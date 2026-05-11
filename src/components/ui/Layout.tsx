@@ -1,5 +1,4 @@
 import React from 'react';
-import { motion, AnimatePresence } from 'motion/react';
 import { cn } from '../../lib/utils';
 import { X, CheckCircle, AlertCircle, Info } from 'lucide-react';
 
@@ -13,24 +12,21 @@ interface CardProps {
 
 export function Card({ children, className, variant = 'glass', id, onClick }: CardProps) {
   return (
-    <motion.div
+    <div
       id={id}
       onClick={onClick}
-      initial={{ opacity: 0, y: 20 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
-        "relative overflow-hidden rounded-2xl p-6 group",
+        "relative overflow-hidden rounded-2xl p-6 group transition-all duration-300",
         variant === 'glass' && "glass-card border-white/5",
         variant === 'solid' && "bg-[#0a0a0a] border border-white/5",
-        variant === 'glow' && "glass-accent shadow-[0_0_30px_rgba(139,92,246,0.1)]",
+        variant === 'glow' && "glass-accent shadow-[0_0_20px_rgba(139,92,246,0.08)]",
         variant === 'premium' && "glass-card bg-gradient-to-br from-purple-500/5 to-blue-500/5",
         onClick && "cursor-pointer active:scale-[0.99]",
         className
       )}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
 
@@ -136,30 +132,25 @@ export function Toast({
   isVisible: boolean; 
   onClose: () => void 
 }) {
+  if (!isVisible) return null;
+
   return (
-    <AnimatePresence>
-      {isVisible && (
-        <motion.div
-          initial={{ opacity: 0, y: 50, scale: 0.9 }}
-          animate={{ opacity: 1, y: 0, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.9, y: 20 }}
-          className={cn(
-            "fixed bottom-24 left-1/2 z-[100] flex -translate-x-1/2 items-center gap-3 rounded-2xl border px-6 py-3 shadow-2xl backdrop-blur-xl md:bottom-8",
-            type === 'success' && "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
-            type === 'error' && "bg-red-500/10 border-red-500/20 text-red-400",
-            type === 'info' && "bg-blue-500/10 border-blue-500/20 text-blue-400",
-            type === 'warning' && "bg-amber-500/10 border-amber-500/20 text-amber-400"
-          )}
-        >
-          {type === 'success' && <CheckCircle className="w-5 h-5" />}
-          {type === 'error' && <AlertCircle className="w-5 h-5" />}
-          {type === 'info' && <Info className="w-5 h-5" />}
-          <span className="text-sm font-medium">{message}</span>
-          <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-md transition-colors ml-2">
-            <X className="w-4 h-4" />
-          </button>
-        </motion.div>
+    <div
+      className={cn(
+        "fixed bottom-24 left-1/2 z-[100] flex -translate-x-1/2 items-center gap-3 rounded-2xl border px-6 py-3 shadow-xl backdrop-blur-md md:bottom-8 transition-all duration-200",
+        type === 'success' && "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
+        type === 'error' && "bg-red-500/10 border-red-500/20 text-red-400",
+        type === 'info' && "bg-blue-500/10 border-blue-500/20 text-blue-400",
+        type === 'warning' && "bg-amber-500/10 border-amber-500/20 text-amber-400"
       )}
-    </AnimatePresence>
+    >
+      {type === 'success' && <CheckCircle className="w-5 h-5" />}
+      {type === 'error' && <AlertCircle className="w-5 h-5" />}
+      {type === 'info' && <Info className="w-5 h-5" />}
+      <span className="text-sm font-medium">{message}</span>
+      <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-md transition-colors ml-2">
+        <X className="w-4 h-4" />
+      </button>
+    </div>
   );
 }

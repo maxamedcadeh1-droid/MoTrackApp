@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'motion/react';
 import {
   BarChart3,
   Briefcase,
@@ -203,119 +202,107 @@ export function CommandCenter() {
 
   const groups = ['Navigate', 'Create', 'Focus'] as const;
 
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-[12vh]">
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsOpen(false)}
-            className="absolute inset-0 bg-black/70 backdrop-blur-xl"
+  return isOpen ? (
+    <div className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-[12vh]">
+      <button
+        type="button"
+        onClick={() => setIsOpen(false)}
+        className="absolute inset-0 bg-black/70 backdrop-blur-xl"
+      />
+
+      <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-[#080b13]/94 shadow-xl shadow-black/40 backdrop-blur-xl">
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-accent/10 to-transparent" />
+        <div className="relative flex items-center gap-4 border-b border-white/10 px-5 py-4">
+          <Search className="h-5 w-5 text-zinc-500" />
+          <input
+            autoFocus
+            placeholder="Search pages, create items, or start focus..."
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            onKeyDown={onInputKeyDown}
+            className="h-10 flex-1 border-none bg-transparent font-sans text-base font-medium text-white placeholder:text-zinc-600 focus:outline-none"
           />
-
-          <motion.div
-            initial={{ opacity: 0, scale: 0.96, y: -16 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.97, y: -12 }}
-            transition={{ duration: 0.2 }}
-            className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-[#080b13]/94 shadow-2xl shadow-black/50 backdrop-blur-2xl"
+          <button
+            onClick={() => setIsOpen(false)}
+            className="rounded-xl p-2 text-zinc-500 transition-colors hover:bg-white/5 hover:text-white"
           >
-            <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-accent/10 to-transparent" />
-            <div className="relative flex items-center gap-4 border-b border-white/10 px-5 py-4">
-              <Search className="h-5 w-5 text-zinc-500" />
-              <input
-                autoFocus
-                placeholder="Search pages, create items, or start focus..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                onKeyDown={onInputKeyDown}
-                className="h-10 flex-1 border-none bg-transparent font-sans text-base font-medium text-white placeholder:text-zinc-600 focus:outline-none"
-              />
-              <button
-                onClick={() => setIsOpen(false)}
-                className="rounded-xl p-2 text-zinc-500 transition-colors hover:bg-white/5 hover:text-white"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
+            <X className="h-4 w-4" />
+          </button>
+        </div>
 
-            <div className="max-h-[56vh] overflow-y-auto p-3 scrollbar-hide">
-              {filteredCommands.length > 0 ? (
-                groups.map((group) => {
-                  const items = filteredCommands.filter((cmd) => cmd.group === group);
-                  if (items.length === 0) return null;
+        <div className="max-h-[56vh] overflow-y-auto p-3 scrollbar-hide">
+          {filteredCommands.length > 0 ? (
+            groups.map((group) => {
+              const items = filteredCommands.filter((cmd) => cmd.group === group);
+              if (items.length === 0) return null;
 
-                  return (
-                    <div key={group} className="pb-3">
-                      <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">
-                        {group}
-                      </p>
-                      <div className="space-y-1">
-                        {items.map((cmd) => {
-                          const absoluteIndex = filteredCommands.findIndex((item) => item.id === cmd.id);
-                          const isSelected = absoluteIndex === selectedIndex;
+              return (
+                <div key={group} className="pb-3">
+                  <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">
+                    {group}
+                  </p>
+                  <div className="space-y-1">
+                    {items.map((cmd) => {
+                      const absoluteIndex = filteredCommands.findIndex((item) => item.id === cmd.id);
+                      const isSelected = absoluteIndex === selectedIndex;
 
-                          return (
-                            <button
-                              key={cmd.id}
-                              onMouseEnter={() => setSelectedIndex(absoluteIndex)}
-                              onClick={() => runCommand(cmd)}
+                      return (
+                        <button
+                          key={cmd.id}
+                          onMouseEnter={() => setSelectedIndex(absoluteIndex)}
+                          onClick={() => runCommand(cmd)}
+                          className={cn(
+                            'flex w-full items-center justify-between rounded-2xl p-3 text-left transition-all',
+                            isSelected ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-white'
+                          )}
+                        >
+                          <span className="flex min-w-0 items-center gap-3">
+                            <span
                               className={cn(
-                                'flex w-full items-center justify-between rounded-2xl p-3 text-left transition-all',
-                                isSelected ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-white'
+                                'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors',
+                                isSelected ? 'border-accent/25 bg-accent/10 text-accent' : 'border-white/10 bg-white/[0.035] text-zinc-500'
                               )}
                             >
-                              <span className="flex min-w-0 items-center gap-3">
-                                <span
-                                  className={cn(
-                                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors',
-                                    isSelected ? 'border-accent/25 bg-accent/10 text-accent' : 'border-white/10 bg-white/[0.035] text-zinc-500'
-                                  )}
-                                >
-                                  <cmd.icon className="h-4 w-4" />
-                                </span>
-                                <span className="min-w-0">
-                                  <span className="block truncate text-sm font-semibold">{cmd.label}</span>
-                                  <span className="block truncate text-xs text-zinc-600">{cmd.description}</span>
-                                </span>
-                              </span>
-                              <span className="ml-3 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1 font-mono text-[10px] text-zinc-600">
-                                Enter
-                              </span>
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  );
-                })
-              ) : (
-                <div className="py-12 text-center">
-                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.035]">
-                    <Sparkles className="h-6 w-6 text-zinc-600" />
+                              <cmd.icon className="h-4 w-4" />
+                            </span>
+                            <span className="min-w-0">
+                              <span className="block truncate text-sm font-semibold">{cmd.label}</span>
+                              <span className="block truncate text-xs text-zinc-600">{cmd.description}</span>
+                            </span>
+                          </span>
+                          <span className="ml-3 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1 font-mono text-[10px] text-zinc-600">
+                            Enter
+                          </span>
+                        </button>
+                      );
+                    })}
                   </div>
-                  <p className="font-display text-lg font-semibold text-white">No matching command</p>
-                  <p className="mt-2 text-sm text-zinc-500">Try dashboard, habit, note, project, or focus.</p>
                 </div>
-              )}
-            </div>
-
-            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-white/[0.02] px-5 py-3">
-              <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-600">
-                <Command className="h-3.5 w-3.5" />
-                <span>Ctrl K opens quick search</span>
+              );
+            })
+          ) : (
+            <div className="py-12 text-center">
+              <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.035]">
+                <Sparkles className="h-6 w-6 text-zinc-600" />
               </div>
-              <div className="flex items-center gap-3 font-mono text-[10px] text-zinc-600">
-                <span>Arrow keys</span>
-                <span>Enter</span>
-                <span>Esc</span>
-              </div>
+              <p className="font-display text-lg font-semibold text-white">No matching command</p>
+              <p className="mt-2 text-sm text-zinc-500">Try dashboard, habit, note, project, or focus.</p>
             </div>
-          </motion.div>
+          )}
         </div>
-      )}
-    </AnimatePresence>
-  );
+
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-white/[0.02] px-5 py-3">
+          <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-600">
+            <Command className="h-3.5 w-3.5" />
+            <span>Ctrl K opens quick search</span>
+          </div>
+          <div className="flex items-center gap-3 font-mono text-[10px] text-zinc-600">
+            <span>Arrow keys</span>
+            <span>Enter</span>
+            <span>Esc</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  ) : null;
 }

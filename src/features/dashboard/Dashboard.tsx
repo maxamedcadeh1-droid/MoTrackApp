@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion } from 'motion/react';
 import {
   ArrowDownRight,
   ArrowUpRight,
@@ -17,15 +16,6 @@ import {
   TrendingUp,
   Zap,
 } from 'lucide-react';
-import {
-  Area,
-  AreaChart,
-  CartesianGrid,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from 'recharts';
 import { Button, Card, Skeleton } from '../../components/ui/Layout';
 import { supabase } from '../../lib/supabase';
 import { cn } from '../../lib/utils';
@@ -399,37 +389,19 @@ export function Dashboard() {
             </span>
           </div>
           <div className="h-[280px] w-full">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={stats.weeklyData}>
-                <defs>
-                  <linearGradient id="momentumGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--color-accent)" stopOpacity={0.36} />
-                    <stop offset="95%" stopColor="var(--color-accent)" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
-                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11, fontWeight: 600 }} dy={12} />
-                <YAxis hide domain={[0, 100]} />
-                <Tooltip
-                  cursor={{ stroke: 'var(--color-accent)', strokeWidth: 1 }}
-                  contentStyle={{
-                    backgroundColor: '#080b13',
-                    border: '1px solid rgba(255,255,255,0.1)',
-                    borderRadius: 16,
-                    color: '#fff',
-                    boxShadow: '0 20px 60px rgba(0,0,0,0.45)',
-                  }}
-                />
-                <Area
-                  type="monotone"
-                  dataKey="score"
-                  stroke="var(--color-accent)"
-                  strokeWidth={3}
-                  fill="url(#momentumGradient)"
-                  animationDuration={1400}
-                />
-              </AreaChart>
-            </ResponsiveContainer>
+            <div className="flex h-full items-end gap-3">
+              {stats.weeklyData.map((item) => {
+                const height = Math.max(item.score, 8);
+                return (
+                  <div key={item.day} className="flex-1">
+                    <div className="relative h-full overflow-hidden rounded-3xl bg-white/5">
+                      <div className="absolute bottom-0 left-0 right-0 rounded-3xl bg-gradient-to-t from-accent to-violet-400" style={{ height: `${height}%` }} />
+                    </div>
+                    <p className="mt-3 text-center text-xs text-zinc-500">{item.day}</p>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </Card>
 
@@ -454,11 +426,12 @@ export function Dashboard() {
 }
 
 function MomentumRing({ score }: { score: number }) {
+  const strokeDasharray = `${score} 100`;
   return (
     <div className="relative mx-auto h-52 w-52">
       <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
         <circle cx="60" cy="60" r="52" pathLength={100} className="fill-none stroke-white/5" strokeWidth="9" />
-        <motion.circle
+        <circle
           cx="60"
           cy="60"
           r="52"
@@ -466,9 +439,7 @@ function MomentumRing({ score }: { score: number }) {
           className="fill-none stroke-accent drop-shadow-[0_0_18px_rgba(139,92,246,0.45)]"
           strokeWidth="9"
           strokeLinecap="round"
-          initial={{ strokeDasharray: '0 100' }}
-          animate={{ strokeDasharray: `${score} 100` }}
-          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+          strokeDasharray={strokeDasharray}
         />
       </svg>
       <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
@@ -488,7 +459,7 @@ function BreakdownPill({ label, value, max, color }: { label: string; value: num
         <span className="font-mono text-xs text-white">{value}/{max}</span>
       </div>
       <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
-        <motion.div initial={{ width: 0 }} animate={{ width: `${percent}%` }} className={cn('h-full rounded-full', color)} />
+        <div className={cn('h-full rounded-full', color)} style={{ width: `${percent}%` }} />
       </div>
     </div>
   );
@@ -525,8 +496,8 @@ function BriefingMetric({ icon: Icon, label, value, onClick }: { icon: typeof Ti
 
 function OnboardingCard({ icon: Icon, title, cta, onClick }: { icon: typeof Timer; title: string; cta: string; onClick: () => void }) {
   return (
-    <motion.button
-      whileHover={{ y: -3 }}
+    <button
+      type="button"
       onClick={onClick}
       className="group rounded-2xl border border-dashed border-white/10 bg-white/[0.025] p-5 text-left transition-all hover:border-accent/30 hover:bg-accent/[0.035]"
     >
@@ -538,7 +509,7 @@ function OnboardingCard({ icon: Icon, title, cta, onClick }: { icon: typeof Time
         {cta}
         <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
       </span>
-    </motion.button>
+    </button>
   );
 }
 

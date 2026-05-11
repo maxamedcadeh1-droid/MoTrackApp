@@ -1,6 +1,5 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { AnimatePresence, motion } from 'motion/react';
 import { Briefcase, CheckCircle2, FileText, Plus, Timer } from 'lucide-react';
 import { cn } from '../lib/utils';
 
@@ -30,69 +29,51 @@ export function QuickAdd() {
 
   return (
     <>
-      <AnimatePresence>
-        {isOpen && (
-          <motion.button
-            type="button"
-            aria-label="Close quick actions"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            onClick={() => setIsOpen(false)}
-            className="fixed inset-0 z-40 bg-transparent"
-          />
-        )}
-      </AnimatePresence>
+      {isOpen && (
+        <button
+          type="button"
+          aria-label="Close quick actions"
+          onClick={() => setIsOpen(false)}
+          className="fixed inset-0 z-40 bg-transparent"
+        />
+      )}
 
       <div className="fixed bottom-24 right-5 z-50 md:bottom-8 md:right-8">
-        <AnimatePresence>
-          {isOpen && (
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="absolute bottom-[4.5rem] right-0 space-y-3"
-            >
-              {actions.map((action, index) => (
-                <motion.button
-                  key={action.label}
-                  initial={{ opacity: 0, x: 14, scale: 0.94 }}
-                  animate={{ opacity: 1, x: 0, scale: 1 }}
-                  exit={{ opacity: 0, x: 14, scale: 0.94 }}
-                  transition={{ delay: index * 0.035 }}
-                  onClick={() => {
-                    navigate(action.path);
-                    setIsOpen(false);
-                  }}
-                  className="group ml-auto flex min-h-12 items-center gap-3"
-                >
-                  <span className="whitespace-nowrap rounded-xl border border-white/10 bg-[#080b13]/95 px-3 py-2 text-xs font-semibold text-white opacity-100 shadow-2xl backdrop-blur-xl transition-all md:opacity-0 md:group-hover:opacity-100">
-                    {action.label}
-                  </span>
-                  <span className={cn('flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 shadow-2xl backdrop-blur-xl transition-transform group-hover:scale-105', action.accent)}>
-                    <action.icon className="h-5 w-5" />
-                  </span>
-                </motion.button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
+        {isOpen && (
+          <div className="absolute bottom-[4.5rem] right-0 space-y-3">
+            {actions.map((action) => (
+              <button
+                key={action.label}
+                onClick={() => {
+                  navigate(action.path);
+                  setIsOpen(false);
+                }}
+                className="group ml-auto flex min-h-12 items-center gap-3"
+              >
+                <span className="whitespace-nowrap rounded-xl border border-white/10 bg-[#080b13]/95 px-3 py-2 text-xs font-semibold text-white opacity-100 shadow-xl backdrop-blur-md transition-all md:opacity-0 md:group-hover:opacity-100">
+                  {action.label}
+                </span>
+                <span className={cn('flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 shadow-xl backdrop-blur-md transition-transform group-hover:scale-105', action.accent)}>
+                  <action.icon className="h-5 w-5" />
+                </span>
+              </button>
+            ))}
+          </div>
+        )}
 
-        <motion.button
-          whileHover={{ scale: 1.04, y: -2 }}
-          whileTap={{ scale: 0.96 }}
+        <button
           onClick={() => setIsOpen((value) => !value)}
           className={cn(
-            'flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 shadow-2xl transition-all duration-300',
+            'flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 shadow-xl transition-all duration-300',
             isOpen
-              ? 'rotate-45 bg-white/10 text-white backdrop-blur-2xl'
+              ? 'rotate-45 bg-white/10 text-white backdrop-blur-md'
               : 'momentum-gradient text-white shadow-accent/25'
           )}
           aria-expanded={isOpen}
           aria-label="Open quick actions"
         >
           <Plus className="h-6 w-6" />
-        </motion.button>
+        </button>
       </div>
     </>
   );

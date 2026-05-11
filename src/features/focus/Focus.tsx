@@ -17,7 +17,6 @@ import {
   CloudRain,
   Wind
 } from 'lucide-react';
-import { motion, AnimatePresence } from 'motion/react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
@@ -224,7 +223,7 @@ export function Focus() {
                         strokeWidth="2"
                         fill="none"
                     />
-                    <motion.circle
+                    <circle
                         cx="50%"
                         cy="50%"
                         r="45%"
@@ -232,8 +231,7 @@ export function Focus() {
                         strokeWidth="4"
                         fill="none"
                         strokeDasharray="100 100"
-                        initial={{ strokeDashoffset: 100 }}
-                        animate={{ strokeDashoffset: 100 - progress }}
+                        strokeDashoffset={100 - progress}
                         className="transition-all duration-1000"
                         style={{ filter: `blur(4px) drop-shadow(0 0 20px ${MODES[mode].color}40)` }}
                     />
@@ -258,14 +256,12 @@ export function Focus() {
                         ))}
                     </div>
                     
-                    <motion.div
+                    <div
                         key={timeLeft}
-                        initial={{ opacity: 0.8, scale: 0.98 }}
-                        animate={{ opacity: 1, scale: 1 }}
                         className="font-mono text-[4.5rem] font-bold leading-none tracking-tight text-white tabular-nums sm:text-[7rem] md:text-[10rem] lg:text-[11.25rem]"
                     >
                         {formatTime(timeLeft)}
-                    </motion.div>
+                    </div>
                 </div>
 
                 <div className="absolute bottom-[18%] z-20 flex gap-4 sm:gap-8 lg:bottom-1/4">
@@ -330,7 +326,9 @@ export function Focus() {
                             </div>
                             {activeSound === sound.id && (
                                 <div className="flex gap-0.5">
-                                    {[1,2,3].map(i => <motion.div key={i} animate={{ height: [8, 16, 8] }} transition={{ repeat: Infinity, duration: 0.5, delay: i * 0.1 }} className="w-0.5 bg-accent" />)}
+                                    {[1,2,3].map((i) => (
+                                      <div key={i} className="w-0.5 bg-accent" style={{ height: `${8 + i * 4}px` }} />
+                                    ))}
                                 </div>
                             )}
                         </button>

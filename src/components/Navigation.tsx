@@ -16,7 +16,6 @@ import {
   User,
   Wifi,
 } from 'lucide-react';
-import { AnimatePresence, motion } from 'motion/react';
 import { useAuth } from '../features/auth/AuthContext';
 import { useLogout } from '../features/auth/useLogout';
 import { cn } from '../lib/utils';
@@ -120,11 +119,7 @@ export function Sidebar() {
                 <item.icon className={cn('h-5 w-5 transition-all group-hover:scale-110', isActive ? 'text-accent' : 'text-zinc-500')} />
                 <span>{item.label}</span>
                 {isActive && (
-                  <motion.div
-                    layoutId="sidebar-active-indicator"
-                    className="absolute -left-4 h-6 w-1 rounded-full bg-accent shadow-[0_0_20px_rgba(139,92,246,0.55)]"
-                    transition={{ type: 'spring', stiffness: 320, damping: 32 }}
-                  />
+                  <span className="absolute -left-4 h-6 w-1 rounded-full bg-accent shadow-[0_0_18px_rgba(139,92,246,0.45)]" />
                 )}
               </>
             )}
@@ -173,24 +168,15 @@ export function MobileNav() {
 
   return (
     <>
-      <AnimatePresence>
-        {accountOpen && (
-          <>
-            <motion.button
-              type="button"
-              aria-label="Close account menu"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              onClick={() => setAccountOpen(false)}
-              className="fixed inset-0 z-[65] bg-black/40 backdrop-blur-sm md:hidden"
-            />
-            <motion.div
-              initial={{ opacity: 0, y: 18, scale: 0.98 }}
-              animate={{ opacity: 1, y: 0, scale: 1 }}
-              exit={{ opacity: 0, y: 18, scale: 0.98 }}
-              className="fixed bottom-24 left-3 right-3 z-[70] max-h-[70vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#080b13]/95 p-2 shadow-2xl shadow-black/50 backdrop-blur-2xl md:hidden"
-            >
+      {accountOpen && (
+        <>
+          <button
+            type="button"
+            aria-label="Close account menu"
+            onClick={() => setAccountOpen(false)}
+            className="fixed inset-0 z-[65] bg-black/40 backdrop-blur-sm md:hidden"
+          />
+          <div className="fixed bottom-24 left-3 right-3 z-[70] max-h-[70vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#080b13]/95 p-2 shadow-xl shadow-black/40 backdrop-blur-xl md:hidden">
               <div className="mb-1 rounded-xl border border-white/10 bg-white/[0.035] p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
@@ -226,12 +212,11 @@ export function MobileNav() {
                 <LogOut className="h-4 w-4" />
                 {isLoggingOut ? 'Logging out...' : 'Logout'}
               </button>
-            </motion.div>
+            </div>
           </>
         )}
-      </AnimatePresence>
 
-      <nav className="fixed bottom-3 left-3 right-3 z-50 flex h-[4.75rem] items-center justify-between gap-1 rounded-2xl border border-white/10 bg-[#080b13]/88 px-2 shadow-2xl shadow-black/40 backdrop-blur-2xl md:hidden">
+      <nav className="fixed bottom-3 left-3 right-3 z-50 flex h-[4.75rem] items-center justify-between gap-1 rounded-2xl border border-white/10 bg-[#080b13]/88 px-2 shadow-xl shadow-black/40 backdrop-blur-xl md:hidden">
         {mobileItems.map((item) => (
           <NavLink
             key={item.path}
@@ -245,11 +230,7 @@ export function MobileNav() {
             {({ isActive }) => (
               <>
                 {isActive && (
-                  <motion.div
-                    layoutId="mobile-active"
-                    className="absolute inset-0 rounded-xl bg-accent/10"
-                    transition={{ type: 'spring', stiffness: 350, damping: 32 }}
-                  />
+                  <span className="absolute inset-0 rounded-xl bg-accent/10" />
                 )}
                 <item.icon className={cn('relative z-10 h-5 w-5', isActive && 'text-accent')} />
                 <span className="relative z-10 text-[10px] font-semibold leading-none">{item.label}</span>
