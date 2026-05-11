@@ -18,6 +18,7 @@ import {
   Wind
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 import { formatTime, cn } from '../../lib/utils';
@@ -25,7 +26,7 @@ import { formatTime, cn } from '../../lib/utils';
 type TimerMode = 'focus' | 'short-break' | 'long-break';
 
 const MODES: Record<TimerMode, { label: string; minutes: number; color: string; icon: any }> = {
-  focus: { label: 'Deep Focus', minutes: 25, color: '#8b5cf6', icon: Zap },
+  focus: { label: 'Focus', minutes: 25, color: '#8b5cf6', icon: Zap },
   'short-break': { label: 'Short Rest', minutes: 5, color: '#10b981', icon: Coffee },
   'long-break': { label: 'Recharge', minutes: 15, color: '#3b82f6', icon: History },
 };
@@ -38,6 +39,7 @@ const SOUNDS = [
 
 export function Focus() {
   const { user } = useAuth();
+  const [searchParams] = useSearchParams();
   const [mode, setMode] = useState<TimerMode>('focus');
   const [timeLeft, setTimeLeft] = useState(MODES[mode].minutes * 60);
   const [isActive, setIsActive] = useState(false);
@@ -48,10 +50,19 @@ export function Focus() {
   const timerRef = useRef<NodeJS.Timeout | null>(null);
   const audioRef = useRef<HTMLAudioElement | null>(null);
   const startTimeRef = useRef<Date | null>(null);
+  const autoStartedRef = useRef(false);
 
   useEffect(() => {
     fetchHistory();
   }, [user]);
+
+  useEffect(() => {
+    if (searchParams.get('start') === 'true' && !autoStartedRef.current && !isActive && mode === 'focus') {
+      autoStartedRef.current = true;
+      startTimeRef.current = new Date();
+      setIsActive(true);
+    }
+  }, [searchParams, isActive, mode]);
 
   useEffect(() => {
     if (isActive && timeLeft > 0) {
@@ -137,11 +148,11 @@ export function Focus() {
           
           if (error) throw error;
           
-          setToast({ show: true, message: 'Deep Focus Session Completed! +10 Momentum', type: 'success' });
+          setToast({ show: true, message: 'Focus session saved', type: 'success' });
           fetchHistory();
         } catch (error: any) {
           console.error('Save focus session error:', error);
-          setToast({ show: true, message: 'Failed to record session: ' + error.message, type: 'error' });
+          setToast({ show: true, message: 'Something went wrong', type: 'error' });
         }
       }
     }
@@ -176,33 +187,33 @@ export function Focus() {
   const progress = (1 - timeLeft / (MODES[mode].minutes * 60)) * 100;
 
   return (
-    <div className="space-y-12 pb-20 max-w-6xl mx-auto">
+    <div className="mx-auto max-w-6xl space-y-8 pb-20 sm:space-y-12">
       <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
         <div>
           <div className="flex items-center gap-2 mb-4">
               <div className="w-1.5 h-6 bg-accent rounded-full" />
-              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500">Neural Sync Session</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500">Focus session</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-display font-bold text-white tracking-tight leading-tight">
-            Deep <span className="text-accent underline decoration-4 underline-offset-8 decoration-accent/20">Focus</span>
+            Focus Time
           </h1>
-          <p className="text-zinc-500 mt-4 font-medium tracking-tight max-w-xl">Enter your flow state through cognitive isolation. Every distraction is a leak in the system.</p>
+          <p className="text-zinc-500 mt-4 font-medium tracking-tight max-w-xl">Set a clear block, reduce context switching, and give one important thing your best attention.</p>
         </div>
         <div className="flex gap-4">
             <div className="flex items-center h-14 gap-3 bg-white/5 px-6 rounded-2xl border border-white/5 shadow-xl transition-all hover:bg-white/[0.08]">
                 <Flame className="w-5 h-5 text-orange-500 animate-pulse" />
                 <div className="flex flex-col">
-                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-none">Global Log</span>
-                    <span className="text-xs font-mono font-bold text-white uppercase mt-1 tracking-tight">{sessions.length} Sessions Today</span>
+                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-none">Today</span>
+                    <span className="text-xs font-mono font-bold text-white uppercase mt-1 tracking-tight">{sessions.length} sessions</span>
                 </div>
             </div>
         </div>
       </header>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+      <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
         {/* Main Timer Display */}
-        <div className="lg:col-span-8 flex flex-col items-center justify-center space-y-12">
-            <div className="relative w-full max-w-2xl aspect-square flex flex-col items-center justify-center">
+        <div className="flex flex-col items-center justify-center space-y-8 lg:col-span-8 lg:space-y-12">
+            <div className="relative flex aspect-square w-full max-w-[34rem] flex-col items-center justify-center">
                 {/* Circular Progress Ring */}
                 <svg className="absolute inset-0 w-full h-full -rotate-90">
                     <circle
@@ -230,13 +241,13 @@ export function Focus() {
 
                 {/* Digital Time */}
                 <div className="relative text-center z-10">
-                    <div className="flex justify-center gap-2 mb-8">
+                    <div className="mb-6 flex flex-wrap justify-center gap-2 sm:mb-8">
                         {(Object.keys(MODES) as TimerMode[]).map((m) => (
                             <button
                                 key={m}
                                 onClick={() => changeMode(m)}
                                 className={cn(
-                                    "px-4 py-2 rounded-full text-[10px] font-display font-black uppercase tracking-[0.2em] transition-all border",
+                                    "px-3 py-2 sm:px-4 rounded-full text-[10px] font-display font-semibold uppercase tracking-[0.16em] sm:tracking-[0.2em] transition-all border",
                                     mode === m 
                                     ? "bg-white/5 border-white/10 text-white shadow-xl" 
                                     : "text-zinc-600 border-transparent hover:text-zinc-400"
@@ -251,41 +262,41 @@ export function Focus() {
                         key={timeLeft}
                         initial={{ opacity: 0.8, scale: 0.98 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="text-[120px] md:text-[180px] font-mono font-black tracking-tighter leading-none text-white tabular-nums italic"
+                        className="font-mono text-[4.5rem] font-bold leading-none tracking-tight text-white tabular-nums sm:text-[7rem] md:text-[10rem] lg:text-[11.25rem]"
                     >
                         {formatTime(timeLeft)}
                     </motion.div>
                 </div>
 
-                <div className="absolute bottom-1/4 flex gap-8 z-20">
+                <div className="absolute bottom-[18%] z-20 flex gap-4 sm:gap-8 lg:bottom-1/4">
                      <button 
                         onClick={resetTimer}
-                        className="p-5 rounded-full glass border-white/5 text-zinc-600 hover:text-white hover:border-white/20 transition-all hover:scale-110 active:scale-95 shadow-2xl"
+                        className="rounded-full border-white/5 p-4 text-zinc-600 shadow-2xl transition-all hover:scale-110 hover:border-white/20 hover:text-white active:scale-95 sm:p-5 glass"
                     >
-                        <RotateCcw className="w-8 h-8" />
+                        <RotateCcw className="h-6 w-6 sm:h-8 sm:w-8" />
                     </button>
 
                     <button 
                         onClick={toggleTimer}
                         className={cn(
-                            "w-24 h-24 rounded-full flex items-center justify-center transition-all duration-500 active:scale-95 shadow-2xl relative group overflow-hidden border border-white/10",
+                            "w-20 h-20 sm:w-24 sm:h-24 rounded-full flex items-center justify-center transition-all duration-500 active:scale-95 shadow-2xl relative group overflow-hidden border border-white/10",
                             isActive 
                                 ? "bg-white/5 text-white" 
                                 : "momentum-gradient text-white"
                         )}
                     >
                         <div className="absolute inset-0 bg-white/20 opacity-0 group-hover:opacity-100 transition-opacity" />
-                        {isActive ? <Pause className="w-10 h-10 relative z-10" /> : <Play className="w-10 h-10 ml-1.5 relative z-10" />}
+                        {isActive ? <Pause className="relative z-10 h-8 w-8 sm:h-10 sm:w-10" /> : <Play className="relative z-10 ml-1 h-8 w-8 sm:ml-1.5 sm:h-10 sm:w-10" />}
                     </button>
 
                     <button 
                         onClick={() => activeSound ? stopSound() : playSound('rain')}
                         className={cn(
-                            "p-5 rounded-full border transition-all hover:scale-110 active:scale-95 shadow-2xl",
+                            "p-4 sm:p-5 rounded-full border transition-all hover:scale-110 active:scale-95 shadow-2xl",
                             activeSound ? "bg-accent/10 border-accent/20 text-accent" : "glass border-white/5 text-zinc-600 hover:text-white"
                         )}
                     >
-                        {activeSound ? <Volume2 className="w-8 h-8 font-black" /> : <VolumeX className="w-8 h-8" />}
+                        {activeSound ? <Volume2 className="h-6 w-6 sm:h-8 sm:w-8" /> : <VolumeX className="h-6 w-6 sm:h-8 sm:w-8" />}
                     </button>
                 </div>
             </div>
@@ -293,8 +304,8 @@ export function Focus() {
 
         {/* Side Controls: Sounds & History */}
         <div className="lg:col-span-4 space-y-8">
-            <Card className="p-8 border-white/5 bg-white/[0.02]">
-                <h3 className="text-sm font-display font-black uppercase tracking-[0.3em] text-zinc-600 mb-6">Environmental Audio</h3>
+            <Card className="border-white/5 bg-white/[0.02] p-5 sm:p-8">
+                <h3 className="text-sm font-display font-semibold uppercase tracking-[0.3em] text-zinc-600 mb-6">Background audio</h3>
                 <div className="space-y-4">
                     {SOUNDS.map(sound => (
                         <button
@@ -314,8 +325,8 @@ export function Focus() {
                                 <sound.icon className="w-5 h-5" />
                             </div>
                             <div className="flex-1">
-                                <span className="text-sm font-display font-black uppercase tracking-[0.2em]">{sound.label}</span>
-                                <p className="text-[10px] uppercase font-bold opacity-40 mt-0.5 tracking-tighter">Ambient Audio Control</p>
+                                <span className="text-sm font-display font-semibold uppercase tracking-[0.2em]">{sound.label}</span>
+                                <p className="text-[10px] uppercase font-bold opacity-40 mt-0.5 tracking-tighter">Ambient audio</p>
                             </div>
                             {activeSound === sound.id && (
                                 <div className="flex gap-0.5">
@@ -327,7 +338,7 @@ export function Focus() {
                 </div>
 
                 <div className="mt-12 pt-10 border-t border-white/5">
-                    <h3 className="text-sm font-display font-black uppercase tracking-[0.3em] text-zinc-600 mb-6">Execution Log</h3>
+                    <h3 className="text-sm font-display font-semibold uppercase tracking-[0.3em] text-zinc-600 mb-6">Session history</h3>
                     <div className="space-y-5 max-h-[300px] overflow-y-auto pr-2 scrollbar-hide">
                         {sessions.length > 0 ? sessions.map(session => (
                             <div key={session.id} className="flex gap-4 group">
@@ -336,16 +347,16 @@ export function Focus() {
                                 </div>
                                 <div className="space-y-0.5">
                                     <div className="flex items-center gap-2">
-                                        <span className="text-[12px] font-mono font-black text-white uppercase tracking-tight">{session.completed_minutes}m Session</span>
+                                        <span className="text-[12px] font-mono font-semibold text-white uppercase tracking-tight">{session.completed_minutes}m Session</span>
                                         <span className="text-[9px] text-zinc-700 font-bold uppercase tracking-widest">{new Date(session.started_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</span>
                                     </div>
-                                    <p className="text-[10px] text-zinc-600 font-medium uppercase tracking-tighter italic">Mission synchronization successful</p>
+                                    <p className="text-[10px] text-zinc-600 font-medium uppercase tracking-tighter">Recorded to your daily focus total</p>
                                 </div>
                             </div>
                         )) : (
                             <div className="py-12 text-center">
                                 <History className="w-10 h-10 text-white/5 mx-auto mb-4" />
-                                <p className="text-[10px] font-display font-black uppercase tracking-[0.2em] text-zinc-700">No telemetry recorded</p>
+                                <p className="text-[10px] font-display font-semibold uppercase tracking-[0.2em] text-zinc-700">No sessions today</p>
                             </div>
                         )}
                     </div>

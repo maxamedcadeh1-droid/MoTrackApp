@@ -40,6 +40,7 @@ export function Notes() {
   const [noteForm, setNoteForm] = useState({ title: '', content: '', tags: [] as string[] });
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' as any });
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('grid');
+  const noteTitle = noteForm.title.trim();
 
   const fetchNotes = async () => {
     if (!user) return;
@@ -56,7 +57,7 @@ export function Notes() {
       if (data) setNotes(data);
     } catch (error: any) {
       console.error('Fetch notes error:', error);
-      showToast(error.message, 'error');
+      showToast('Something went wrong', 'error');
     } finally {
       setLoading(false);
     }
@@ -76,17 +77,17 @@ export function Notes() {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     
     if (!authUser) {
-      showToast('Please login first', 'error');
+      showToast('Please log in first', 'error');
       return;
     }
-    if (!noteForm.title) return;
+    if (!noteTitle) return;
 
     setSubmitting(true);
     try {
       if (editingNote) {
         const { data, error } = await (supabase.from('notes') as any)
           .update({
-            title: noteForm.title,
+            title: noteTitle,
             content: noteForm.content,
             tags: noteForm.tags,
             updated_at: new Date().toISOString()
@@ -99,12 +100,12 @@ export function Notes() {
         if (error) throw error;
         
         setNotes(prev => prev.map(n => n.id === editingNote.id ? data : n));
-        showToast('Note updated successfully');
+        showToast('Note saved');
         closeModal();
       } else {
         const { data, error } = await (supabase.from('notes') as any).insert({
           user_id: authUser.id,
-          title: noteForm.title,
+          title: noteTitle,
           content: noteForm.content,
           tags: noteForm.tags,
           is_pinned: false,
@@ -116,12 +117,12 @@ export function Notes() {
         if (error) throw error;
 
         setNotes(prev => [data, ...prev]);
-        showToast('Note captured');
+        showToast('Note saved');
         closeModal();
       }
     } catch (error: any) {
       console.error('Save note error:', error);
-      showToast(error.message, 'error');
+      showToast('Something went wrong', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -129,7 +130,7 @@ export function Notes() {
 
   const togglePin = async (note: Note) => {
     if (!user) {
-      showToast('Please login first', 'error');
+      showToast('Please log in first', 'error');
       return;
     }
     try {
@@ -149,7 +150,7 @@ export function Notes() {
       }
     } catch (error: any) {
       console.error('Toggle pin error:', error);
-      showToast(error.message, 'error');
+      showToast('Something went wrong', 'error');
     }
   };
 
@@ -162,7 +163,7 @@ export function Notes() {
       showToast('Note deleted', 'error');
     } catch (error: any) {
       console.error('Delete note error:', error);
-      showToast(error.message, 'error');
+      showToast('Something went wrong', 'error');
     }
   };
 
@@ -201,6 +202,7 @@ export function Notes() {
     n.content?.toLowerCase().includes(search.toLowerCase()) ||
     n.tags?.some(t => t.toLowerCase().includes(search.toLowerCase()))
   );
+  const isSearchingExistingNotes = notes.length > 0 && filteredNotes.length === 0;
 
   return (
     <div className="space-y-8 pb-20">
@@ -208,16 +210,16 @@ export function Notes() {
         <div>
           <div className="flex items-center gap-2 mb-4">
               <div className="w-1.5 h-6 bg-accent rounded-full" />
-              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500">Cryptographic Memory Storage</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500">Notes and ideas</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-display font-bold text-white tracking-tight leading-tight">
-            Digital <span className="text-accent underline decoration-4 underline-offset-8 decoration-accent/20">Synapse</span>
+            Notes
           </h1>
-          <p className="text-zinc-500 mt-4 font-medium tracking-tight max-w-xl">Externalize your neural patterns into high-fidelity data nodes for async recall and synthesis.</p>
+          <p className="text-zinc-500 mt-4 font-medium tracking-tight max-w-xl">Write notes, pin important context, and keep your best ideas easy to find.</p>
         </div>
         <Button onClick={() => setIsModalOpen(true)} className="h-14 px-8 shadow-xl shadow-accent/20">
           <Plus className="w-5 h-5 mr-3" />
-          CAPTURE SIGNAL
+          Create Note
         </Button>
       </header>
 
@@ -225,7 +227,7 @@ export function Notes() {
         <div className="relative flex-1 w-full">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
           <Input 
-            placeholder="Search synapses..." 
+            placeholder="Search notes..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-12 bg-white/5 border-white/5 focus:border-accent/40"
@@ -269,18 +271,26 @@ export function Notes() {
           ))}
         </div>
       ) : (
-        <Card className="flex flex-col items-center justify-center py-24 text-center border-dashed border-white/5 bg-zinc-900/20 rounded-[3rem]">
+        <Card className="flex flex-col items-center justify-center rounded-3xl border-dashed border-white/5 bg-zinc-900/20 py-16 text-center sm:rounded-[3rem] sm:py-24">
           <div className="w-24 h-24 bg-zinc-900 border border-white/5 rounded-full flex items-center justify-center mb-10 shadow-2xl overflow-hidden relative group">
              <div className="absolute inset-0 bg-accent/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-            <FileText className="w-10 h-10 text-zinc-700 relative z-10" />
+            {isSearchingExistingNotes ? <Search className="w-10 h-10 text-zinc-700 relative z-10" /> : <FileText className="w-10 h-10 text-zinc-700 relative z-10" />}
           </div>
-          <h3 className="text-2xl font-display font-bold text-white tracking-tight leading-none uppercase tracking-widest">No Signals Detected</h3>
+          <h3 className="text-2xl font-display font-bold text-white tracking-tight leading-none">
+            {isSearchingExistingNotes ? 'No notes match your search' : 'Create your first note'}
+          </h3>
           <p className="text-zinc-500 max-w-xs mx-auto mt-4 text-[15px] font-medium leading-relaxed">
-            "Silence is the canvas of genius." Externalize your first signal to begin the transmission.
+            {isSearchingExistingNotes
+              ? 'Try another keyword or clear the search to see all notes.'
+              : 'Write a thought, meeting note, or quick idea. Your workspace gets smarter as context accumulates.'}
           </p>
-          <Button onClick={() => setIsModalOpen(true)} variant="outline" className="mt-10 h-14 px-10 border-white/10 hover:bg-accent/10 hover:border-accent/40 rounded-2xl transition-all">
-            <Maximize2 className="w-4 h-4 mr-3" />
-            Initialize First Node
+          <Button
+            onClick={() => isSearchingExistingNotes ? setSearch('') : setIsModalOpen(true)}
+            variant="outline"
+            className="mt-10 h-14 px-10 border-white/10 hover:bg-accent/10 hover:border-accent/40 rounded-2xl transition-all"
+          >
+            {isSearchingExistingNotes ? <Search className="w-4 h-4 mr-3" /> : <Maximize2 className="w-4 h-4 mr-3" />}
+            {isSearchingExistingNotes ? 'Clear search' : 'Write your first note'}
           </Button>
         </Card>
       )}
@@ -300,18 +310,18 @@ export function Notes() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-x-4 top-1/2 -translate-y-1/2 md:left-1/2 md:-translate-x-1/2 z-[61] w-full max-w-3xl"
+              className="fixed inset-x-3 top-1/2 z-[61] max-h-[calc(100vh-1.5rem)] w-auto -translate-y-1/2 overflow-y-auto md:left-1/2 md:w-full md:max-w-3xl md:-translate-x-1/2"
             >
-              <Card className="p-8 md:p-10 border-white/10 bg-[#0f0f0f] shadow-2xl relative">
+              <Card className="relative border-white/10 bg-[#0f0f0f] p-5 shadow-2xl sm:p-8 md:p-10">
                 <button onClick={closeModal} className="absolute top-6 right-6 text-zinc-500 hover:text-white">
                   <X className="w-5 h-5" />
                 </button>
                 
                 <form onSubmit={handleSubmit} className="space-y-8">
                   <div className="space-y-1">
-                    <Badge variant="outline" className="text-accent border-accent/20">Synapse Capture</Badge>
-                    <h3 className="text-3xl font-black text-white tracking-tighter uppercase italic">
-                      {editingNote ? 'Modify Signal' : 'Initialize Node'}
+                    <Badge variant="outline" className="text-accent border-accent/20">Note details</Badge>
+                    <h3 className="text-3xl font-display font-bold text-white tracking-tight">
+                      {editingNote ? 'Edit Note' : 'Create Note'}
                     </h3>
                   </div>
 
@@ -320,25 +330,27 @@ export function Notes() {
                         <Input 
                             value={noteForm.title}
                             onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
-                            placeholder="Signal Title..." 
-                            className="bg-transparent border-none text-3xl font-display font-black text-white placeholder:text-zinc-800 p-0 h-auto focus:ring-0"
+                            placeholder="Note title..." 
+                            className="h-auto border-none bg-transparent p-0 font-display text-2xl font-bold text-white placeholder:text-zinc-800 focus:ring-0 sm:text-3xl"
+                            required
                             autoFocus
                         />
+                        <p className="text-xs text-zinc-700">A title is required before saving.</p>
                     </div>
                     
                     <div className="space-y-2">
                         <TextArea 
                             value={noteForm.content}
                             onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
-                            placeholder="Begin transmission..." 
-                            className="bg-transparent border-none text-zinc-400 font-sans placeholder:text-zinc-800 p-0 text-lg leading-relaxed min-h-[300px] focus:ring-0 scrollbar-hide"
+                            placeholder="Start writing..." 
+                            className="min-h-[220px] border-none bg-transparent p-0 font-sans text-base leading-relaxed text-zinc-400 placeholder:text-zinc-800 focus:ring-0 sm:min-h-[300px] sm:text-lg scrollbar-hide"
                         />
                     </div>
 
                     <div className="space-y-4 pt-6 border-t border-white/5">
                         <div className="flex items-center gap-2 text-zinc-500 mb-2">
                             <TagIcon className="w-4 h-4" />
-                            <span className="text-[10px] font-display font-black uppercase tracking-[0.2em]">Metadata Tags</span>
+                            <span className="text-[10px] font-display font-black uppercase tracking-[0.2em]">Tags</span>
                         </div>
                         <div className="flex flex-wrap gap-2">
                             {PRESET_TAGS.map(tag => (
@@ -361,14 +373,14 @@ export function Notes() {
                   </div>
 
                   <div className="flex gap-4 pt-4 border-t border-white/5">
-                    <Button type="submit" className="flex-1 py-6 text-lg" disabled={submitting}>
+                    <Button type="submit" className="flex-1 py-6 text-lg" disabled={submitting || !noteTitle}>
                         {submitting ? (
                           <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            {editingNote ? 'Syncing...' : 'Executing...'}
+                            Saving...
                           </>
                         ) : (
-                          editingNote ? 'Sync Changes' : 'Execute Capture'
+                          editingNote ? 'Save Changes' : 'Save Note'
                         )}
                     </Button>
                   </div>
@@ -394,10 +406,10 @@ export function Notes() {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="fixed inset-x-4 top-1/2 -translate-y-1/2 md:left-1/2 md:-translate-x-1/2 z-[61] w-full max-w-4xl"
+                    className="fixed inset-x-3 top-1/2 z-[61] max-h-[calc(100vh-1.5rem)] w-auto -translate-y-1/2 overflow-y-auto md:left-1/2 md:w-full md:max-w-4xl md:-translate-x-1/2"
                 >
-                    <Card className="p-12 md:p-20 border-white/5 bg-transparent shadow-none relative">
-                        <div className="absolute top-10 right-10 flex gap-4">
+                    <Card className="relative border-white/5 bg-transparent p-5 shadow-none sm:p-12 md:p-20">
+                        <div className="absolute right-5 top-5 flex gap-4 sm:right-10 sm:top-10">
                             <button onClick={() => openEdit(viewNote)} className="text-zinc-500 hover:text-accent transition-colors">
                                 <SquarePen className="w-6 h-6" />
                             </button>
@@ -416,7 +428,7 @@ export function Notes() {
                                         {new Date(viewNote.created_at).toLocaleDateString()}
                                     </Badge>
                                 </div>
-                                <h2 className="text-5xl md:text-7xl font-black text-white tracking-tighter uppercase italic leading-none">
+                                <h2 className="text-4xl md:text-6xl font-display font-bold text-white tracking-tight leading-tight">
                                     {viewNote.title}
                                 </h2>
                             </div>
@@ -451,13 +463,13 @@ function NoteCard({ note, viewMode, onTogglePin, onDelete, onEdit, onView }: any
         onClick={onView}
         className={cn(
             "group relative transition-all duration-500 cursor-pointer overflow-hidden rounded-[2.5rem] bg-[#0a0a0a] border-white/5",
-            isGridView ? "min-h-[280px] p-8" : "p-8 flex items-center justify-between gap-10"
+            isGridView ? "min-h-[240px] p-5 sm:min-h-[280px] sm:p-8" : "p-5 sm:p-8 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6 sm:gap-10"
         )}
     >
       {/* Subtle Glow */}
       <div className="absolute top-0 right-0 w-40 h-40 bg-accent/10 blur-[80px] rounded-full -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-30 transition-all duration-700" />
       
-      <div className={cn("flex flex-col gap-6", isGridView ? "h-full" : "flex-1 flex-row items-center gap-12")}>
+      <div className={cn("flex flex-col gap-6", isGridView ? "h-full" : "flex-1 sm:flex-row sm:items-center sm:gap-12")}>
         <div className={cn("space-y-4", !isGridView && "flex-1")}>
             <div className="flex items-center gap-4">
                 {note.is_pinned && <Pin className="w-4 h-4 text-accent fill-accent shadow-[0_0_10px_var(--color-accent)]" />}
@@ -475,7 +487,7 @@ function NoteCard({ note, viewMode, onTogglePin, onDelete, onEdit, onView }: any
             </h3>
             {isGridView && (
                 <p className="text-[14px] text-zinc-500 line-clamp-4 leading-relaxed font-medium opacity-60 group-hover:opacity-100 transition-opacity">
-                    {note.content || 'System idle. No data captured.'}
+                    {note.content || 'No content yet.'}
                 </p>
             )}
         </div>
@@ -491,7 +503,7 @@ function NoteCard({ note, viewMode, onTogglePin, onDelete, onEdit, onView }: any
                 </span>
             </div>
             
-            <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-all">
+            <div className="flex gap-2 opacity-100 transition-all md:opacity-0 md:group-hover:opacity-100">
                 <button 
                     onClick={(e) => { e.stopPropagation(); onTogglePin(); }} 
                     className={cn("p-2.5 rounded-xl transition-all border border-transparent shadow-xl", note.is_pinned ? "bg-accent/10 border-accent/20 text-accent" : "bg-zinc-900 border-white/5 text-zinc-600 hover:text-white")}

@@ -20,18 +20,16 @@ export function Card({ children, className, variant = 'glass', id, onClick }: Ca
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       className={cn(
-        "rounded-[32px] overflow-hidden relative group",
+        "relative overflow-hidden rounded-2xl p-6 group",
         variant === 'glass' && "glass-card border-white/5",
         variant === 'solid' && "bg-[#0a0a0a] border border-white/5",
         variant === 'glow' && "glass-accent shadow-[0_0_30px_rgba(139,92,246,0.1)]",
         variant === 'premium' && "glass-card bg-gradient-to-br from-purple-500/5 to-blue-500/5",
-        onClick && "cursor-pointer active:scale-[0.98]",
+        onClick && "cursor-pointer active:scale-[0.99]",
         className
       )}
     >
-      <div className="relative z-10 p-6">
-        {children}
-      </div>
+      {children}
     </motion.div>
   );
 }
@@ -47,7 +45,7 @@ export function Badge({
 }) {
   return (
     <span className={cn(
-      "px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-[0.2em] font-display flex items-center gap-1.5",
+      "flex items-center gap-1.5 rounded-full px-2.5 py-1 font-sans text-[10px] font-semibold uppercase tracking-[0.16em]",
       variant === 'default' && "bg-white/5 text-zinc-400 border border-white/10",
       variant === 'success' && "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20",
       variant === 'warning' && "bg-amber-500/10 text-amber-400 border border-amber-500/20",
@@ -75,8 +73,8 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center rounded-xl font-display font-bold tracking-tight transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed active:scale-95",
-        variant === 'primary' && "bg-accent text-white shadow-lg shadow-accent/20 hover:shadow-accent/40 hover:-translate-y-0.5 hover:neon-glow-purple",
+        "inline-flex items-center justify-center rounded-xl font-sans font-semibold tracking-normal transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]",
+        variant === 'primary' && "bg-accent text-white shadow-lg shadow-accent/20 hover:-translate-y-0.5 hover:shadow-accent/35 hover:neon-glow-purple",
         variant === 'secondary' && "bg-white/10 text-white hover:bg-white/20",
         variant === 'ghost' && "bg-transparent text-zinc-400 hover:text-white hover:bg-white/5",
         variant === 'outline' && "bg-transparent text-white border border-white/10 hover:border-white/30 hover:bg-white/5",
@@ -101,7 +99,7 @@ export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInp
   return (
     <input
       className={cn(
-        "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent/50 transition-all",
+        "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-zinc-600 transition-all focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/35",
         className
       )}
       {...props}
@@ -113,7 +111,7 @@ export function TextArea({ className, ...props }: React.TextareaHTMLAttributes<H
   return (
     <textarea
       className={cn(
-        "w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder:text-zinc-600 focus:outline-none focus:ring-2 focus:ring-accent/50 focus:border-accent/50 transition-all min-h-[100px]",
+        "min-h-[100px] w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-zinc-600 transition-all focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/35",
         className
       )}
       {...props}
@@ -123,7 +121,7 @@ export function TextArea({ className, ...props }: React.TextareaHTMLAttributes<H
 
 export function Skeleton({ className }: { className?: string }) {
   return (
-    <div className={cn("animate-pulse bg-white/5 rounded-xl", className)} />
+    <div className={cn("skeleton-shimmer rounded-xl", className)} />
   );
 }
 
@@ -146,7 +144,7 @@ export function Toast({
           animate={{ opacity: 1, y: 0, scale: 1 }}
           exit={{ opacity: 0, scale: 0.9, y: 20 }}
           className={cn(
-            "fixed bottom-8 left-1/2 -translate-x-1/2 z-[100] px-6 py-3 rounded-2xl shadow-2xl flex items-center gap-3 backdrop-blur-xl border",
+            "fixed bottom-24 left-1/2 z-[100] flex -translate-x-1/2 items-center gap-3 rounded-2xl border px-6 py-3 shadow-2xl backdrop-blur-xl md:bottom-8",
             type === 'success' && "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
             type === 'error' && "bg-red-500/10 border-red-500/20 text-red-400",
             type === 'info' && "bg-blue-500/10 border-blue-500/20 text-blue-400",

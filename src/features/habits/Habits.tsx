@@ -60,6 +60,7 @@ export function Habits() {
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' as any });
+  const habitTitle = newHabit.title.trim();
 
   const fetchHabits = async () => {
     if (!user) return;
@@ -75,7 +76,7 @@ export function Habits() {
       if (data) setHabits(data);
     } catch (error: any) {
       console.error('Fetch habits error:', error);
-      showToast(error.message, 'error');
+      showToast('Something went wrong', 'error');
     } finally {
       setLoading(false);
     }
@@ -93,17 +94,17 @@ export function Habits() {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     
     if (!authUser) {
-      showToast('Please login first', 'error');
+      showToast('Please log in first', 'error');
       return;
     }
-    if (!newHabit.title) return;
+    if (!habitTitle) return;
 
     setSubmitting(true);
     try {
       if (editingHabit) {
         const { data, error } = await (supabase.from('habits') as any)
           .update({
-            title: newHabit.title,
+            title: habitTitle,
             description: newHabit.description,
             category: newHabit.category,
             color: newHabit.color,
@@ -118,12 +119,12 @@ export function Habits() {
         if (error) throw error;
         
         setHabits(prev => prev.map(h => h.id === editingHabit.id ? data : h));
-        showToast('Habit updated successfully');
+        showToast('Habit updated');
         closeModal();
       } else {
         const { data, error } = await (supabase.from('habits') as any).insert({
           user_id: authUser.id,
-          title: newHabit.title,
+          title: habitTitle,
           description: newHabit.description,
           category: newHabit.category,
           color: newHabit.color,
@@ -140,12 +141,12 @@ export function Habits() {
         if (error) throw error;
 
         setHabits(prev => [data, ...prev]);
-        showToast('Habit created successfully');
+        showToast('Habit created');
         closeModal();
       }
     } catch (error: any) {
       console.error('Save habit error:', error);
-      showToast(error.message, 'error');
+      showToast('Something went wrong', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -153,7 +154,7 @@ export function Habits() {
 
   const toggleComplete = async (habit: Habit) => {
     if (!user) {
-      showToast('Please login first', 'error');
+      showToast('Please log in first', 'error');
       return;
     }
     const today = new Date().toISOString().split('T')[0];
@@ -185,11 +186,11 @@ export function Habits() {
 
       if (data) {
         setHabits(prev => prev.map(h => h.id === habit.id ? data : h));
-        if (!isCompleted) showToast('Boom! Habit secured.');
+        if (!isCompleted) showToast('Habit completed');
       }
     } catch (error: any) {
       console.error('Toggle habit error:', error);
-      showToast(error.message, 'error');
+      showToast('Something went wrong', 'error');
     }
   };
 
@@ -231,7 +232,7 @@ export function Habits() {
       showToast('Habit deleted', 'error');
     } catch (error: any) {
       console.error('Delete habit error:', error);
-      showToast(error.message, 'error');
+      showToast('Something went wrong', 'error');
     }
   };
 
@@ -262,6 +263,7 @@ export function Habits() {
     const matchesFilter = filter === 'All' || h.category === filter;
     return matchesSearch && matchesFilter;
   });
+  const isFilteringExistingHabits = habits.length > 0 && filteredHabits.length === 0;
 
   return (
     <div className="space-y-8 pb-20">
@@ -269,16 +271,16 @@ export function Habits() {
         <div>
           <div className="flex items-center gap-2 mb-4">
               <div className="w-1.5 h-6 bg-accent rounded-full" />
-              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500">Neuro-Routine Synchronization</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500">Daily routines</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-display font-bold text-white tracking-tight leading-tight">
-            Identity <span className="text-accent underline decoration-4 underline-offset-8 decoration-accent/20">Design</span>
+            Habits
           </h1>
-          <p className="text-zinc-500 mt-4 font-medium tracking-tight max-w-xl">Your current identity is a composite of your daily recurring patterns. Architect them with precision.</p>
+          <p className="text-zinc-500 mt-4 font-medium tracking-tight max-w-xl">Design steady routines, protect your streaks, and make progress feel visible every day.</p>
         </div>
         <Button onClick={() => setIsAdding(true)} className="h-14 px-8 shadow-xl shadow-accent/20">
           <Plus className="w-5 h-5 mr-3" />
-          DEFINE NEW HABIT
+          Create Habit
         </Button>
       </header>
 
@@ -328,18 +330,33 @@ export function Habits() {
           ))}
         </div>
       ) : (
-        <Card className="flex flex-col items-center justify-center py-24 text-center border-dashed border-white/5 bg-zinc-900/20 rounded-[3rem]">
+        <Card className="flex flex-col items-center justify-center rounded-3xl border-dashed border-white/5 bg-zinc-900/20 py-16 text-center sm:rounded-[3rem] sm:py-24">
           <div className="w-24 h-24 bg-zinc-900 border border-white/5 rounded-full flex items-center justify-center mb-10 shadow-2xl overflow-hidden relative group">
             <div className="absolute inset-0 bg-accent/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-            <Flame className="w-10 h-10 text-zinc-700 relative z-10" />
+            {isFilteringExistingHabits ? <Search className="w-10 h-10 text-zinc-700 relative z-10" /> : <Flame className="w-10 h-10 text-zinc-700 relative z-10" />}
           </div>
-          <h3 className="text-2xl font-display font-bold text-white tracking-tight leading-none uppercase tracking-widest">No Active Orbits</h3>
+          <h3 className="text-2xl font-display font-bold text-white tracking-tight leading-none">
+            {isFilteringExistingHabits ? 'No habits match your search' : 'Create your first habit'}
+          </h3>
           <p className="text-zinc-500 max-w-xs mx-auto mt-4 text-[15px] font-medium leading-relaxed">
-            "The secret of your future is hidden in your daily routine." Initialize your first habit to begin the sync.
+            {isFilteringExistingHabits
+              ? 'Try a different keyword or clear filters to see all habits again.'
+              : 'Start with one small routine you can complete today. MoTrack will turn it into streaks, consistency, and momentum.'}
           </p>
-          <Button onClick={() => setIsAdding(true)} variant="outline" className="mt-10 h-14 px-10 border-white/10 hover:bg-accent/10 hover:border-accent/40 rounded-2xl transition-all">
-            <Zap className="w-4 h-4 mr-3" />
-            Initialize First Habit
+          <Button
+            onClick={() => {
+              if (isFilteringExistingHabits) {
+                setSearch('');
+                setFilter('All');
+              } else {
+                setIsAdding(true);
+              }
+            }}
+            variant="outline"
+            className="mt-10 h-14 px-10 border-white/10 hover:bg-accent/10 hover:border-accent/40 rounded-2xl transition-all"
+          >
+            {isFilteringExistingHabits ? <Search className="w-4 h-4 mr-3" /> : <Zap className="w-4 h-4 mr-3" />}
+            {isFilteringExistingHabits ? 'Clear filters' : 'Create your first habit'}
           </Button>
         </Card>
       )}
@@ -359,35 +376,37 @@ export function Habits() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="fixed inset-x-4 top-1/2 -translate-y-1/2 md:left-1/2 md:-translate-x-1/2 z-[61] w-full max-w-lg"
+              className="fixed inset-x-3 top-1/2 z-[61] max-h-[calc(100vh-1.5rem)] w-auto -translate-y-1/2 overflow-y-auto md:left-1/2 md:w-full md:max-w-lg md:-translate-x-1/2"
             >
-              <Card className="p-8 border-white/10 bg-[#0f0f0f] shadow-2xl relative">
+              <Card className="relative border-white/10 bg-[#0f0f0f] p-5 shadow-2xl sm:p-8">
                 <button onClick={closeModal} className="absolute top-6 right-6 text-zinc-500 hover:text-white">
                   <X className="w-5 h-5" />
                 </button>
                 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-1">
-                    <Badge variant="outline" className="text-accent border-accent/20">Identity Config</Badge>
-                    <h3 className="text-2xl font-black text-white tracking-tighter uppercase italic">
-                      {editingHabit ? 'Modify Habit' : 'Define New Habit'}
+                    <Badge variant="outline" className="text-accent border-accent/20">Habit setup</Badge>
+                    <h3 className="text-2xl font-display font-bold text-white tracking-tight">
+                      {editingHabit ? 'Edit Habit' : 'Create Habit'}
                     </h3>
                   </div>
 
                   <div className="space-y-4">
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Habit Title</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Habit title</label>
                         <Input 
                             value={newHabit.title}
                             onChange={(e) => setNewHabit({ ...newHabit, title: e.target.value })}
-                            placeholder="e.g. Morning Meditation" 
+                            placeholder="e.g. Morning walk" 
                             className="bg-white/5"
+                            required
                             autoFocus
                         />
+                        <p className="ml-1 text-xs text-zinc-600">Required. Keep it short and easy to complete.</p>
                     </div>
                     
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Description (Optional)</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Description (optional)</label>
                         <TextArea 
                             value={newHabit.description}
                             onChange={(e) => setNewHabit({ ...newHabit, description: e.target.value })}
@@ -396,7 +415,7 @@ export function Habits() {
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Category</label>
                             <select 
@@ -428,7 +447,7 @@ export function Habits() {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Signature Color</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Color</label>
                         <div className="flex gap-3">
                             {COLORS.map(c => (
                                 <button
@@ -448,14 +467,14 @@ export function Habits() {
 
                   <div className="flex gap-3 pt-6">
                     <Button type="button" variant="ghost" className="flex-1" onClick={closeModal} disabled={submitting}>Cancel</Button>
-                    <Button type="submit" className="flex-1" disabled={submitting}>
+                    <Button type="submit" className="flex-1" disabled={submitting || !habitTitle}>
                         {submitting ? (
                           <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            {editingHabit ? 'Saving...' : 'Initializing...'}
+                            {editingHabit ? 'Saving...' : 'Creating...'}
                           </>
                         ) : (
-                          editingHabit ? 'Save Changes' : 'Initialize Habit'
+                          editingHabit ? 'Save Changes' : 'Create Habit'
                         )}
                     </Button>
                   </div>
@@ -482,13 +501,13 @@ function HabitCard({ habit, onToggle, onDelete, onEdit }: { habit: Habit; onTogg
   const Icon = ICONS.find(i => i.name === habit.icon)?.icon || Target;
 
   return (
-    <Card className="group hover:border-accent/30 bg-[#0a0a0a] border-white/5 transition-all duration-500 relative overflow-hidden rounded-[2.5rem] p-8">
+    <Card className="group relative overflow-hidden rounded-3xl border-white/5 bg-[#0a0a0a] p-5 transition-all duration-500 hover:border-accent/30 sm:rounded-[2.5rem] sm:p-8">
       <div 
         className="absolute top-0 right-0 w-40 h-40 blur-[80px] rounded-full -translate-y-1/2 translate-x-1/2 opacity-20 group-hover:opacity-40 transition-opacity" 
         style={{ backgroundColor: habit.color }}
       />
       
-      <div className="flex justify-between items-start mb-8 relative z-10">
+      <div className="relative z-10 mb-8 flex items-start justify-between gap-3">
         <div className="flex items-center gap-4">
           <div 
             className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl group-hover:scale-105 transition-all bg-zinc-900 border border-white/5"
@@ -513,7 +532,7 @@ function HabitCard({ habit, onToggle, onDelete, onEdit }: { habit: Habit; onTogg
         </div>
       </div>
 
-      <div className="grid grid-cols-2 gap-4 mt-8 mb-8 relative z-10">
+      <div className="relative z-10 mb-8 mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
           <div className="bg-zinc-900/50 border border-white/5 p-5 rounded-3xl flex items-center gap-4">
               <div className="p-2 w-10 h-10 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center">
                   <Flame className="w-5 h-5" />
@@ -534,7 +553,7 @@ function HabitCard({ habit, onToggle, onDelete, onEdit }: { habit: Habit; onTogg
           </div>
       </div>
 
-      <div className="flex items-center justify-between pt-6 border-t border-white/5 relative z-10">
+      <div className="relative z-10 flex flex-col gap-5 border-t border-white/5 pt-6 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex gap-2">
             {[...Array(7)].map((_, i) => {
                 const date = new Date();
@@ -556,14 +575,14 @@ function HabitCard({ habit, onToggle, onDelete, onEdit }: { habit: Habit; onTogg
         <button
           onClick={onToggle}
           className={cn(
-            "px-8 h-12 rounded-2xl flex items-center gap-3 transition-all duration-500 text-[11px] font-bold uppercase tracking-widest border shadow-xl relative overflow-hidden group",
+            "px-8 h-12 rounded-2xl flex items-center justify-center gap-3 transition-all duration-500 text-[11px] font-bold uppercase tracking-widest border shadow-xl relative overflow-hidden group w-full sm:w-auto",
             isCompletedToday 
               ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" 
               : "bg-zinc-900 text-zinc-400 border-white/5 hover:border-accent/40 hover:text-white"
           )}
         >
           {isCompletedToday ? <CheckCircle2 className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
-          {isCompletedToday ? 'SYNCED' : 'IGNITE'}
+          {isCompletedToday ? 'Done' : 'Complete'}
           {!isCompletedToday && (
               <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
           )}

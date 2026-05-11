@@ -1,5 +1,5 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { User, Session } from '@supabase/supabase-js';
+import { User, Session, AuthError } from '@supabase/supabase-js';
 import { supabase } from '../../lib/supabase';
 
 interface AuthContextType {
@@ -7,7 +7,7 @@ interface AuthContextType {
   profile: any | null;
   session: Session | null;
   isLoading: boolean;
-  signOut: () => Promise<void>;
+  signOut: () => Promise<{ error: AuthError | null }>;
   refreshProfile: () => Promise<void>;
 }
 
@@ -59,7 +59,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signOut();
+
+    if (error) {
+      return { error };
+    }
+
+    setSession(null);
+    setUser(null);
+    setProfile(null);
+    setIsLoading(false);
+
+    return { error: null };
   };
 
   return (

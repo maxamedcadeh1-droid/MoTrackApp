@@ -1,21 +1,25 @@
-import React from 'react';
-import { NavLink, useNavigate, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  CheckCircle2, 
-  FileText, 
-  Briefcase, 
-  Timer, 
-  BarChart3, 
-  User, 
-  Settings, 
+import { useState } from 'react';
+import { NavLink, useNavigate } from 'react-router-dom';
+import {
+  BarChart3,
+  Briefcase,
+  CheckCircle2,
+  Command,
+  FileText,
+  LayoutDashboard,
   LogOut,
+  MoreHorizontal,
   Moon,
-  Search
+  Search,
+  Settings,
+  Timer,
+  User,
+  Wifi,
 } from 'lucide-react';
+import { AnimatePresence, motion } from 'motion/react';
 import { useAuth } from '../features/auth/AuthContext';
+import { useLogout } from '../features/auth/useLogout';
 import { cn } from '../lib/utils';
-import { motion } from 'motion/react';
 
 const navItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
@@ -31,89 +35,95 @@ const secondaryNavItems = [
   { icon: Settings, label: 'Settings', path: '/settings' },
 ];
 
+function openCommandCenter() {
+  window.dispatchEvent(new Event('motrack:open-command-center'));
+}
+
 export function Sidebar() {
-  const { signOut, user, profile } = useAuth();
+  const { user, profile } = useAuth();
+  const { handleLogout, isLoggingOut } = useLogout();
   const navigate = useNavigate();
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/login');
-  };
-
-  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'User';
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Mohamed';
   const avatarUrl = profile?.avatar_url;
 
   return (
-    <aside className="hidden md:flex flex-col w-64 glass border-r border-white/5 h-screen sticky top-0 z-50">
-      <div className="p-8 flex items-center gap-4">
-        <div className="w-10 h-10 bg-gradient-to-br from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-xl shadow-purple-500/20">
-          <Moon className="text-white w-6 h-6 animate-pulse" />
+    <aside className="sticky top-0 z-50 hidden h-screen w-[17rem] shrink-0 flex-col border-r border-white/5 bg-[#070912]/70 px-4 py-5 backdrop-blur-2xl md:flex">
+      <div className="flex items-center gap-4 px-3 pb-6">
+        <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br from-purple-500 to-blue-500 shadow-xl shadow-purple-500/15">
+          <Moon className="h-5 w-5 text-white" />
         </div>
-        <div className="flex flex-col">
-          <span className="text-xl font-display font-bold tracking-tight text-white leading-none whitespace-nowrap">
-            MoTrack<span className="text-accent">OS</span>
+        <div className="min-w-0">
+          <span className="block whitespace-nowrap font-display text-xl font-bold leading-none tracking-normal text-white">
+            MoTrack
           </span>
-          <span className="text-[10px] font-bold text-zinc-600 tracking-[0.2em] uppercase mt-1">
-            System v2.0.4
+          <span className="mt-1 block text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">
+            Productivity workspace
           </span>
         </div>
       </div>
-      
-      <div className="mx-4 mb-8 p-4 rounded-3xl bg-zinc-900/50 border border-white/5 flex items-center gap-4 group hover:border-accent/30 transition-all cursor-pointer hover:bg-accent/[0.02]" onClick={() => navigate('/profile')}>
-        <div className="w-11 h-11 rounded-2xl bg-zinc-800 border border-white/5 flex items-center justify-center overflow-hidden group-hover:scale-105 transition-transform">
+
+      <button
+        onClick={() => navigate('/profile')}
+        className="mb-5 flex w-full items-center gap-3 rounded-2xl border border-white/10 bg-white/[0.035] p-3 text-left transition-all hover:border-accent/25 hover:bg-white/[0.055]"
+      >
+        <div className="flex h-11 w-11 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-zinc-900">
           {avatarUrl ? (
-            <img src={avatarUrl} alt={displayName} className="w-full h-full object-cover" referrerPolicy="no-referrer" />
+            <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
           ) : (
-            <div className="w-full h-full bg-accent/10 flex items-center justify-center">
-                <User className="w-6 h-6 text-accent" />
-            </div>
+            <User className="h-5 w-5 text-accent" />
           )}
         </div>
-        <div className="flex-1 min-w-0">
-          <p className="text-[15px] font-semibold text-white truncate tracking-tight">{displayName}</p>
-          <p className="text-[10px] font-bold uppercase text-zinc-600 tracking-widest truncate mt-0.5">Operator Access</p>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold text-white">{displayName}</p>
+          <p className="mt-0.5 truncate text-[10px] font-medium uppercase tracking-[0.16em] text-zinc-600">
+            {user?.email || 'Account'}
+          </p>
+          <span className="mt-2 inline-flex items-center gap-1.5 rounded-full border border-emerald-500/10 bg-emerald-500/5 px-2 py-1 text-[10px] font-semibold text-emerald-400">
+            <Wifi className="h-3 w-3" />
+            Synced
+          </span>
         </div>
-      </div>
+      </button>
 
-      <div className="px-4 mb-6">
-        <button 
-          onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}
-          className="w-full flex items-center justify-between px-4 py-3 rounded-2xl bg-zinc-900/50 border border-white/5 text-zinc-500 hover:text-white transition-all hover:bg-accent/[0.03] hover:border-accent/30 group"
-        >
-          <div className="flex items-center gap-3">
-            <Search className="w-4 h-4 text-zinc-600 group-hover:text-accent transition-colors" />
-            <span className="text-sm font-medium tracking-tight">Quick Action</span>
-          </div>
-          <div className="flex items-center gap-1 px-1.5 py-0.5 bg-white/5 rounded-lg border border-white/5 items-center">
-              <span className="text-[9px] font-mono opacity-50 group-hover:opacity-100 uppercase tracking-tighter">Ctrl K</span>
-          </div>
-        </button>
-      </div>
+      <button
+        onClick={openCommandCenter}
+        className="mb-6 flex w-full items-center justify-between rounded-2xl border border-white/10 bg-white/[0.035] px-4 py-3 text-zinc-500 transition-all hover:border-accent/30 hover:bg-accent/[0.04] hover:text-white"
+      >
+        <span className="flex items-center gap-3 text-sm font-medium">
+          <Search className="h-4 w-4" />
+          Quick search
+        </span>
+        <span className="flex items-center gap-1 rounded-lg border border-white/10 bg-white/5 px-2 py-1 font-mono text-[10px] text-zinc-500">
+          <Command className="h-3 w-3" />
+          K
+        </span>
+      </button>
 
-      <nav className="flex-1 px-4 space-y-2 overflow-y-auto scrollbar-hide">
-        <div className="px-4 py-2 text-[10px] font-bold text-zinc-600 uppercase tracking-[0.2em]">
-          Operational Core
-        </div>
+      <nav className="flex-1 space-y-1 overflow-y-auto pr-1 scrollbar-hide">
+        <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">Workspace</p>
         {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
-            className={({ isActive }) => cn(
-              "flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group relative",
-              isActive 
-                ? "bg-accent/10 text-white border border-accent/20" 
-                : "text-zinc-500 hover:text-white hover:bg-white/[0.03]"
-            )}
+            className={({ isActive }) =>
+              cn(
+                'group relative flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition-all duration-300',
+                isActive
+                  ? 'border border-accent/20 bg-accent/10 text-white shadow-lg shadow-accent/5'
+                  : 'text-zinc-500 hover:bg-white/[0.045] hover:text-white'
+              )
+            }
           >
             {({ isActive }) => (
               <>
-                <item.icon className={cn("w-5 h-5 transition-all group-hover:scale-110", isActive ? "text-accent" : "group-hover:text-zinc-300")} />
-                <span className={cn("font-medium text-[15px] tracking-tight transition-colors", isActive ? "text-white" : "group-hover:text-zinc-200")}>{item.label}</span>
+                <item.icon className={cn('h-5 w-5 transition-all group-hover:scale-110', isActive ? 'text-accent' : 'text-zinc-500')} />
+                <span>{item.label}</span>
                 {isActive && (
                   <motion.div
                     layoutId="sidebar-active-indicator"
-                    className="absolute -left-1 w-1 h-6 bg-accent rounded-full shadow-[0_0_20px_rgba(139,92,246,0.6)]"
-                    transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                    className="absolute -left-4 h-6 w-1 rounded-full bg-accent shadow-[0_0_20px_rgba(139,92,246,0.55)]"
+                    transition={{ type: 'spring', stiffness: 320, damping: 32 }}
                   />
                 )}
               </>
@@ -122,33 +132,30 @@ export function Sidebar() {
         ))}
       </nav>
 
-      <div className="px-4 py-8 border-t border-white/5 space-y-2">
-        <div className="px-4 py-2 text-[10px] font-bold text-zinc-600 uppercase tracking-[0.2em]">
-          Identity Hub
-        </div>
+      <div className="space-y-1 border-t border-white/5 pt-5">
+        <p className="px-3 pb-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">Account</p>
         {secondaryNavItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
-            className={({ isActive }) => cn(
-              "flex items-center gap-3 px-4 py-3.5 rounded-2xl transition-all duration-300 group",
-              isActive ? "bg-white/5 text-white border border-white/10" : "text-zinc-500 hover:text-white hover:bg-white/[0.03]"
-            )}
+            className={({ isActive }) =>
+              cn(
+                'flex items-center gap-3 rounded-2xl px-3 py-3 text-sm font-medium transition-all',
+                isActive ? 'bg-white/5 text-white' : 'text-zinc-500 hover:bg-white/[0.045] hover:text-white'
+              )
+            }
           >
-            {({ isActive }) => (
-              <>
-                <item.icon className={cn("w-5 h-5", isActive ? "text-accent" : "")} />
-                <span className="font-medium text-[15px] tracking-tight">{item.label}</span>
-              </>
-            )}
+            <item.icon className="h-5 w-5" />
+            <span>{item.label}</span>
           </NavLink>
         ))}
         <button
-          onClick={handleSignOut}
-          className="flex items-center gap-3 px-4 py-3.5 rounded-2xl text-zinc-500 hover:text-red-400 hover:bg-red-500/5 transition-all duration-300 w-full text-left mt-4"
+          onClick={() => handleLogout()}
+          disabled={isLoggingOut}
+          className="mt-2 flex w-full items-center gap-3 rounded-2xl px-3 py-3 text-left text-sm font-medium text-zinc-500 transition-all hover:bg-red-500/10 hover:text-red-300"
         >
-          <LogOut className="w-5 h-5" />
-          <span className="font-semibold text-[15px] tracking-tight">System Logout</span>
+          <LogOut className="h-5 w-5" />
+          <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
         </button>
       </div>
     </aside>
@@ -156,21 +163,112 @@ export function Sidebar() {
 }
 
 export function MobileNav() {
+  const [accountOpen, setAccountOpen] = useState(false);
+  const navigate = useNavigate();
+  const { user, profile } = useAuth();
+  const { handleLogout, isLoggingOut } = useLogout();
+  const mobileItems = [navItems[0], navItems[1], navItems[3], navItems[4]];
+  const moreItems = [navItems[2], navItems[5], ...secondaryNavItems];
+  const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Account';
+
   return (
-    <nav className="md:hidden fixed bottom-4 left-4 right-4 z-50 glass rounded-2xl h-16 flex items-center justify-between px-6">
-      {navItems.slice(0, 5).map((item) => (
-        <NavLink
-          key={item.path}
-          to={item.path}
-          className={({ isActive }) => cn(
-            "flex flex-col items-center justify-center gap-1 min-w-[56px] transition-colors",
-            isActive ? "text-accent" : "text-zinc-500"
+    <>
+      <AnimatePresence>
+        {accountOpen && (
+          <>
+            <motion.button
+              type="button"
+              aria-label="Close account menu"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setAccountOpen(false)}
+              className="fixed inset-0 z-[65] bg-black/40 backdrop-blur-sm md:hidden"
+            />
+            <motion.div
+              initial={{ opacity: 0, y: 18, scale: 0.98 }}
+              animate={{ opacity: 1, y: 0, scale: 1 }}
+              exit={{ opacity: 0, y: 18, scale: 0.98 }}
+              className="fixed bottom-24 left-3 right-3 z-[70] max-h-[70vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#080b13]/95 p-2 shadow-2xl shadow-black/50 backdrop-blur-2xl md:hidden"
+            >
+              <div className="mb-1 rounded-xl border border-white/10 bg-white/[0.035] p-4">
+                <div className="flex items-start justify-between gap-4">
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-semibold text-white">{displayName}</p>
+                    <p className="mt-1 truncate text-xs text-zinc-500">{user?.email || 'Account'}</p>
+                  </div>
+                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-500/10 bg-emerald-500/5 px-2 py-1 text-[10px] font-semibold text-emerald-400">
+                    <Wifi className="h-3 w-3" />
+                    Synced
+                  </span>
+                </div>
+              </div>
+              {moreItems.map((item) => (
+                <button
+                  key={item.path}
+                  type="button"
+                  onClick={() => {
+                    navigate(item.path);
+                    setAccountOpen(false);
+                  }}
+                  className="flex min-h-12 w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-zinc-300 transition-colors hover:bg-white/5 hover:text-white"
+                >
+                  <item.icon className="h-4 w-4 text-accent" />
+                  {item.label}
+                </button>
+              ))}
+              <button
+                type="button"
+                disabled={isLoggingOut}
+                onClick={() => handleLogout(() => setAccountOpen(false))}
+                className="flex min-h-12 w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-red-300 transition-colors hover:bg-red-500/10 disabled:opacity-60"
+              >
+                <LogOut className="h-4 w-4" />
+                {isLoggingOut ? 'Logging out...' : 'Logout'}
+              </button>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
+      <nav className="fixed bottom-3 left-3 right-3 z-50 flex h-[4.75rem] items-center justify-between gap-1 rounded-2xl border border-white/10 bg-[#080b13]/88 px-2 shadow-2xl shadow-black/40 backdrop-blur-2xl md:hidden">
+        {mobileItems.map((item) => (
+          <NavLink
+            key={item.path}
+            to={item.path}
+            className={({ isActive }) =>
+              cn(
+                'relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 transition-all',
+                isActive ? 'text-white' : 'text-zinc-500'
+              )}
+          >
+            {({ isActive }) => (
+              <>
+                {isActive && (
+                  <motion.div
+                    layoutId="mobile-active"
+                    className="absolute inset-0 rounded-xl bg-accent/10"
+                    transition={{ type: 'spring', stiffness: 350, damping: 32 }}
+                  />
+                )}
+                <item.icon className={cn('relative z-10 h-5 w-5', isActive && 'text-accent')} />
+                <span className="relative z-10 text-[10px] font-semibold leading-none">{item.label}</span>
+              </>
+            )}
+          </NavLink>
+        ))}
+        <button
+          type="button"
+          onClick={() => setAccountOpen((value) => !value)}
+          className={cn(
+            'relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-zinc-500 transition-all',
+            accountOpen && 'bg-accent/10 text-white'
           )}
         >
-          <item.icon className="w-5 h-5" />
-          <span className="text-[10px] uppercase tracking-wider font-bold">{item.label}</span>
-        </NavLink>
-      ))}
-    </nav>
+          <MoreHorizontal className={cn('relative z-10 h-5 w-5', accountOpen && 'text-accent')} />
+          <span className="relative z-10 text-[10px] font-semibold leading-none">More</span>
+        </button>
+      </nav>
+    </>
   );
 }

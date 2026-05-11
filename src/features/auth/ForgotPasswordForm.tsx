@@ -2,46 +2,31 @@ import React, { useState } from 'react';
 import { supabase } from '../../lib/supabase';
 import { useNavigate, Link } from 'react-router-dom';
 import { Card, Button, Input } from '../../components/ui/Layout';
-import { Moon, Mail, Lock, User, ArrowRight, Loader2, CheckCircle2 } from 'lucide-react';
+import { Moon, Mail, ArrowLeft, Loader2, CheckCircle2 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 
-export function SignUpForm() {
+export function ForgotPasswordForm() {
   const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [fullName, setFullName] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showSuccess, setShowSuccess] = useState(false);
   const navigate = useNavigate();
 
-  const handleSignUp = async (e: React.FormEvent) => {
+  const handleForgotPassword = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError(null);
 
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          emailRedirectTo: `${window.location.origin}/login`,
-          data: {
-            full_name: fullName,
-          },
-        },
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo: `${window.location.origin}/reset-password`,
       });
 
       if (error) throw error;
       
-      if (data.user) {
-        setShowSuccess(true);
-      }
+      setShowSuccess(true);
     } catch (err: any) {
-      if (err.message === 'User already registered') {
-        setError('An account with this email already exists.');
-      } else {
-        setError(err.message || 'An error occurred during sign up');
-      }
+      setError(err.message || 'Failed to send reset email. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -52,8 +37,8 @@ export function SignUpForm() {
       <div className="fixed inset-0 grid-bg pointer-events-none opacity-50" />
       
       {/* Background Glows */}
-      <div className="absolute top-1/4 -right-1/4 w-[600px] h-[600px] bg-purple-600/10 blur-[150px] rounded-full animate-pulse" />
-      <div className="absolute bottom-1/4 -left-1/4 w-[600px] h-[600px] bg-blue-600/10 blur-[150px] rounded-full animate-pulse delay-1000" />
+      <div className="absolute top-1/4 -left-1/4 w-[600px] h-[600px] bg-purple-600/10 blur-[150px] rounded-full animate-pulse" />
+      <div className="absolute bottom-1/4 -right-1/4 w-[600px] h-[600px] bg-blue-600/10 blur-[150px] rounded-full animate-pulse delay-1000" />
 
       <AnimatePresence mode="wait">
         {showSuccess ? (
@@ -76,7 +61,7 @@ export function SignUpForm() {
               <div className="space-y-3">
                 <h2 className="font-display text-2xl font-bold text-white tracking-tight">Check your email</h2>
                 <p className="text-zinc-400 font-sans text-sm leading-relaxed">
-                  We've sent a verification link to <span className="text-white font-medium">{email}</span>
+                  We've sent a password reset link to <span className="text-white font-medium">{email}</span>
                 </p>
               </div>
               <motion.div
@@ -110,10 +95,10 @@ export function SignUpForm() {
                 <Moon className="text-white w-10 h-10 animate-pulse" />
               </motion.div>
               <h1 className="font-display text-4xl font-bold tracking-tight text-white mb-3">
-                Create your account
+                Reset password
               </h1>
               <p className="text-zinc-400 font-sans text-sm leading-relaxed">
-                Create your workspace and start building momentum.
+                Enter your email address and we'll send you a link to reset your password.
               </p>
             </div>
 
@@ -123,7 +108,7 @@ export function SignUpForm() {
               transition={{ duration: 0.6, delay: 0.2 }}
             >
               <Card className="p-8 border-white/10 bg-white/[0.03] backdrop-blur-2xl rounded-2xl shadow-2xl shadow-black/20">
-                <form onSubmit={handleSignUp} className="space-y-6">
+                <form onSubmit={handleForgotPassword} className="space-y-6">
                   {error && (
                     <motion.div 
                       initial={{ opacity: 0, x: -10 }}
@@ -135,44 +120,14 @@ export function SignUpForm() {
                   )}
                   
                   <div className="space-y-3">
-                    <label className="text-sm font-medium text-zinc-300 font-sans">Full name</label>
-                    <div className="relative group">
-                      <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-accent transition-colors" />
-                      <Input
-                        type="text"
-                        placeholder="Your full name"
-                        value={fullName}
-                        onChange={(e) => setFullName(e.target.value)}
-                        className="pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-2xl h-12 focus:border-accent/50 focus:ring-2 focus:ring-accent/20 transition-all font-sans text-white placeholder:text-zinc-500"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
                     <label className="text-sm font-medium text-zinc-300 font-sans">Email address</label>
                     <div className="relative group">
-                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-accent transition-colors" />
+                      <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 transition-colors group-focus-within:text-accent" />
                       <Input
                         type="email"
                         placeholder="you@example.com"
                         value={email}
                         onChange={(e) => setEmail(e.target.value)}
-                        className="pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-2xl h-12 focus:border-accent/50 focus:ring-2 focus:ring-accent/20 transition-all font-sans text-white placeholder:text-zinc-500"
-                        required
-                      />
-                    </div>
-                  </div>
-
-                  <div className="space-y-3">
-                    <label className="text-sm font-medium text-zinc-300 font-sans">Password</label>
-                    <div className="relative group">
-                      <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 group-focus-within:text-accent transition-colors" />
-                      <Input
-                        type="password"
-                        placeholder="Create a password"
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
                         className="pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-2xl h-12 focus:border-accent/50 focus:ring-2 focus:ring-accent/20 transition-all font-sans text-white placeholder:text-zinc-500"
                         required
                       />
@@ -191,22 +146,17 @@ export function SignUpForm() {
                       {loading ? (
                         <Loader2 className="w-5 h-5 animate-spin mx-auto" />
                       ) : (
-                        <span className="flex items-center justify-center">
-                          Create account
-                          <ArrowRight className="ml-2 w-4 h-4" />
-                        </span>
+                        'Send reset link'
                       )}
                     </Button>
                   </motion.div>
                 </form>
 
                 <div className="mt-8 pt-6 border-t border-white/10 text-center">
-                  <p className="text-sm text-zinc-400 font-sans">
-                    Already have an account?{' '}
-                    <Link to="/login" className="text-accent hover:text-accent/80 transition-colors font-medium">
-                      Sign in
-                    </Link>
-                  </p>
+                  <Link to="/login" className="inline-flex items-center text-sm text-zinc-400 hover:text-white transition-colors font-sans">
+                    <ArrowLeft className="w-4 h-4 mr-2" />
+                    Back to sign in
+                  </Link>
                 </div>
               </Card>
             </motion.div>

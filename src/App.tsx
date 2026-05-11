@@ -1,71 +1,71 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense } from 'react';
 import { AuthProvider } from './features/auth/AuthContext';
 import { ProtectedRoute, PublicRoute } from './features/auth/ProtectedRoute';
 import { DashboardLayout } from './components/DashboardLayout';
+import { ToastProvider } from './components/ui/ToastProvider';
 
 // Auth Pages
 import { LoginForm } from './features/auth/LoginForm';
 import { SignUpForm } from './features/auth/SignUpForm';
+import { ForgotPasswordForm } from './features/auth/ForgotPasswordForm';
+import { ResetPasswordForm } from './features/auth/ResetPasswordForm';
 
-// Dashboard Pages
-import { Dashboard } from './features/dashboard/Dashboard';
-import { Habits } from './features/habits/Habits';
-import { Notes } from './features/notes/Notes';
-import { Projects } from './features/projects/Projects';
-import { Focus } from './features/focus/Focus';
-import { Analytics } from './features/analytics/Analytics';
-import { Profile } from './features/profile/Profile';
-import { Settings } from './features/settings/Settings';
-import { CommandCenter } from './components/CommandCenter';
-import { QuickAdd } from './components/QuickAdd';
+// Lazy-loaded Dashboard Pages for code splitting
+const Dashboard = lazy(() => import('./features/dashboard/Dashboard').then(m => ({ default: m.Dashboard })));
+const Habits = lazy(() => import('./features/habits/Habits').then(m => ({ default: m.Habits })));
+const Notes = lazy(() => import('./features/notes/Notes').then(m => ({ default: m.Notes })));
+const Projects = lazy(() => import('./features/projects/Projects').then(m => ({ default: m.Projects })));
+const Focus = lazy(() => import('./features/focus/Focus').then(m => ({ default: m.Focus })));
+const Analytics = lazy(() => import('./features/analytics/Analytics').then(m => ({ default: m.Analytics })));
+const Profile = lazy(() => import('./features/profile/Profile').then(m => ({ default: m.Profile })));
+const Settings = lazy(() => import('./features/settings/Settings').then(m => ({ default: m.Settings })));
 
-import { motion } from 'motion/react';
-
-function Header({ title, subtitle }: { title: string; subtitle?: string }) {
+function RouteLoader() {
   return (
-    <motion.div 
-      initial={{ opacity: 0, x: -20 }}
-      animate={{ opacity: 1, x: 0 }}
-      className="space-y-1 mb-8"
-    >
-      <h1 className="text-4xl font-bold tracking-tight text-white mb-2">{title}</h1>
-      {subtitle && <p className="text-zinc-500 text-lg">{subtitle}</p>}
-    </motion.div>
+    <div className="flex min-h-screen items-center justify-center bg-[#05060a]">
+      <div className="text-center">
+        <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-2 border-accent/20 border-t-accent" />
+        <p className="font-sans text-sm text-zinc-500">Loading workspace...</p>
+      </div>
+    </div>
   );
 }
 
 export default function App() {
   return (
     <AuthProvider>
-      <Router>
-        <CommandCenter />
-        <QuickAdd />
-        <Routes>
-          {/* Public Routes */}
-          <Route element={<PublicRoute />}>
-            <Route path="/login" element={<LoginForm />} />
-            <Route path="/signup" element={<SignUpForm />} />
-            <Route path="/" element={<Navigate to="/login" replace />} />
-          </Route>
-
-          {/* Protected Routes */}
-          <Route element={<ProtectedRoute />}>
-            <Route element={<DashboardLayout />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/habits" element={<Habits />} />
-              <Route path="/notes" element={<Notes />} />
-              <Route path="/projects" element={<Projects />} />
-              <Route path="/focus" element={<Focus />} />
-              <Route path="/analytics" element={<Analytics />} />
-              <Route path="/profile" element={<Profile />} />
-              <Route path="/settings" element={<Settings />} />
+      <ToastProvider>
+        <Router>
+          <Routes>
+            {/* Public Routes */}
+            <Route element={<PublicRoute />}>
+              <Route path="/login" element={<LoginForm />} />
+              <Route path="/signup" element={<SignUpForm />} />
+              <Route path="/forgot-password" element={<ForgotPasswordForm />} />
+              <Route path="/reset-password" element={<ResetPasswordForm />} />
+              <Route path="/" element={<Navigate to="/login" replace />} />
             </Route>
-          </Route>
 
-          {/* Fallback */}
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </Router>
+            {/* Protected Routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<DashboardLayout />}>
+                <Route path="/dashboard" element={<Suspense fallback={<RouteLoader />}><Dashboard /></Suspense>} />
+                <Route path="/habits" element={<Suspense fallback={<RouteLoader />}><Habits /></Suspense>} />
+                <Route path="/notes" element={<Suspense fallback={<RouteLoader />}><Notes /></Suspense>} />
+                <Route path="/projects" element={<Suspense fallback={<RouteLoader />}><Projects /></Suspense>} />
+                <Route path="/focus" element={<Suspense fallback={<RouteLoader />}><Focus /></Suspense>} />
+                <Route path="/analytics" element={<Suspense fallback={<RouteLoader />}><Analytics /></Suspense>} />
+                <Route path="/profile" element={<Suspense fallback={<RouteLoader />}><Profile /></Suspense>} />
+                <Route path="/settings" element={<Suspense fallback={<RouteLoader />}><Settings /></Suspense>} />
+              </Route>
+            </Route>
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </Router>
+      </ToastProvider>
     </AuthProvider>
   );
 }

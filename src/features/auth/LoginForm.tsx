@@ -28,7 +28,7 @@ export function LoginForm() {
           throw new Error('Please confirm your email address. Check your inbox for verification.');
         }
         if (error.message.toLowerCase().includes('invalid login credentials')) {
-          throw new Error('Invalid email or password. Trace failed.');
+          throw new Error('Invalid email or password. Please try again.');
         }
         throw error;
       }
@@ -65,87 +65,106 @@ export function LoginForm() {
           >
             <Moon className="text-white w-10 h-10 animate-pulse" />
           </motion.div>
-          <h1 className="text-5xl font-black text-white tracking-tighter uppercase italic leading-none">
-            MoTrack<span className="text-accent underline decoration-4 underline-offset-8 decoration-accent/30 ml-2">OS</span>
+          <h1 className="font-display text-4xl font-bold tracking-tight text-white mb-3">
+            Welcome back
           </h1>
-          <p className="text-zinc-500 mt-6 font-bold uppercase tracking-[.2em] text-[10px]">Authorization Required to Enter System</p>
+          <p className="text-zinc-400 font-sans text-sm leading-relaxed">
+            Continue building momentum.
+          </p>
         </div>
 
-        <Card className="p-10 border-white/5 bg-white/[0.02] backdrop-blur-2xl">
-          <form onSubmit={handleLogin} className="space-y-6">
-            {error && (
-              <motion.div 
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-[10px] font-black uppercase tracking-widest italic"
-              >
-                Error: {error}
-              </motion.div>
-            )}
-            
-            <div className="space-y-3">
-              <label className="text-[10px] font-black uppercase tracking-[.3em] text-zinc-600 ml-1">Universal Identifier</label>
-              <div className="relative group">
-                <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 transition-colors group-focus-within:text-accent" />
-                <Input
-                  type="email"
-                  placeholder="operator@motrack.ai"
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                  className="pl-12 bg-white/5 border-white/5 h-12 focus:border-accent/40 transition-all font-medium"
-                  required
-                />
-              </div>
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex justify-between items-center px-1">
-                <label className="text-[10px] font-black uppercase tracking-[.3em] text-zinc-600">Access Key</label>
-                <Link to="#" className="text-[9px] font-black uppercase tracking-widest text-zinc-700 hover:text-accent transition-colors">Forgot Key?</Link>
-              </div>
-              <div className="relative group">
-                <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600 transition-colors group-focus-within:text-accent" />
-                <Input
-                  type="password"
-                  placeholder="••••••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="pl-12 bg-white/5 border-white/5 h-12 focus:border-accent/40 transition-all font-medium"
-                  required
-                />
-              </div>
-            </div>
-
-            <Button 
-              type="submit" 
-              className="w-full h-14 text-sm font-black uppercase tracking-[.2em] relative overflow-hidden group" 
-              disabled={loading}
-            >
-              <div className="absolute inset-0 bg-gradient-to-r from-accent via-white/20 to-accent opacity-0 group-hover:opacity-100 transition-opacity animate-shimmer" />
-              {loading ? (
-                <Loader2 className="w-5 h-5 animate-spin" />
-              ) : (
-                <span className="relative z-10 flex items-center justify-center italic">
-                  Authorize & Enter
-                  <ArrowRight className="ml-3 w-4 h-4" />
-                </span>
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.6, delay: 0.2 }}
+        >
+          <Card className="p-8 border-white/10 bg-white/[0.03] backdrop-blur-2xl rounded-2xl shadow-2xl shadow-black/20">
+            <form onSubmit={handleLogin} className="space-y-6">
+              {error && (
+                <motion.div 
+                  initial={{ opacity: 0, x: -10 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  className="bg-red-500/10 border border-red-500/20 text-red-400 p-4 rounded-xl text-sm font-medium"
+                >
+                  {error}
+                </motion.div>
               )}
-            </Button>
-          </form>
+              
+              <div className="space-y-3">
+                <label className="text-sm font-medium text-zinc-300 font-sans">Email address</label>
+                <div className="relative group">
+                  <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 transition-colors group-focus-within:text-accent" />
+                  <Input
+                    type="email"
+                    placeholder="you@example.com"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    className="pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-2xl h-12 focus:border-accent/50 focus:ring-2 focus:ring-accent/20 transition-all font-sans text-white placeholder:text-zinc-500"
+                    required
+                  />
+                </div>
+              </div>
 
-          <div className="mt-10 pt-8 border-t border-white/5 text-center">
-            <p className="text-[10px] font-black uppercase tracking-[.2em] text-zinc-600">
-              Inaccurate permissions?{' '}
-              <Link to="/signup" className="text-accent hover:text-white transition-colors">
-                Request System Access
-              </Link>
-            </p>
-          </div>
-        </Card>
+              <div className="space-y-3">
+                <div className="flex justify-between items-center">
+                  <label className="text-sm font-medium text-zinc-300 font-sans">Password</label>
+                  <Link to="/forgot-password" className="text-sm font-medium text-accent hover:text-accent/80 transition-colors font-sans">
+                    Forgot password?
+                  </Link>
+                </div>
+                <div className="relative group">
+                  <Lock className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500 transition-colors group-focus-within:text-accent" />
+                  <Input
+                    type="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="pl-12 pr-4 py-3 bg-white/5 border border-white/10 rounded-2xl h-12 focus:border-accent/50 focus:ring-2 focus:ring-accent/20 transition-all font-sans text-white placeholder:text-zinc-500"
+                    required
+                  />
+                </div>
+              </div>
 
-        <p className="text-center mt-12 text-[10px] font-black text-zinc-700 uppercase tracking-[.5em]">
-          &copy; 2024 MOTRACK PREMIUM OPERATING SYSTEM
-        </p>
+              <motion.div
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Button 
+                  type="submit" 
+                  className="w-full h-12 bg-gradient-to-r from-purple-600 to-purple-700 hover:from-purple-700 hover:to-purple-800 text-white font-semibold rounded-2xl shadow-lg shadow-purple-500/25 hover:shadow-purple-500/40 transition-all duration-200 font-sans" 
+                  disabled={loading}
+                >
+                  {loading ? (
+                    <Loader2 className="w-5 h-5 animate-spin mx-auto" />
+                  ) : (
+                    <span className="flex items-center justify-center">
+                      Continue
+                      <ArrowRight className="ml-2 w-4 h-4" />
+                    </span>
+                  )}
+                </Button>
+              </motion.div>
+            </form>
+
+            <div className="mt-8 pt-6 border-t border-white/10 text-center">
+              <p className="text-sm text-zinc-400 font-sans">
+                Don't have an account?{' '}
+                <Link to="/signup" className="text-accent hover:text-accent/80 transition-colors font-medium">
+                  Sign up
+                </Link>
+              </p>
+            </div>
+          </Card>
+        </motion.div>
+
+        <motion.p 
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.4 }}
+          className="text-center mt-8 text-xs text-zinc-500 font-sans"
+        >
+          Protected by secure Supabase authentication.
+        </motion.p>
       </motion.div>
     </div>
   );

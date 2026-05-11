@@ -1,29 +1,45 @@
-import React, { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
-import { 
-  Search, 
-  Terminal, 
-  Plus, 
-  Zap, 
-  Layout, 
-  CheckSquare, 
-  StickyNote, 
-  Timer, 
-  Settings as SettingsIcon,
+import { useEffect, useMemo, useState } from 'react';
+import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'motion/react';
+import {
+  BarChart3,
+  Briefcase,
+  CheckCircle2,
+  Command,
+  FileText,
+  LayoutDashboard,
+  Plus,
+  Search,
+  Settings,
+  Sparkles,
+  Timer,
+  User,
   X,
-  Command
 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
 import { cn } from '../lib/utils';
+
+type CommandItem = {
+  id: string;
+  label: string;
+  description: string;
+  icon: typeof Search;
+  keywords: string[];
+  action: () => void;
+  group: 'Navigate' | 'Create' | 'Focus';
+};
 
 export function CommandCenter() {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(0);
   const navigate = useNavigate();
+  const location = useLocation();
 
   useEffect(() => {
+    const open = () => setIsOpen(true);
     const down = (e: KeyboardEvent) => {
-      if (e.key === 'k' && (e.metaKey || e.ctrlKey)) {
+      if (e.key.toLowerCase() === 'k' && (e.metaKey || e.ctrlKey)) {
         e.preventDefault();
         setIsOpen((prev) => !prev);
       }
@@ -32,106 +48,274 @@ export function CommandCenter() {
       }
     };
 
+    window.addEventListener('motrack:open-command-center', open);
     document.addEventListener('keydown', down);
-    return () => document.removeEventListener('keydown', down);
+    return () => {
+      window.removeEventListener('motrack:open-command-center', open);
+      document.removeEventListener('keydown', down);
+    };
   }, []);
 
-  const commands = [
-    { id: 'dash', label: 'Go to Dashboard', icon: Layout, action: () => navigate('/dashboard') },
-    { id: 'habits', label: 'Manage Habits', icon: Zap, action: () => navigate('/habits') },
-    { id: 'projects', label: 'Mission Control', icon: CheckSquare, action: () => navigate('/projects') },
-    { id: 'notes', label: 'Digital Synapse', icon: StickyNote, action: () => navigate('/notes') },
-    { id: 'focus', label: 'Deep Focus', icon: Timer, action: () => navigate('/focus') },
-    { id: 'settings', label: 'Terminal Settings', icon: SettingsIcon, action: () => navigate('/settings') },
-  ];
+  useEffect(() => {
+    setIsOpen(false);
+    setQuery('');
+  }, [location.pathname]);
 
-  const filteredCommands = commands.filter(cmd => 
-    cmd.label.toLowerCase().includes(query.toLowerCase())
+  const commands = useMemo<CommandItem[]>(
+    () => [
+      {
+        id: 'dashboard',
+        label: 'Open dashboard',
+        description: 'Dashboard, progress, and priorities',
+        icon: LayoutDashboard,
+        keywords: ['home', 'briefing', 'momentum'],
+        action: () => navigate('/dashboard'),
+        group: 'Navigate',
+      },
+      {
+        id: 'habits',
+        label: 'Open habits',
+        description: 'Review routines and streaks',
+        icon: CheckCircle2,
+        keywords: ['routine', 'streak'],
+        action: () => navigate('/habits'),
+        group: 'Navigate',
+      },
+      {
+        id: 'notes',
+        label: 'Open notes',
+        description: 'Write and search ideas',
+        icon: FileText,
+        keywords: ['capture', 'writing'],
+        action: () => navigate('/notes'),
+        group: 'Navigate',
+      },
+      {
+        id: 'projects',
+        label: 'Open projects',
+        description: 'Track active work and tasks',
+        icon: Briefcase,
+        keywords: ['tasks', 'work'],
+        action: () => navigate('/projects'),
+        group: 'Navigate',
+      },
+      {
+        id: 'analytics',
+        label: 'Open analytics',
+        description: 'Trends, consistency, and focus patterns',
+        icon: BarChart3,
+        keywords: ['stats', 'charts', 'insights'],
+        action: () => navigate('/analytics'),
+        group: 'Navigate',
+      },
+      {
+        id: 'profile',
+        label: 'Open profile',
+        description: 'Avatar, bio, goals, and identity',
+        icon: User,
+        keywords: ['account', 'bio'],
+        action: () => navigate('/profile'),
+        group: 'Navigate',
+      },
+      {
+        id: 'settings',
+        label: 'Open settings',
+        description: 'Preferences and daily goals',
+        icon: Settings,
+        keywords: ['preferences', 'goal'],
+        action: () => navigate('/settings'),
+        group: 'Navigate',
+      },
+      {
+        id: 'create-habit',
+        label: 'Create habit',
+        description: 'Start a new daily routine',
+        icon: Plus,
+        keywords: ['new habit', 'routine'],
+        action: () => navigate('/habits?add=true'),
+        group: 'Create',
+      },
+      {
+        id: 'create-note',
+        label: 'Create note',
+        description: 'Write a quick thought',
+        icon: Plus,
+        keywords: ['new note', 'capture'],
+        action: () => navigate('/notes?add=true'),
+        group: 'Create',
+      },
+      {
+        id: 'create-project',
+        label: 'Create project',
+        description: 'Organize a new initiative',
+        icon: Plus,
+        keywords: ['new project', 'task'],
+        action: () => navigate('/projects?add=true'),
+        group: 'Create',
+      },
+      {
+        id: 'start-focus',
+        label: 'Start focus timer',
+        description: 'Begin a 25 minute focus session',
+        icon: Timer,
+        keywords: ['pomodoro', 'deep work', 'timer'],
+        action: () => navigate('/focus?start=true'),
+        group: 'Focus',
+      },
+    ],
+    [navigate]
   );
 
-  const handleAction = (action: () => void) => {
-    action();
+  const filteredCommands = useMemo(() => {
+    const normalized = query.trim().toLowerCase();
+    if (!normalized) return commands;
+    return commands.filter((cmd) => {
+      const haystack = [cmd.label, cmd.description, cmd.group, ...cmd.keywords].join(' ').toLowerCase();
+      return haystack.includes(normalized);
+    });
+  }, [commands, query]);
+
+  useEffect(() => {
+    setSelectedIndex(0);
+  }, [query, isOpen]);
+
+  const runCommand = (command?: CommandItem) => {
+    if (!command) return;
+    command.action();
     setIsOpen(false);
     setQuery('');
   };
 
+  const onInputKeyDown = (e: ReactKeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedIndex((index) => Math.min(index + 1, filteredCommands.length - 1));
+    }
+    if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedIndex((index) => Math.max(index - 1, 0));
+    }
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      runCommand(filteredCommands[selectedIndex]);
+    }
+  };
+
+  const groups = ['Navigate', 'Create', 'Focus'] as const;
+
   return (
     <AnimatePresence>
       {isOpen && (
-        <div className="fixed inset-0 z-[100] flex items-start justify-center pt-[15vh] px-4">
-          <motion.div 
+        <div className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-[12vh]">
+          <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={() => setIsOpen(false)}
-            className="absolute inset-0 bg-black/80 backdrop-blur-md"
+            className="absolute inset-0 bg-black/70 backdrop-blur-xl"
           />
 
           <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: -20 }}
+            initial={{ opacity: 0, scale: 0.96, y: -16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -20 }}
-            className="relative w-full max-w-xl bg-[#0f0f0f] border border-white/10 rounded-3xl shadow-2xl overflow-hidden"
+            exit={{ opacity: 0, scale: 0.97, y: -12 }}
+            transition={{ duration: 0.2 }}
+            className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-[#080b13]/94 shadow-2xl shadow-black/50 backdrop-blur-2xl"
           >
-            <div className="flex items-center gap-4 px-6 py-4 border-b border-white/5">
-              <Search className="w-5 h-5 text-zinc-500" />
-              <input 
+            <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-accent/10 to-transparent" />
+            <div className="relative flex items-center gap-4 border-b border-white/10 px-5 py-4">
+              <Search className="h-5 w-5 text-zinc-500" />
+              <input
                 autoFocus
-                placeholder="Execute command..."
+                placeholder="Search pages, create items, or start focus..."
                 value={query}
                 onChange={(e) => setQuery(e.target.value)}
-                className="flex-1 bg-transparent border-none text-white placeholder:text-zinc-700 focus:ring-0 text-lg font-medium"
+                onKeyDown={onInputKeyDown}
+                className="h-10 flex-1 border-none bg-transparent font-sans text-base font-medium text-white placeholder:text-zinc-600 focus:outline-none"
               />
-              <div className="flex items-center gap-1 px-2 py-1 bg-white/5 rounded-lg border border-white/5">
-                <span className="text-[10px] font-black text-zinc-500 uppercase">ESC</span>
-              </div>
+              <button
+                onClick={() => setIsOpen(false)}
+                className="rounded-xl p-2 text-zinc-500 transition-colors hover:bg-white/5 hover:text-white"
+              >
+                <X className="h-4 w-4" />
+              </button>
             </div>
 
-            <div className="p-2 max-h-[400px] overflow-y-auto scrollbar-hide">
-              <div className="px-4 py-2">
-                <p className="text-[10px] font-black text-zinc-700 uppercase tracking-[0.2em] mb-2">Primary Protocols</p>
-                <div className="space-y-1">
-                  {filteredCommands.map(cmd => (
-                    <button
-                      key={cmd.id}
-                      onClick={() => handleAction(cmd.action)}
-                      className="w-full flex items-center justify-between p-3 rounded-xl hover:bg-white/5 group transition-all"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="p-2 rounded-lg bg-zinc-900 group-hover:bg-accent/10 transition-colors">
-                          <cmd.icon className="w-4 h-4 text-zinc-500 group-hover:text-accent transition-colors" />
-                        </div>
-                        <span className="text-sm font-bold text-zinc-400 group-hover:text-white transition-colors uppercase italic tracking-tight">{cmd.label}</span>
+            <div className="max-h-[56vh] overflow-y-auto p-3 scrollbar-hide">
+              {filteredCommands.length > 0 ? (
+                groups.map((group) => {
+                  const items = filteredCommands.filter((cmd) => cmd.group === group);
+                  if (items.length === 0) return null;
+
+                  return (
+                    <div key={group} className="pb-3">
+                      <p className="px-3 py-2 text-[10px] font-semibold uppercase tracking-[0.18em] text-zinc-600">
+                        {group}
+                      </p>
+                      <div className="space-y-1">
+                        {items.map((cmd) => {
+                          const absoluteIndex = filteredCommands.findIndex((item) => item.id === cmd.id);
+                          const isSelected = absoluteIndex === selectedIndex;
+
+                          return (
+                            <button
+                              key={cmd.id}
+                              onMouseEnter={() => setSelectedIndex(absoluteIndex)}
+                              onClick={() => runCommand(cmd)}
+                              className={cn(
+                                'flex w-full items-center justify-between rounded-2xl p-3 text-left transition-all',
+                                isSelected ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-white'
+                              )}
+                            >
+                              <span className="flex min-w-0 items-center gap-3">
+                                <span
+                                  className={cn(
+                                    'flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border transition-colors',
+                                    isSelected ? 'border-accent/25 bg-accent/10 text-accent' : 'border-white/10 bg-white/[0.035] text-zinc-500'
+                                  )}
+                                >
+                                  <cmd.icon className="h-4 w-4" />
+                                </span>
+                                <span className="min-w-0">
+                                  <span className="block truncate text-sm font-semibold">{cmd.label}</span>
+                                  <span className="block truncate text-xs text-zinc-600">{cmd.description}</span>
+                                </span>
+                              </span>
+                              <span className="ml-3 rounded-lg border border-white/10 bg-white/[0.03] px-2 py-1 font-mono text-[10px] text-zinc-600">
+                                Enter
+                              </span>
+                            </button>
+                          );
+                        })}
                       </div>
-                      <ChevronRight className="w-4 h-4 text-zinc-800 group-hover:text-zinc-600" />
-                    </button>
-                  ))}
-                  {filteredCommands.length === 0 && (
-                    <div className="py-8 text-center">
-                      <Terminal className="w-8 h-8 text-zinc-800 mx-auto mb-2" />
-                      <p className="text-[10px] font-black text-zinc-700 uppercase tracking-widest">No matching protocols found</p>
                     </div>
-                  )}
+                  );
+                })
+              ) : (
+                <div className="py-12 text-center">
+                  <div className="mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.035]">
+                    <Sparkles className="h-6 w-6 text-zinc-600" />
+                  </div>
+                  <p className="font-display text-lg font-semibold text-white">No matching command</p>
+                  <p className="mt-2 text-sm text-zinc-500">Try dashboard, habit, note, project, or focus.</p>
                 </div>
-              </div>
+              )}
             </div>
 
-            <div className="px-6 py-3 bg-white/[0.02] border-t border-white/5 flex items-center justify-between">
-              <div className="flex items-center gap-4">
-                <div className="flex items-center gap-2">
-                    <Command className="w-3 h-3 text-zinc-600" />
-                    <span className="text-[9px] font-black text-zinc-600 uppercase">Command Center Active</span>
-                </div>
+            <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 bg-white/[0.02] px-5 py-3">
+              <div className="flex items-center gap-2 text-[11px] font-medium text-zinc-600">
+                <Command className="h-3.5 w-3.5" />
+                <span>Ctrl K opens quick search</span>
               </div>
-              <p className="text-[9px] font-black text-zinc-700 uppercase italic">Version 2.0.4 - OS//MOTRACK</p>
+              <div className="flex items-center gap-3 font-mono text-[10px] text-zinc-600">
+                <span>Arrow keys</span>
+                <span>Enter</span>
+                <span>Esc</span>
+              </div>
             </div>
           </motion.div>
         </div>
       )}
     </AnimatePresence>
   );
-}
-
-function ChevronRight({ className }: { className?: string }) {
-    return <Plus className={cn("rotate-45", className)} />;
 }

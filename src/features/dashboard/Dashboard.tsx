@@ -1,63 +1,86 @@
-import { useEffect, useState } from 'react';
-import { Card, Badge, Button, Skeleton } from '../../components/ui/Layout';
-import { 
-  CheckCircle2, 
-  Timer, 
-  Briefcase, 
-  TrendingUp, 
-  ArrowUpRight,
-  Plus,
-  Clock,
-  Calendar,
-  Zap,
-  Target,
-  FileText,
-  Star,
-  ChevronRight
-} from 'lucide-react';
-import { motion } from 'motion/react';
-import { supabase } from '../../lib/supabase';
-import { useAuth } from '../auth/AuthContext';
-import { cn } from '../../lib/utils';
-import { 
-  AreaChart, 
-  Area, 
-  XAxis, 
-  YAxis, 
-  CartesianGrid, 
-  Tooltip, 
-  ResponsiveContainer 
-} from 'recharts';
+import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
+import {
+  ArrowDownRight,
+  ArrowUpRight,
+  BarChart3,
+  Briefcase,
+  Calendar,
+  CheckCircle2,
+  Clock,
+  FileText,
+  Plus,
+  Sparkles,
+  Target,
+  Timer,
+  TrendingUp,
+  Zap,
+} from 'lucide-react';
+import {
+  Area,
+  AreaChart,
+  CartesianGrid,
+  ResponsiveContainer,
+  Tooltip,
+  XAxis,
+  YAxis,
+} from 'recharts';
+import { Button, Card, Skeleton } from '../../components/ui/Layout';
+import { supabase } from '../../lib/supabase';
+import { cn } from '../../lib/utils';
+import { getMomentumInsight, getTimeBasedGreeting, getTrendIndicator } from '../../lib/insights';
+import { useAuth } from '../auth/AuthContext';
 
-const chartData = [
-  { name: 'Mon', score: 45 },
-  { name: 'Tue', score: 52 },
-  { name: 'Wed', score: 48 },
-  { name: 'Thu', score: 70 },
-  { name: 'Fri', score: 61 },
-  { name: 'Sat', score: 85 },
-  { name: 'Sun', score: 92 },
-];
+type DashboardStats = {
+  momentum: number;
+  previousMomentum: number;
+  habitsScore: number;
+  focusScore: number;
+  projectsScore: number;
+  habitsCompleted: number;
+  totalHabits: number;
+  focusMinutes: number;
+  dailyGoal: number;
+  activeProjects: number;
+  completedProjectTasks: number;
+  totalProjectTasks: number;
+  bestStreak: number;
+  weeklyData: Array<{ day: string; score: number; focus: number; habits: number }>;
+};
+
+const emptyStats: DashboardStats = {
+  momentum: 0,
+  previousMomentum: 0,
+  habitsScore: 0,
+  focusScore: 0,
+  projectsScore: 0,
+  habitsCompleted: 0,
+  totalHabits: 0,
+  focusMinutes: 0,
+  dailyGoal: 45,
+  activeProjects: 0,
+  completedProjectTasks: 0,
+  totalProjectTasks: 0,
+  bestStreak: 0,
+  weeklyData: [],
+};
+
+function dateKey(date: Date) {
+  return date.toISOString().split('T')[0];
+}
+
+function startOfDay(date: Date) {
+  const copy = new Date(date);
+  copy.setHours(0, 0, 0, 0);
+  return copy;
+}
 
 export function Dashboard() {
-  const { user } = useAuth();
+  const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
-  const [stats, setStats] = useState({
-    momentum: 0,
-    habitsCompleted: 0,
-    focusMinutes: 0,
-    tasksCompleted: 0,
-    activeProjects: 0,
-    dailyGoal: 120, // Default 2 hours
-  });
-
-  const [missions, setMissions] = useState([
-    { id: 'habits', title: 'Complete habits', category: 'Identity', icon: Target, done: false, sub: '0/0 tasks remaining' },
-    { id: 'focus', title: 'Daily focus goal', category: 'Deep Work', icon: Timer, done: false, sub: '45m target' },
-    { id: 'projects', title: 'Project progression', category: 'Missions', icon: Briefcase, done: false, sub: 'No active tasks' },
-  ]);
+  const [stats, setStats] = useState<DashboardStats>(emptyStats);
 
   useEffect(() => {
     async function fetchDashboardData() {
@@ -65,89 +88,100 @@ export function Dashboard() {
       setLoading(true);
 
       try {
-        const today = new Date().toISOString().split('T')[0];
+        const today = startOfDay(new Date());
+        const yesterday = new Date(today);
+        yesterday.setDate(today.getDate() - 1);
+        const firstWeekDay = new Date(today);
+        firstWeekDay.setDate(today.getDate() - 6);
 
-        // 1. Fetch Habits
-        const { data: habitsData } = await (supabase.from('habits') as any)
-          .select('*')
-          .eq('user_id', user.id);
-        
-        const habits = (habitsData || []) as any[];
-        const habitsCompletedToday = habits.filter(h => 
-          h.completed_dates?.includes(today)
-        ).length || 0;
-        const totalHabits = habits.length;
-
-        // 2. Fetch Projects and incomplete tasks
-        const { data: projects } = await (supabase.from('projects') as any)
-          .select('*, project_tasks(*)')
-          .eq('user_id', user.id)
-          .eq('status', 'active');
-        
-        const activeProjects = (projects || []) as any[];
-        const incompleteTasks = activeProjects.reduce((acc, p) => 
-          acc + (p.project_tasks?.filter((t: any) => !t.is_done).length || 0), 0
-        );
-
-        // 3. Fetch Focus Sessions and Settings
-        const [{ data: sessionsData }, { data: settings }] = await Promise.all([
+        const [{ data: habitsData }, { data: projectsData }, { data: sessionsData }, { data: settings }] = await Promise.all([
+          (supabase.from('habits') as any)
+            .select('*')
+            .eq('user_id', user.id),
+          (supabase.from('projects') as any)
+            .select('*, project_tasks(*)')
+            .eq('user_id', user.id),
           (supabase.from('focus_sessions') as any)
-            .select('completed_minutes')
+            .select('*')
             .eq('user_id', user.id)
-            .gte('started_at', today),
+            .gte('started_at', firstWeekDay.toISOString()),
           (supabase.from('settings') as any)
             .select('daily_goal_minutes')
             .eq('user_id', user.id)
-            .single()
+            .single(),
         ]);
-        
-        const focusMinutesToday = (sessionsData || []).reduce((acc: number, s: any) => acc + (s.completed_minutes || 0), 0) || 0;
-        const dailyFocusGoal = (settings as any)?.daily_goal_minutes || 45;
 
-        // Calculate Momentum Score
-        const habitsPart = totalHabits > 0 ? (habitsCompletedToday / totalHabits) * 40 : 0;
-        const focusPart = Math.min((focusMinutesToday / dailyFocusGoal) * 30, 30);
-        const tasksPart = Math.min(activeProjects.length > 0 ? ((activeProjects.length - Math.min(incompleteTasks, activeProjects.length)) / activeProjects.length) * 30 : 0, 30);
-        
-        const totalMomentum = Math.round(habitsPart + focusPart + tasksPart);
+        const habits = (habitsData || []).filter((habit: any) => habit.is_active !== false);
+        const projects = (projectsData || []) as any[];
+        const activeProjects = projects.filter((project) => project.status === 'active');
+        const sessions = (sessionsData || []) as any[];
+        const dailyGoal = Math.max((settings as any)?.daily_goal_minutes || 45, 1);
 
-        setStats({
-          momentum: totalMomentum,
-          habitsCompleted: habitsCompletedToday,
-          focusMinutes: focusMinutesToday,
-          tasksCompleted: incompleteTasks, // Reusing this for "tasks remaining"
-          activeProjects: activeProjects.length,
-          dailyGoal: dailyFocusGoal
+        const todayKey = dateKey(today);
+        const yesterdayKey = dateKey(yesterday);
+
+        const habitsCompletedToday = habits.filter((habit: any) => habit.completed_dates?.includes(todayKey)).length;
+        const habitsCompletedYesterday = habits.filter((habit: any) => habit.completed_dates?.includes(yesterdayKey)).length;
+        const totalHabits = habits.length;
+
+        const focusMinutesToday = sessions
+          .filter((session) => session.started_at?.startsWith(todayKey))
+          .reduce((acc, session) => acc + (session.completed_minutes || 0), 0);
+        const focusMinutesYesterday = sessions
+          .filter((session) => session.started_at?.startsWith(yesterdayKey))
+          .reduce((acc, session) => acc + (session.completed_minutes || 0), 0);
+
+        const projectTasks = activeProjects.flatMap((project) => project.project_tasks || []);
+        const totalProjectTasks = projectTasks.length;
+        const completedProjectTasks = projectTasks.filter((task: any) => task.is_done).length;
+
+        const habitsScore = totalHabits > 0 ? Math.round((habitsCompletedToday / totalHabits) * 40) : 0;
+        const focusScore = Math.min(Math.round((focusMinutesToday / dailyGoal) * 30), 30);
+        const projectsScore = totalProjectTasks > 0
+          ? Math.round((completedProjectTasks / totalProjectTasks) * 30)
+          : activeProjects.length > 0
+            ? 12
+            : 0;
+
+        const yesterdayHabitsScore = totalHabits > 0 ? Math.round((habitsCompletedYesterday / totalHabits) * 40) : 0;
+        const yesterdayFocusScore = Math.min(Math.round((focusMinutesYesterday / dailyGoal) * 30), 30);
+        const previousMomentum = Math.min(100, yesterdayHabitsScore + yesterdayFocusScore + projectsScore);
+        const momentum = Math.min(100, habitsScore + focusScore + projectsScore);
+
+        const weeklyData = [...Array(7)].map((_, index) => {
+          const day = new Date(firstWeekDay);
+          day.setDate(firstWeekDay.getDate() + index);
+          const key = dateKey(day);
+          const focus = sessions
+            .filter((session) => session.started_at?.startsWith(key))
+            .reduce((acc, session) => acc + (session.completed_minutes || 0), 0);
+          const habitsDone = habits.filter((habit: any) => habit.completed_dates?.includes(key)).length;
+          const dayHabitsScore = totalHabits > 0 ? (habitsDone / totalHabits) * 40 : 0;
+          const dayFocusScore = Math.min((focus / dailyGoal) * 30, 30);
+          return {
+            day: day.toLocaleDateString('en-US', { weekday: 'short' }),
+            score: Math.round(Math.min(100, dayHabitsScore + dayFocusScore + projectsScore)),
+            focus,
+            habits: habitsDone,
+          };
         });
 
-        // Update missions state based on real data
-        setMissions([
-          { 
-            id: 'habits', 
-            title: totalHabits > 0 ? `${totalHabits - habitsCompletedToday} Habits Remaining` : 'Initialize Daily Orbit', 
-            category: 'Identity', 
-            icon: Target, 
-            done: totalHabits > 0 && habitsCompletedToday === totalHabits,
-            sub: totalHabits > 0 ? `${habitsCompletedToday}/${totalHabits} Synced` : 'No habits defined'
-          },
-          { 
-            id: 'focus', 
-            title: `${dailyFocusGoal}m Focus Quest`, 
-            category: 'Deep Work', 
-            icon: Timer, 
-            done: focusMinutesToday >= dailyFocusGoal,
-            sub: `${focusMinutesToday}m Recorded today`
-          },
-          { 
-            id: 'projects', 
-            title: incompleteTasks > 0 ? `${incompleteTasks} Tasks Awaiting` : 'Architect New Path', 
-            category: 'Missions', 
-            icon: Briefcase, 
-            done: activeProjects.length > 0 && incompleteTasks === 0,
-            sub: activeProjects.length > 0 ? `${activeProjects.length} Active Missions` : 'System idle'
-          },
-        ]);
-
+        setStats({
+          momentum,
+          previousMomentum,
+          habitsScore,
+          focusScore,
+          projectsScore,
+          habitsCompleted: habitsCompletedToday,
+          totalHabits,
+          focusMinutes: focusMinutesToday,
+          dailyGoal,
+          activeProjects: activeProjects.length,
+          completedProjectTasks,
+          totalProjectTasks,
+          bestStreak: Math.max(0, ...habits.map((habit: any) => habit.best_streak || 0)),
+          weeklyData,
+        });
       } catch (err) {
         console.error('Dashboard data error:', err);
       } finally {
@@ -158,42 +192,83 @@ export function Dashboard() {
     fetchDashboardData();
   }, [user]);
 
-  const handleMissionClick = (id: string) => {
-    switch (id) {
-      case 'habits':
-        navigate('/habits');
-        break;
-      case 'focus':
-        navigate('/focus');
-        break;
-      case 'projects':
-        navigate('/projects');
-        break;
-    }
-  };
+  const firstName = useMemo(() => {
+    const source = profile?.full_name || user?.email?.split('@')[0] || 'Mohamed';
+    return source.split(' ')[0] || 'Mohamed';
+  }, [profile?.full_name, user?.email]);
+
+  const incompleteHabits = Math.max(stats.totalHabits - stats.habitsCompleted, 0);
+  const trend = getTrendIndicator(stats.momentum, stats.previousMomentum);
+  const insight = getMomentumInsight({
+    momentum: stats.momentum,
+    incompleteHabits,
+    focusMinutes: stats.focusMinutes,
+    dailyGoal: stats.dailyGoal,
+    activeProjects: stats.activeProjects,
+  });
+  const hasNoData = stats.totalHabits === 0 && stats.activeProjects === 0 && stats.focusMinutes === 0;
+  const dashboardInsight = hasNoData
+    ? 'Start by creating one habit, writing one note, or starting a focus session. Your dashboard will become more useful as you add activity.'
+    : incompleteHabits > 0
+      ? "You're building momentum. Complete one more habit to improve today's score."
+      : stats.focusMinutes < stats.dailyGoal
+        ? 'Your habits are in good shape. Add one focus session to lift your productivity score.'
+        : 'Strong day. Pick one project task to keep your momentum moving.';
+  const remainingFocusMinutes = Math.max(stats.dailyGoal - stats.focusMinutes, 0);
+  const remainingProjectTasks = Math.max(stats.totalProjectTasks - stats.completedProjectTasks, 0);
+  const topPriorities = [
+    {
+      icon: CheckCircle2,
+      label: 'Habit',
+      title: stats.totalHabits === 0 ? 'Create your first habit' : incompleteHabits > 0 ? 'Complete one habit' : 'Habits are done',
+      detail: stats.totalHabits === 0
+        ? 'Start with one routine you can repeat.'
+        : incompleteHabits > 0
+          ? `${incompleteHabits} habit${incompleteHabits === 1 ? '' : 's'} left today.`
+          : 'You completed every habit for today.',
+      action: stats.totalHabits === 0 ? 'Create Habit' : 'Open Habits',
+      onClick: () => navigate(stats.totalHabits === 0 ? '/habits?add=true' : '/habits'),
+      accent: 'text-emerald-300 bg-emerald-500/10',
+    },
+    {
+      icon: Timer,
+      label: 'Focus',
+      title: remainingFocusMinutes > 0 ? 'Start a focus session' : 'Focus goal reached',
+      detail: remainingFocusMinutes > 0
+        ? `${remainingFocusMinutes} minutes left to reach your daily goal.`
+        : `${stats.focusMinutes} minutes logged today.`,
+      action: remainingFocusMinutes > 0 ? 'Start Focus' : 'Review Focus',
+      onClick: () => navigate(remainingFocusMinutes > 0 ? '/focus?start=true' : '/focus'),
+      accent: 'text-blue-300 bg-blue-500/10',
+    },
+    {
+      icon: Briefcase,
+      label: 'Project',
+      title: stats.activeProjects === 0 ? 'Create your first project' : remainingProjectTasks > 0 ? 'Close one project task' : 'Review active projects',
+      detail: stats.activeProjects === 0
+        ? 'Turn a goal into a visible plan.'
+        : remainingProjectTasks > 0
+          ? `${remainingProjectTasks} task${remainingProjectTasks === 1 ? '' : 's'} still open.`
+          : `${stats.activeProjects} active project${stats.activeProjects === 1 ? '' : 's'} ready for review.`,
+      action: stats.activeProjects === 0 ? 'Create Project' : 'Open Projects',
+      onClick: () => navigate(stats.activeProjects === 0 ? '/projects?add=true' : '/projects'),
+      accent: 'text-purple-300 bg-purple-500/10',
+    },
+  ];
 
   if (loading) {
     return (
-      <div className="space-y-12 animate-in fade-in duration-700">
-        <div className="space-y-4">
-          <Skeleton className="h-4 w-32 rounded-full" />
-          <Skeleton className="h-12 w-64 rounded-xl" />
-          <Skeleton className="h-4 w-96 rounded-lg font-medium" />
+      <div className="space-y-8">
+        <div className="space-y-3">
+          <Skeleton className="h-4 w-36 rounded-full" />
+          <Skeleton className="h-12 w-72 rounded-xl" />
+          <Skeleton className="h-4 w-full max-w-xl rounded-lg" />
         </div>
-        
-        {/* Momentum Hero Skeleton */}
-        <Skeleton className="h-[340px] rounded-[3rem]" />
-        
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-          <div className="lg:col-span-2 space-y-8">
-             <Skeleton className="h-[400px] rounded-[2.5rem]" />
-             <div className="grid grid-cols-3 gap-6">
-                <Skeleton className="h-44 rounded-[2rem]" />
-                <Skeleton className="h-44 rounded-[2rem]" />
-                <Skeleton className="h-44 rounded-[2rem]" />
-             </div>
-          </div>
-          <Skeleton className="h-[600px] rounded-[2.5rem]" />
+        <Skeleton className="h-[360px] rounded-3xl" />
+        <div className="grid grid-cols-1 gap-6 lg:grid-cols-3">
+          <Skeleton className="h-52 rounded-3xl" />
+          <Skeleton className="h-52 rounded-3xl" />
+          <Skeleton className="h-52 rounded-3xl" />
         </div>
       </div>
     );
@@ -201,328 +276,327 @@ export function Dashboard() {
 
   return (
     <div className="space-y-8 pb-12">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-4">
-        <div>
-          <div className="flex items-center gap-2 mb-3">
-              <div className="w-1.5 h-6 bg-accent rounded-full animate-pulse" />
-              <span className="text-[10px] font-black uppercase tracking-[0.3em] text-zinc-500">System Core v2.0.4 // Online</span>
+      <header className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+        <div className="max-w-3xl">
+          <div className="mb-4 flex items-center gap-2">
+            <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_18px_rgba(52,211,153,0.5)]" />
+            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
+              Productivity overview
+            </span>
           </div>
-          <h1 className="text-4xl md:text-5xl font-display font-bold text-white tracking-tight leading-tight">
-            MoTrack <span className="text-accent underline decoration-4 underline-offset-8 decoration-accent/20">Explorer</span>
+          <h1 className="font-display text-4xl font-bold leading-tight tracking-normal text-white md:text-6xl">
+            {getTimeBasedGreeting(firstName)}
           </h1>
-          <p className="text-zinc-500 mt-4 font-medium tracking-tight max-w-xl">Your high-fidelity productivity workspace is synchronized and active.</p>
+          <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-500">
+            {insight.message}
+          </p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" onClick={() => navigate('/settings')} size="icon">
-            <Calendar className="w-4 h-4 text-zinc-400" />
+        <div className="flex flex-wrap gap-3">
+          <Button variant="outline" onClick={() => navigate('/analytics')}>
+            <BarChart3 className="mr-2 h-4 w-4" />
+            Analytics
           </Button>
-          <Button onClick={() => window.dispatchEvent(new KeyboardEvent('keydown', { key: 'k', ctrlKey: true }))}>
-            <Zap className="w-4 h-4 mr-2" />
-            Control Center
+          <Button onClick={() => window.dispatchEvent(new Event('motrack:open-command-center'))}>
+            <Sparkles className="mr-2 h-4 w-4" />
+            Quick search
           </Button>
         </div>
       </header>
 
-      {/* Momentum Hero */}
-      <Card variant="premium" className="relative p-10 flex flex-col justify-center border-white/5 overflow-hidden group bg-[#0a0a0a]">
-        <div className="absolute top-0 right-0 w-[500px] h-[500px] bg-accent/10 blur-[120px] rounded-full -translate-y-1/2 translate-x-1/2 opacity-50 group-hover:opacity-70 transition-opacity duration-1000" />
-        
-        <div className="grid grid-cols-1 lg:grid-cols-12 items-center gap-12 relative z-10">
-          <div className="lg:col-span-7">
-            <div className="flex items-center gap-3 mb-6">
-              <div className="p-2 rounded-xl bg-accent/10">
-                <Zap className="w-5 h-5 text-accent animate-pulse" />
+      <Card variant="premium" className="overflow-hidden border-white/10 bg-[#080b13]/80 p-0">
+        <div className="grid gap-0 lg:grid-cols-12">
+          <div className="relative overflow-hidden p-6 sm:p-8 lg:col-span-7 lg:p-10">
+            <div className="pointer-events-none absolute right-0 top-0 h-64 w-64 -translate-y-1/2 translate-x-1/3 rounded-full bg-accent/14 blur-3xl" />
+            <div className="relative z-10">
+              <div className="mb-8 flex flex-wrap items-center gap-3">
+                <span className="inline-flex items-center gap-2 rounded-full border border-accent/20 bg-accent/10 px-3 py-1 text-xs font-semibold text-accent">
+                  <Zap className="h-3.5 w-3.5" />
+                  {insight.headline}
+                </span>
+                <span className="inline-flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-zinc-400">
+                  {trend.trend === 'up' && <ArrowUpRight className="h-3.5 w-3.5 text-emerald-300" />}
+                  {trend.trend === 'down' && <ArrowDownRight className="h-3.5 w-3.5 text-amber-300" />}
+                  {trend.trend === 'stable' && <TrendingUp className="h-3.5 w-3.5 text-blue-300" />}
+                  {trend.trend === 'stable' ? 'Stable vs yesterday' : `${trend.percentage}% ${trend.trend} vs yesterday`}
+                </span>
               </div>
-              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-accent">Momentum Engine Active</span>
-            </div>
-            
-            <div className="flex items-baseline gap-4 mb-4">
-                <h2 className="text-7xl font-mono font-bold text-white tracking-tighter">
-                  {stats.momentum}<span className="text-4xl ml-1 text-zinc-400">%</span>
-                </h2>
-                <div className="px-3 py-1 rounded-full bg-emerald-500/10 border border-emerald-500/20">
-                    <span className="text-[10px] font-bold text-emerald-500 uppercase tracking-widest">+12% From Yesterday</span>
-                </div>
-            </div>
 
-            <div className="w-full h-3 bg-zinc-900 rounded-full mt-6 overflow-hidden p-0.5 border border-white/5">
-              <motion.div 
-                initial={{ width: 0 }}
-                animate={{ width: `${stats.momentum}%` }}
-                className="h-full rounded-full momentum-gradient shadow-[0_0_20px_rgba(139,92,246,0.3)]"
-              />
-            </div>
-            
-            <div className="grid grid-cols-3 gap-6 mt-10 p-6 rounded-3xl bg-white/[0.02] border border-white/5">
-                <div>
-                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Habits (40%)</p>
-                    <p className="text-sm font-mono font-bold text-white">{stats.habitsCompleted} Done</p>
+              <div className="grid gap-8 md:grid-cols-[220px_1fr] md:items-center">
+                <MomentumRing score={stats.momentum} />
+                <div className="space-y-5">
+                  <div>
+                    <p className="text-sm font-medium text-zinc-500">Momentum score</p>
+                    <h2 className="mt-2 font-display text-3xl font-semibold text-white md:text-4xl">
+                      You are {stats.momentum}% on track today.
+                    </h2>
+                  </div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-3">
+                    <BreakdownPill label="Habits" value={stats.habitsScore} max={40} color="bg-emerald-400" />
+                    <BreakdownPill label="Focus" value={stats.focusScore} max={30} color="bg-blue-400" />
+                    <BreakdownPill label="Projects" value={stats.projectsScore} max={30} color="bg-purple-400" />
+                  </div>
                 </div>
-                <div>
-                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Focus (30%)</p>
-                    <p className="text-sm font-mono font-bold text-white">{stats.focusMinutes}m Today</p>
-                </div>
-                <div>
-                    <p className="text-[10px] font-bold text-zinc-600 uppercase tracking-widest mb-1">Projects (30%)</p>
-                    <p className="text-sm font-mono font-bold text-white">{stats.activeProjects} Active</p>
-                </div>
+              </div>
             </div>
           </div>
-          
-          <div className="lg:col-span-5 grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <StatSmall 
-              icon={Target} 
-              label="Habit Load" 
-              value={`${stats.habitsCompleted}`} 
-              sub="Routines Synced" 
-              accent="text-emerald-400"
-            />
-            <StatSmall 
-              icon={Timer} 
-              label="Deep Space" 
-              value={`${stats.focusMinutes}m`} 
-              sub="Focus Minutes" 
-              accent="text-blue-400"
-            />
+
+          <div className="border-t border-white/10 bg-white/[0.025] p-6 sm:p-8 lg:col-span-5 lg:border-l lg:border-t-0 lg:p-10">
+            <div className="mb-6 flex items-center justify-between">
+              <div>
+                <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-600">Today</p>
+                <h3 className="mt-2 font-display text-xl font-semibold text-white">Today's Mission</h3>
+              </div>
+              <Calendar className="h-5 w-5 text-zinc-600" />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <BriefingMetric icon={Timer} label="Focus time" value={`${stats.focusMinutes}/${stats.dailyGoal}m`} onClick={() => navigate('/focus')} />
+              <BriefingMetric icon={CheckCircle2} label="Habits left" value={`${incompleteHabits}`} onClick={() => navigate('/habits')} />
+              <BriefingMetric icon={Briefcase} label="Active projects" value={`${stats.activeProjects}`} onClick={() => navigate('/projects')} />
+              <BriefingMetric icon={Target} label="Best streak" value={`${stats.bestStreak}d`} onClick={() => navigate('/habits')} />
+            </div>
+            <div className="mt-6 rounded-2xl border border-white/10 bg-black/20 p-4">
+              <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-zinc-600">Smart insight</p>
+              <p className="mt-2 text-sm leading-relaxed text-zinc-400">{dashboardInsight}</p>
+            </div>
           </div>
         </div>
       </Card>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-        {/* Main Content Column */}
-        <div className="lg:col-span-2 space-y-8">
-          {/* Charts Card */}
-          <Card className="p-8 bg-[#0a0a0a] border-white/5">
-            <div className="flex items-center justify-between mb-10">
-              <div>
-                <h3 className="text-lg font-display font-bold text-white tracking-tight leading-none uppercase tracking-widest">Neural Flow Analytics</h3>
-                <p className="text-zinc-500 text-[11px] font-bold uppercase mt-2 tracking-[0.2em] opacity-40">System Momentum over 168 hours</p>
-              </div>
-              <div className="flex gap-2">
-                <Button variant="ghost" size="sm" className="text-[10px] font-bold uppercase tracking-widest px-3 py-1 bg-white/5 border border-white/5">Weekly Report</Button>
-              </div>
-            </div>
-            <div className="h-[280px] w-full">
-              <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={chartData}>
-                  <defs>
-                    <linearGradient id="momentumGradient" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="var(--color-accent)" stopOpacity={0.3}/>
-                      <stop offset="95%" stopColor="var(--color-accent)" stopOpacity={0}/>
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff03" />
-                  <XAxis 
-                    dataKey="name" 
-                    axisLine={false} 
-                    tickLine={false} 
-                    tick={{ fill: '#52525b', fontSize: 10, fontWeight: 700 }} 
-                    dy={12}
-                  />
-                  <YAxis hide />
-                  <Tooltip 
-                    contentStyle={{ 
-                      backgroundColor: '#050505', 
-                      border: '1px solid rgba(255, 255, 255, 0.05)',
-                      borderRadius: '16px',
-                      fontSize: '11px',
-                      fontWeight: 600,
-                      boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
-                    }}
-                    cursor={{ stroke: '#8b5cf6', strokeWidth: 1 }}
-                  />
-                  <Area 
-                    type="monotone" 
-                    dataKey="score" 
-                    stroke="#8b5cf6" 
-                    strokeWidth={3}
-                    fillOpacity={1} 
-                    fill="url(#momentumGradient)" 
-                    animationDuration={2500}
-                  />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
-          </Card>
+      {hasNoData && (
+        <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+          <OnboardingCard icon={CheckCircle2} title="Create your first habit" cta="Create Habit" onClick={() => navigate('/habits?add=true')} />
+          <OnboardingCard icon={Timer} title="Start your first focus session" cta="Start Focus" onClick={() => navigate('/focus?start=true')} />
+          <OnboardingCard icon={Briefcase} title="Create your first project" cta="Create Project" onClick={() => navigate('/projects?add=true')} />
+        </div>
+      )}
 
-          {/* Today's Mission Cards */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between pl-1">
-              <h3 className="text-[11px] font-bold uppercase tracking-[.3em] text-zinc-500">Mission Operational Status</h3>
-              <Star className="w-4 h-4 text-accent/50" />
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              {missions.map((mission) => (
-                <motion.button
-                  key={mission.id} 
-                  whileHover={{ y: -5 }}
-                  whileTap={{ scale: 0.98 }}
-                  onClick={() => handleMissionClick(mission.id)}
-                  className={cn(
-                    "flex flex-col text-left p-6 rounded-[2rem] border transition-all duration-500 relative overflow-hidden group h-full",
-                    mission.done 
-                      ? "border-emerald-500/20 bg-emerald-500/5 opacity-60" 
-                      : "border-white/5 bg-[#0a0a0a] hover:border-accent/40 hover:shadow-2xl hover:shadow-accent/5"
-                  )}
-                >
-                  <div className={cn(
-                    "w-12 h-12 rounded-2xl flex items-center justify-center mb-6 shadow-inner transition-transform group-hover:scale-110",
-                    mission.done ? "bg-emerald-500/20 text-emerald-400" : "bg-zinc-900 border border-white/5 text-zinc-400 group-hover:text-accent"
-                  )}>
-                    <mission.icon className="w-6 h-6" />
-                  </div>
-                  <h4 className={cn("text-[15px] font-bold tracking-tight mb-2", mission.done ? "text-emerald-400/80 line-through" : "text-white")}>
-                    {mission.title}
-                  </h4>
-                  <div className="mt-auto">
-                    <p className="text-[10px] uppercase font-bold tracking-widest text-zinc-600 mb-1">{mission.category}</p>
-                    <div className="flex items-center gap-2">
-                         <div className={cn("w-1 h-1 rounded-full", mission.done ? "bg-emerald-500" : "bg-zinc-800")} />
-                         <p className="text-[10px] font-mono font-bold text-zinc-500 uppercase tracking-tight">{mission.sub}</p>
-                    </div>
-                  </div>
-
-                  {!mission.done && (
-                      <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                         <ArrowUpRight className="w-4 h-4 text-accent" />
-                      </div>
-                  )}
-                </motion.button>
-              ))}
-            </div>
+      <section className="space-y-4">
+        <div className="flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+          <div>
+            <h2 className="font-display text-2xl font-semibold text-white">Top 3 Today</h2>
+            <p className="mt-1 text-sm text-zinc-500">The next small actions that move your score forward.</p>
           </div>
+          <span className="w-fit rounded-full border border-white/10 bg-white/5 px-3 py-1 font-mono text-xs text-zinc-500">
+            {stats.momentum}% today
+          </span>
         </div>
-
-        {/* Side Column: Action Center */}
-        <div className="space-y-8">
-          <Card className="p-6 h-full relative overflow-hidden group">
-            <div className="absolute inset-0 bg-gradient-to-br from-accent/5 to-transparent pointer-events-none" />
-            
-            <h3 className="text-sm font-black uppercase tracking-[.3em] text-zinc-500 mb-6">Action Hub</h3>
-            
-            <div className="space-y-3 relative z-10">
-              <QuickAction 
-                icon={CheckCircle2} 
-                label="Launch Habits" 
-                desc="Daily synchronization"
-                color="text-emerald-400"
-                onClick={() => navigate('/habits')}
-              />
-              <QuickAction 
-                icon={Timer} 
-                label="Start Focus" 
-                desc="Activate deep work"
-                color="text-blue-400"
-                onClick={() => navigate('/focus')}
-              />
-              <QuickAction 
-                icon={FileText} 
-                label="Quick Capture" 
-                desc="Record a brain dump"
-                color="text-amber-400"
-                onClick={() => navigate('/notes')}
-              />
-              <QuickAction 
-                icon={Briefcase} 
-                label="Project OPS" 
-                desc="Manage your missions"
-                color="text-purple-400"
-                onClick={() => navigate('/projects')}
-              />
-            </div>
-
-            <div className="mt-10 pt-8 border-t border-white/5 relative z-10">
-                <HeaderSmall text="Live Feed" />
-                <div className="space-y-5 mt-4">
-                  <FeedItem 
-                    icon={Zap} 
-                    title="Productivity Boost" 
-                    time="10m ago" 
-                    desc="You earned +12 momentum points" 
-                  />
-                  <FeedItem 
-                    icon={Target} 
-                    title="Objective Complete" 
-                    time="2h ago" 
-                    desc="Mission 'Morning Habits' synced" 
-                  />
-                  <FeedItem 
-                    icon={Star} 
-                    title="Weekly Progress" 
-                    time="Today" 
-                    desc="You are in the top 5% of users" 
-                  />
-                </div>
-            </div>
-            
-            <button 
-              onClick={() => navigate('/analytics')}
-              className="mt-8 w-full flex items-center justify-center gap-2 p-3 rounded-xl glass border-white/5 text-zinc-500 hover:text-white hover:bg-white/5 transition-all text-[10px] font-black uppercase tracking-widest"
-            >
-              System Analytics <ChevronRight className="w-3 h-3" />
-            </button>
-          </Card>
+        <div className="grid grid-cols-1 gap-4 lg:grid-cols-3">
+          {topPriorities.map((priority) => (
+            <PriorityCard key={priority.label} {...priority} />
+          ))}
         </div>
+      </section>
+
+      <div className="grid grid-cols-1 gap-6 lg:grid-cols-12">
+        <Card className="border-white/10 bg-[#080b13]/72 p-5 sm:p-8 lg:col-span-8">
+          <div className="mb-8 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <h3 className="font-display text-xl font-semibold text-white">Weekly momentum</h3>
+              <p className="mt-1 text-sm text-zinc-500">Habits and focus sessions translated into a daily score.</p>
+            </div>
+            <span className="w-fit rounded-full border border-white/10 bg-white/5 px-3 py-1 font-mono text-xs text-zinc-400">
+              7 day trend
+            </span>
+          </div>
+          <div className="h-[280px] w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={stats.weeklyData}>
+                <defs>
+                  <linearGradient id="momentumGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--color-accent)" stopOpacity={0.36} />
+                    <stop offset="95%" stopColor="var(--color-accent)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="rgba(255,255,255,0.05)" />
+                <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11, fontWeight: 600 }} dy={12} />
+                <YAxis hide domain={[0, 100]} />
+                <Tooltip
+                  cursor={{ stroke: 'var(--color-accent)', strokeWidth: 1 }}
+                  contentStyle={{
+                    backgroundColor: '#080b13',
+                    border: '1px solid rgba(255,255,255,0.1)',
+                    borderRadius: 16,
+                    color: '#fff',
+                    boxShadow: '0 20px 60px rgba(0,0,0,0.45)',
+                  }}
+                />
+                <Area
+                  type="monotone"
+                  dataKey="score"
+                  stroke="var(--color-accent)"
+                  strokeWidth={3}
+                  fill="url(#momentumGradient)"
+                  animationDuration={1400}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+
+        <Card className="border-white/10 bg-[#080b13]/72 p-5 sm:p-8 lg:col-span-4">
+          <div className="mb-7 flex items-center justify-between">
+            <div>
+              <h3 className="font-display text-xl font-semibold text-white">Quick Actions</h3>
+              <p className="mt-1 text-sm text-zinc-500">Small moves with the highest return.</p>
+            </div>
+            <Sparkles className="h-5 w-5 text-accent" />
+          </div>
+          <div className="space-y-3">
+            <ActionRow icon={CheckCircle2} title="Complete one habit" detail={`${incompleteHabits} remaining today`} onClick={() => navigate('/habits')} />
+            <ActionRow icon={Timer} title="Run a focus session" detail={`${Math.max(stats.dailyGoal - stats.focusMinutes, 0)} minutes to goal`} onClick={() => navigate('/focus?start=true')} />
+            <ActionRow icon={Briefcase} title="Close one project task" detail={`${stats.completedProjectTasks}/${stats.totalProjectTasks} tasks complete`} onClick={() => navigate('/projects')} />
+            <ActionRow icon={FileText} title="Write a note" detail="Keep ideas easy to find" onClick={() => navigate('/notes?add=true')} />
+          </div>
+        </Card>
       </div>
     </div>
   );
 }
 
-function StatSmall({ icon: Icon, label, value, sub, accent }: any) {
+function MomentumRing({ score }: { score: number }) {
   return (
-    <div className="bg-zinc-900/50 p-6 rounded-3xl border border-white/5 hover:border-accent/20 transition-all group backdrop-blur-sm">
-      <div className={cn("inline-flex p-2.5 rounded-2xl bg-zinc-800/50 mb-6 transition-all group-hover:scale-110", accent)}>
-        <Icon className="w-5 h-5" />
-      </div>
-      <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500 mb-2">{label}</p>
-      <div className="flex items-baseline gap-2">
-        <span className="text-3xl font-mono font-bold text-white tracking-tighter">{value}</span>
-        <span className="text-[11px] font-medium text-zinc-600 tracking-tight">{sub}</span>
+    <div className="relative mx-auto h-52 w-52">
+      <svg viewBox="0 0 120 120" className="h-full w-full -rotate-90">
+        <circle cx="60" cy="60" r="52" pathLength={100} className="fill-none stroke-white/5" strokeWidth="9" />
+        <motion.circle
+          cx="60"
+          cy="60"
+          r="52"
+          pathLength={100}
+          className="fill-none stroke-accent drop-shadow-[0_0_18px_rgba(139,92,246,0.45)]"
+          strokeWidth="9"
+          strokeLinecap="round"
+          initial={{ strokeDasharray: '0 100' }}
+          animate={{ strokeDasharray: `${score} 100` }}
+          transition={{ duration: 1.2, ease: [0.16, 1, 0.3, 1] }}
+        />
+      </svg>
+      <div className="absolute inset-0 flex flex-col items-center justify-center text-center">
+        <span className="font-mono text-5xl font-bold leading-none text-white">{score}</span>
+        <span className="mt-2 text-[11px] font-semibold uppercase tracking-[0.18em] text-zinc-500">Momentum</span>
       </div>
     </div>
   );
 }
 
-function QuickAction({ icon: Icon, label, desc, color, onClick }: any) {
+function BreakdownPill({ label, value, max, color }: { label: string; value: number; max: number; color: string }) {
+  const percent = Math.min((value / max) * 100, 100);
   return (
-    <button 
+    <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-4">
+      <div className="mb-3 flex items-center justify-between">
+        <span className="text-xs font-semibold text-zinc-400">{label}</span>
+        <span className="font-mono text-xs text-white">{value}/{max}</span>
+      </div>
+      <div className="h-1.5 overflow-hidden rounded-full bg-white/10">
+        <motion.div initial={{ width: 0 }} animate={{ width: `${percent}%` }} className={cn('h-full rounded-full', color)} />
+      </div>
+    </div>
+  );
+}
+
+function BriefingMetric({ icon: Icon, label, value, onClick }: { icon: typeof Timer; label: string; value: string; onClick?: () => void }) {
+  const content = (
+    <>
+      <Icon className="mb-4 h-5 w-5 text-accent" />
+      <p className="text-xs font-medium text-zinc-500">{label}</p>
+      <p className="mt-1 font-mono text-lg font-semibold text-white">{value}</p>
+    </>
+  );
+
+  const className = cn(
+    'rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-left transition-all',
+    onClick && 'cursor-pointer hover:border-accent/30 hover:bg-accent/[0.04] hover:shadow-[0_0_24px_rgba(139,92,246,0.12)] active:scale-[0.99]'
+  );
+
+  if (onClick) {
+    return (
+      <button type="button" onClick={onClick} className={className}>
+        {content}
+      </button>
+    );
+  }
+
+  return (
+    <div className={className}>
+      {content}
+    </div>
+  );
+}
+
+function OnboardingCard({ icon: Icon, title, cta, onClick }: { icon: typeof Timer; title: string; cta: string; onClick: () => void }) {
+  return (
+    <motion.button
+      whileHover={{ y: -3 }}
       onClick={onClick}
-      className="w-full flex items-center gap-5 p-5 rounded-3xl bg-zinc-900/50 border border-white/5 hover:bg-accent/[0.03] hover:border-accent/30 transition-all group text-left backdrop-blur-sm"
+      className="group rounded-2xl border border-dashed border-white/10 bg-white/[0.025] p-5 text-left transition-all hover:border-accent/30 hover:bg-accent/[0.035]"
     >
-      <div className={cn("w-12 h-12 rounded-2xl bg-zinc-800/50 flex items-center justify-center transition-all group-hover:scale-110 group-hover:bg-accent/10 border border-white/5 shadow-inner", color)}>
-        <Icon className="w-6 h-6" />
+      <div className="mb-5 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/5 text-accent">
+        <Icon className="h-5 w-5" />
       </div>
-      <div>
-        <h4 className="text-[15px] font-semibold text-white tracking-tight">{label}</h4>
-        <p className="text-[11px] text-zinc-500 font-medium uppercase tracking-[0.1em] mt-1">{desc}</p>
+      <h3 className="font-display text-lg font-semibold text-white">{title}</h3>
+      <span className="mt-4 inline-flex items-center gap-2 text-sm font-semibold text-accent">
+        {cta}
+        <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
+      </span>
+    </motion.button>
+  );
+}
+
+function PriorityCard({
+  icon: Icon,
+  label,
+  title,
+  detail,
+  action,
+  accent,
+  onClick,
+}: {
+  icon: typeof Timer;
+  label: string;
+  title: string;
+  detail: string;
+  action: string;
+  accent: string;
+  onClick: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className="group rounded-2xl border border-white/10 bg-[#080b13]/72 p-5 text-left transition-all hover:border-accent/30 hover:bg-accent/[0.035] hover:shadow-[0_0_28px_rgba(139,92,246,0.12)] active:scale-[0.99]"
+    >
+      <div className="mb-5 flex items-center justify-between">
+        <span className={cn('flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10', accent)}>
+          <Icon className="h-5 w-5" />
+        </span>
+        <span className="rounded-full border border-white/10 bg-white/[0.035] px-3 py-1 text-[10px] font-semibold uppercase tracking-[0.16em] text-zinc-500">
+          {label}
+        </span>
       </div>
+      <h3 className="font-display text-lg font-semibold text-white">{title}</h3>
+      <p className="mt-2 min-h-10 text-sm leading-relaxed text-zinc-500">{detail}</p>
+      <span className="mt-5 inline-flex items-center gap-2 text-sm font-semibold text-accent">
+        {action}
+        <Plus className="h-4 w-4 transition-transform group-hover:rotate-90" />
+      </span>
     </button>
   );
 }
 
-function FeedItem({ icon: Icon, title, time, desc }: any) {
+function ActionRow({ icon: Icon, title, detail, onClick }: { icon: typeof Timer; title: string; detail: string; onClick: () => void }) {
   return (
-    <div className="flex gap-4 group">
-       <div className="w-8 h-8 rounded-lg bg-white/5 flex items-center justify-center flex-shrink-0 group-hover:bg-white/10 transition-colors">
-          <Icon className="w-4 h-4 text-zinc-500" />
-       </div>
-       <div className="space-y-0.5">
-          <div className="flex items-center gap-2">
-            <span className="text-[11px] font-black text-white uppercase tracking-tight">{title}</span>
-            <span className="text-[9px] text-zinc-600 font-bold uppercase tracking-widest">{time}</span>
-          </div>
-          <p className="text-[10px] text-zinc-500 font-medium italic line-clamp-1">{desc}</p>
-       </div>
-    </div>
-  );
-}
-
-function HeaderSmall({ text }: { text: string }) {
-  return (
-    <div className="flex items-center gap-3">
-      <div className="h-px bg-white/5 flex-1" />
-      <span className="text-[9px] font-black uppercase tracking-[.4em] text-zinc-700">{text}</span>
-      <div className="h-px bg-white/5 flex-1" />
-    </div>
+    <button
+      onClick={onClick}
+      className="group flex w-full items-center gap-4 rounded-2xl border border-white/10 bg-white/[0.035] p-4 text-left transition-all hover:border-accent/25 hover:bg-accent/[0.035]"
+    >
+      <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/5 text-zinc-400 transition-colors group-hover:text-accent">
+        <Icon className="h-5 w-5" />
+      </span>
+      <span className="min-w-0 flex-1">
+        <span className="block text-sm font-semibold text-white">{title}</span>
+        <span className="mt-1 block truncate text-xs text-zinc-500">{detail}</span>
+      </span>
+      <Clock className="h-4 w-4 text-zinc-700 transition-colors group-hover:text-accent" />
+    </button>
   );
 }

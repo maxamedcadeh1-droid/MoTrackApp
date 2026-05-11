@@ -51,6 +51,7 @@ export function Projects() {
     deadline: ''
   });
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' as any });
+  const projectTitle = projectForm.title.trim();
 
   const fetchProjects = async () => {
     if (!user) return;
@@ -66,7 +67,7 @@ export function Projects() {
       if (data) setProjects(data);
     } catch (error: any) {
       console.error('Fetch projects error:', error);
-      showToast(error.message, 'error');
+      showToast('Something went wrong', 'error');
     } finally {
       setLoading(false);
     }
@@ -86,17 +87,17 @@ export function Projects() {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     
     if (!authUser) {
-      showToast('Please login first', 'error');
+      showToast('Please log in first', 'error');
       return;
     }
-    if (!projectForm.title) return;
+    if (!projectTitle) return;
 
     setSubmitting(true);
     try {
       if (activeProject) {
         const { data, error } = await (supabase.from('projects') as any)
           .update({
-            title: projectForm.title,
+            title: projectTitle,
             description: projectForm.description,
             status: projectForm.status,
             priority: projectForm.priority,
@@ -111,12 +112,12 @@ export function Projects() {
         if (error) throw error;
         
         setProjects(prev => prev.map(p => p.id === activeProject.id ? data : p));
-        showToast('Mission parameters updated');
+        showToast('Project updated');
         closeModal();
       } else {
         const { data, error } = await (supabase.from('projects') as any).insert({
           user_id: authUser.id,
-          title: projectForm.title,
+          title: projectTitle,
           description: projectForm.description,
           status: projectForm.status,
           priority: projectForm.priority,
@@ -130,12 +131,12 @@ export function Projects() {
         if (error) throw error;
 
         setProjects(prev => [data, ...prev]);
-        showToast('New mission initialized');
+        showToast('Project created');
         closeModal();
       }
     } catch (error: any) {
       console.error('Save project error:', error);
-      showToast(error.message, 'error');
+      showToast('Something went wrong', 'error');
     } finally {
       setSubmitting(false);
     }
@@ -147,10 +148,10 @@ export function Projects() {
       const { error } = await supabase.from('projects').delete().eq('id', id);
       if (error) throw error;
       setProjects(prev => prev.filter(p => p.id !== id));
-      showToast('Mission aborted', 'error');
+      showToast('Project deleted', 'error');
     } catch (error: any) {
       console.error('Delete project error:', error);
-      showToast(error.message, 'error');
+      showToast('Something went wrong', 'error');
     }
   };
 
@@ -179,6 +180,7 @@ export function Projects() {
   const filteredProjects = projects.filter(p => 
     p.title.toLowerCase().includes(search.toLowerCase())
   );
+  const isSearchingExistingProjects = projects.length > 0 && filteredProjects.length === 0;
 
   return (
     <div className="space-y-8 pb-20">
@@ -186,16 +188,16 @@ export function Projects() {
         <div>
           <div className="flex items-center gap-2 mb-4">
               <div className="w-1.5 h-6 bg-accent rounded-full" />
-              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500">Mission Architecture Protocol</span>
+              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500">Projects and tasks</span>
           </div>
           <h1 className="text-4xl md:text-5xl font-display font-bold text-white tracking-tight leading-tight">
-            Mission <span className="text-accent underline decoration-4 underline-offset-8 decoration-accent/20">Control</span>
+            Projects
           </h1>
-          <p className="text-zinc-500 mt-4 font-medium tracking-tight max-w-xl">Deconstruct your high-level vision into tactical operational cycles and actionable sub-objectives.</p>
+          <p className="text-zinc-500 mt-4 font-medium tracking-tight max-w-xl">Plan meaningful work, break it into tasks, and keep completion visible at a glance.</p>
         </div>
         <Button onClick={() => setIsModalOpen(true)} className="h-14 px-8 shadow-xl shadow-accent/20">
           <Plus className="w-5 h-5 mr-3" />
-          INITIALIZE MISSION
+          Create Project
         </Button>
       </header>
 
@@ -203,14 +205,14 @@ export function Projects() {
         <div className="relative flex-1 w-full">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
           <Input 
-            placeholder="Search objectives..." 
+            placeholder="Search projects..." 
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-12 bg-white/5 border-white/5 focus:border-accent/40"
           />
         </div>
         <div className="flex gap-2">
-            <Badge className="bg-accent/10 border-accent/20 text-accent">Deployment</Badge>
+            <Badge className="bg-accent/10 border-accent/20 text-accent">Active work</Badge>
             <Badge variant="outline" className="text-zinc-600 border-white/5">Archive</Badge>
         </div>
       </div>
@@ -231,18 +233,26 @@ export function Projects() {
           ))}
         </div>
       ) : (
-        <Card className="flex flex-col items-center justify-center py-24 text-center border-dashed border-white/5 bg-zinc-900/20 rounded-[3rem]">
+        <Card className="flex flex-col items-center justify-center rounded-3xl border-dashed border-white/5 bg-zinc-900/20 py-16 text-center sm:rounded-[3rem] sm:py-24">
           <div className="w-24 h-24 bg-zinc-900 border border-white/5 rounded-full flex items-center justify-center mb-10 shadow-2xl overflow-hidden relative group">
             <div className="absolute inset-0 bg-accent/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-            <Briefcase className="w-10 h-10 text-zinc-700 relative z-10" />
+            {isSearchingExistingProjects ? <Search className="w-10 h-10 text-zinc-700 relative z-10" /> : <Briefcase className="w-10 h-10 text-zinc-700 relative z-10" />}
           </div>
-          <h3 className="text-2xl font-display font-bold text-white tracking-tight leading-none uppercase tracking-widest">No Missions Active</h3>
+          <h3 className="text-2xl font-display font-bold text-white tracking-tight leading-none">
+            {isSearchingExistingProjects ? 'No projects match your search' : 'Create your first project'}
+          </h3>
           <p className="text-zinc-500 max-w-xs mx-auto mt-4 text-[15px] font-medium leading-relaxed">
-            "Nature abhors a vacuum. Fill your workspace with purpose." Deploy your first mission to begin.
+            {isSearchingExistingProjects
+              ? 'Try a different project name or clear the search.'
+              : 'Turn a goal into a visible plan. Add a project, then break it into a few clear tasks.'}
           </p>
-          <Button onClick={() => setIsModalOpen(true)} variant="outline" className="mt-10 h-14 px-10 border-white/10 hover:bg-accent/10 hover:border-accent/40 rounded-2xl transition-all">
-            <Target className="w-4 h-4 mr-3" />
-            Deploy New Mission
+          <Button
+            onClick={() => isSearchingExistingProjects ? setSearch('') : setIsModalOpen(true)}
+            variant="outline"
+            className="mt-10 h-14 px-10 border-white/10 hover:bg-accent/10 hover:border-accent/40 rounded-2xl transition-all"
+          >
+            {isSearchingExistingProjects ? <Search className="w-4 h-4 mr-3" /> : <Target className="w-4 h-4 mr-3" />}
+            {isSearchingExistingProjects ? 'Clear search' : 'Create your first project'}
           </Button>
         </Card>
       )}
@@ -262,44 +272,46 @@ export function Projects() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-x-4 top-1/2 -translate-y-1/2 md:left-1/2 md:-translate-x-1/2 z-[61] w-full max-w-xl"
+              className="fixed inset-x-3 top-1/2 z-[61] max-h-[calc(100vh-1.5rem)] w-auto -translate-y-1/2 overflow-y-auto md:left-1/2 md:w-full md:max-w-xl md:-translate-x-1/2"
             >
-              <Card className="p-8 border-white/10 bg-[#0f0f0f] shadow-2xl relative">
+              <Card className="relative border-white/10 bg-[#0f0f0f] p-5 shadow-2xl sm:p-8">
                 <button onClick={closeModal} className="absolute top-6 right-6 text-zinc-500 hover:text-white">
                   <X className="w-5 h-5" />
                 </button>
                 
                 <form onSubmit={handleSubmit} className="space-y-6">
                   <div className="space-y-1">
-                    <Badge variant="outline" className="text-accent border-accent/20">Mission Manifest</Badge>
-                    <h3 className="text-2xl font-black text-white tracking-tighter uppercase italic">
-                      {activeProject ? 'Modify Mission' : 'Initialize Mission'}
+                    <Badge variant="outline" className="text-accent border-accent/20">Project details</Badge>
+                    <h3 className="text-2xl font-display font-bold text-white tracking-tight">
+                      {activeProject ? 'Edit Project' : 'Create Project'}
                     </h3>
                   </div>
 
                   <div className="space-y-4">
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Mission Identifier</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Project name</label>
                         <Input 
                             value={projectForm.title}
                             onChange={(e) => setProjectForm({ ...projectForm, title: e.target.value })}
                             placeholder="e.g. Website Redesign" 
                             className="bg-white/5"
+                            required
                             autoFocus
                         />
+                        <p className="ml-1 text-xs text-zinc-600">Required. Use a clear outcome or project name.</p>
                     </div>
                     
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Contextual Brief</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Description</label>
                         <TextArea 
                             value={projectForm.description}
                             onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
-                            placeholder="Specify mission objectives..." 
+                            placeholder="Describe the outcome..." 
                             className="bg-white/5"
                         />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
                         <div className="space-y-2">
                             <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Status</label>
                             <select 
@@ -323,7 +335,7 @@ export function Projects() {
                     </div>
 
                     <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Timeline Deadline</label>
+                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Deadline</label>
                         <Input 
                             type="date"
                             value={projectForm.deadline}
@@ -334,15 +346,15 @@ export function Projects() {
                   </div>
 
                   <div className="flex gap-3 pt-6">
-                    <Button type="button" variant="ghost" className="flex-1" onClick={closeModal} disabled={submitting}>Abort</Button>
-                    <Button type="submit" className="flex-1" disabled={submitting}>
+                    <Button type="button" variant="ghost" className="flex-1" onClick={closeModal} disabled={submitting}>Cancel</Button>
+                    <Button type="submit" className="flex-1" disabled={submitting || !projectTitle}>
                         {submitting ? (
                           <>
                             <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            {activeProject ? 'Updating...' : 'Deploying...'}
+                            {activeProject ? 'Updating...' : 'Creating...'}
                           </>
                         ) : (
-                          activeProject ? 'Update Mission' : 'Execute Creation'
+                          activeProject ? 'Save Changes' : 'Create Project'
                         )}
                     </Button>
                   </div>
@@ -368,10 +380,17 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
   const [showTasks, setShowTasks] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [isAddingTask, setIsAddingTask] = useState(false);
+  const [localProgress, setLocalProgress] = useState(project.progress || 0);
+  const trimmedTaskTitle = newTaskTitle.trim();
+  const completedTasks = tasks.filter((task) => task.is_done).length;
 
   useEffect(() => {
     if (showTasks) fetchTasks();
   }, [showTasks, project.id]);
+
+  useEffect(() => {
+    setLocalProgress(project.progress || 0);
+  }, [project.progress]);
 
   const fetchTasks = async () => {
     const { data } = await supabase
@@ -383,7 +402,7 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
   };
 
   const addTask = async () => {
-    if (!newTaskTitle) return;
+    if (!trimmedTaskTitle) return;
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
 
@@ -391,7 +410,7 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
       const { data, error } = await (supabase.from('project_tasks') as any).insert({
         project_id: project.id,
         user_id: authUser.id,
-        title: newTaskTitle,
+        title: trimmedTaskTitle,
         is_done: false,
         position: tasks.length
       })
@@ -403,7 +422,7 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
       setTasks(prev => [...prev, data]);
       setNewTaskTitle('');
       setIsAddingTask(false);
-      updateProjectProgress();
+      await updateProjectProgress();
     } catch (error: any) {
       console.error('Add task error:', error);
     }
@@ -420,7 +439,7 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
       if (error) throw error;
       
       setTasks(prev => prev.map(t => t.id === task.id ? data : t));
-      updateProjectProgress();
+      await updateProjectProgress();
     } catch (error: any) {
       console.error('Toggle task error:', error);
     }
@@ -434,8 +453,10 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
           const done = tasks.filter(t => t.is_done).length;
           const progress = Math.round((done / tasks.length) * 100);
           await (supabase.from('projects') as any).update({ progress }).eq('id', project.id);
+          setLocalProgress(progress);
       } else {
           await (supabase.from('projects') as any).update({ progress: 0 }).eq('id', project.id);
+          setLocalProgress(0);
       }
   };
 
@@ -453,7 +474,7 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
   };
 
   return (
-    <Card className="group flex flex-col h-full hover:border-accent/30 bg-[#0a0a0a] border-white/5 transition-all duration-700 relative overflow-hidden rounded-[2.5rem] p-10">
+    <Card className="group relative flex h-full flex-col overflow-hidden rounded-3xl border-white/5 bg-[#0a0a0a] p-5 transition-all duration-700 hover:border-accent/30 sm:rounded-[2.5rem] sm:p-8 lg:p-10">
       <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-1000" />
       
       <div className="flex justify-between items-start mb-10 relative z-10">
@@ -462,20 +483,20 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
         </Badge>
         <div className="flex gap-1">
             <button onClick={onEdit} className="p-2.5 hover:bg-white/5 rounded-2xl text-zinc-600 hover:text-white transition-all">
-                <SquarePen className="w-4.5 h-4.5" />
+                <SquarePen className="w-4 h-4" />
             </button>
             <button onClick={onDelete} className="p-2.5 hover:bg-red-500/10 rounded-2xl text-zinc-600 hover:text-red-400 transition-all">
-                <Trash2 className="w-4.5 h-4.5" />
+                <Trash2 className="w-4 h-4" />
             </button>
         </div>
       </div>
 
       <div className="space-y-6 mb-12 relative z-10">
-        <h3 className="text-4xl font-display font-bold text-white tracking-tight leading-tight group-hover:text-accent transition-colors duration-500 line-clamp-1">
+        <h3 className="font-display text-2xl font-bold leading-tight tracking-tight text-white transition-colors duration-500 group-hover:text-accent sm:text-4xl line-clamp-1">
           {project.title}
         </h3>
         <p className="text-zinc-500 text-[15px] line-clamp-2 leading-relaxed font-medium opacity-70 group-hover:opacity-100 transition-opacity">
-          {project.description || 'No system brief provided for this mission path.'}
+          {project.description || 'No project description yet.'}
         </p>
       </div>
 
@@ -483,8 +504,8 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
         <div className="space-y-4">
           <div className="flex justify-between items-end">
             <div className="space-y-2">
-                 <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-600">Mission sync status</p>
-                 <p className="text-xs font-mono font-bold text-white uppercase">{project.progress}% completed</p>
+                 <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-600">Project progress</p>
+                 <p className="text-xs font-mono font-bold text-white uppercase">{localProgress}% completed</p>
             </div>
             <div className="w-10 h-10 rounded-full bg-accent/5 border border-accent/10 flex items-center justify-center text-accent/50 group-hover:scale-110 transition-transform">
                 <TrendingUp className="w-5 h-5" />
@@ -493,20 +514,20 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
           <div className="h-2 w-full bg-zinc-900 rounded-full overflow-hidden border border-white/5 p-0.5">
             <motion.div 
               initial={{ width: 0 }}
-              animate={{ width: `${project.progress}%` }}
-              className="h-full rounded-full momentum-gradient shadow-[0_0_15px_rgba(var(--color-accent),0.3)]" 
+              animate={{ width: `${localProgress}%` }}
+              className="h-full rounded-full momentum-gradient shadow-[0_0_15px_rgba(139,92,246,0.3)]" 
             />
           </div>
         </div>
 
-        <div className="flex items-center justify-between pt-8 border-t border-white/5">
-          <div className="flex items-center gap-8">
+        <div className="flex flex-col gap-5 border-t border-white/5 pt-8 xl:flex-row xl:items-center xl:justify-between">
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-8">
             <div className="flex items-center gap-3">
               <div className="p-2 rounded-xl bg-white/5 border border-white/5 text-zinc-500">
                 <Calendar className="w-4 h-4" />
               </div>
               <span className="text-[10px] text-zinc-500 font-bold uppercase tracking-widest leading-none">
-                {project.deadline ? new Date(project.deadline).toLocaleDateString() : 'UNTETHERED'}
+                {project.deadline ? new Date(project.deadline).toLocaleDateString() : 'No deadline'}
               </span>
             </div>
             <div className="flex items-center gap-3">
@@ -521,10 +542,10 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
           
           <button 
             onClick={() => setShowTasks(!showTasks)}
-            className="flex items-center h-12 gap-3 text-accent bg-accent/5 px-6 rounded-2xl border border-accent/10 hover:bg-accent/10 transition-all group/btn shadow-xl shadow-accent/5"
+            className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-accent/10 bg-accent/5 px-6 text-accent shadow-xl shadow-accent/5 transition-all hover:bg-accent/10 xl:w-auto group/btn"
           >
             <ListTodo className="w-4 h-4" />
-            <span className="text-[10px] font-bold uppercase tracking-widest">Invariants {tasks.length > 0 && `(${tasks.filter(t => t.is_done).length}/${tasks.length})`}</span>
+            <span className="text-[10px] font-bold uppercase tracking-widest">Tasks ({completedTasks}/{tasks.length})</span>
           </button>
         </div>
 
@@ -534,41 +555,42 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
                     initial={{ height: 0, opacity: 0 }}
                     animate={{ height: 'auto', opacity: 1 }}
                     exit={{ height: 0, opacity: 0 }}
-                    className="overflow-hidden bg-[#0c0c0c] -mx-10 -mb-10 mt-6 border-t border-white/5 shadow-inner"
+                    className="-mx-5 -mb-5 mt-6 overflow-hidden border-t border-white/5 bg-[#0c0c0c] shadow-inner sm:-mx-8 sm:-mb-8 lg:-mx-10 lg:-mb-10"
                 >
-                    <div className="p-10 space-y-6">
-                        <div className="flex items-center justify-between mb-2">
-                             <h4 className="text-[11px] font-bold uppercase tracking-[.3em] text-zinc-600">Sub-Objectives Matrix</h4>
+                    <div className="space-y-6 p-5 sm:p-8 lg:p-10">
+                        <div className="mb-2 flex items-center justify-between">
+                             <h4 className="text-[11px] font-bold uppercase tracking-[.3em] text-zinc-600">Project tasks</h4>
                              {!isAddingTask && (
-                                <button onClick={() => setIsAddingTask(true)} className="text-accent text-[10px] font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4">Add Entry</button>
+                                <button onClick={() => setIsAddingTask(true)} className="text-accent text-[10px] font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4">Add task</button>
                              )}
                         </div>
 
                         {isAddingTask && (
-                            <div className="flex gap-3 mb-6 animate-in slide-in-from-top-4 duration-300">
+                            <div className="mb-6 flex flex-col gap-3 duration-300 animate-in slide-in-from-top-4 sm:flex-row">
                                 <Input 
                                     value={newTaskTitle}
                                     onChange={(e) => setNewTaskTitle(e.target.value)}
-                                    placeholder="Task identifier..."
+                                    placeholder="Task name..."
                                     className="bg-zinc-900 h-12 text-sm rounded-xl border-white/5 focus:border-accent/40"
                                     autoFocus
                                     onKeyDown={(e) => e.key === 'Enter' && addTask()}
                                 />
-                                <Button onClick={addTask} className="h-12 px-6"><Check className="w-5 h-5" /></Button>
+                                <Button onClick={addTask} disabled={!trimmedTaskTitle} className="h-12 px-6"><Check className="w-5 h-5" /></Button>
                                 <Button variant="ghost" onClick={() => setIsAddingTask(false)} className="h-12 px-6 text-zinc-500 rounded-xl hover:bg-white/5"><X className="w-5 h-5" /></Button>
                             </div>
                         )}
 
                         <div className="space-y-3">
                              {tasks.map(task => (
-                                <div 
+                                <button
+                                    type="button"
                                     key={task.id} 
                                     onClick={() => toggleTask(task)}
-                                    className="flex items-center gap-4 p-4 rounded-2xl bg-[#080808] border border-white/5 hover:border-accent/20 cursor-pointer group/task transition-all shadow-xl"
+                                    className="flex w-full items-center gap-4 rounded-2xl border border-white/5 bg-[#080808] p-4 text-left shadow-xl transition-all hover:border-accent/20 group/task"
                                 >
                                     <div className={cn(
                                         "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-300",
-                                        task.is_done ? "bg-accent border-accent text-white shadow-[0_0_10px_rgba(var(--color-accent),0.4)]" : "border-white/10 text-transparent group-hover/task:border-accent/40"
+                                        task.is_done ? "bg-accent border-accent text-white shadow-[0_0_10px_rgba(139,92,246,0.4)]" : "border-white/10 text-transparent group-hover/task:border-accent/40"
                                     )}>
                                         <Check className="w-4 h-4" />
                                     </div>
@@ -578,14 +600,21 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
                                     )}>
                                         {task.title}
                                     </span>
-                                </div>
+                                </button>
                              ))}
                              {tasks.length === 0 && !isAddingTask && (
                                 <div className="py-10 text-center space-y-4">
                                      <div className="w-12 h-12 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center mx-auto opacity-20">
                                         <ListTodo className="w-6 h-6" />
                                      </div>
-                                     <p className="text-[11px] font-bold text-zinc-700 uppercase tracking-widest">No Sub-Objectives Initialized</p>
+                                     <p className="text-[11px] font-bold text-zinc-700 uppercase tracking-widest">No tasks yet</p>
+                                     <button
+                                        type="button"
+                                        onClick={() => setIsAddingTask(true)}
+                                        className="text-sm font-semibold text-accent transition-colors hover:text-white"
+                                     >
+                                        Add first task
+                                     </button>
                                 </div>
                              )}
                         </div>
