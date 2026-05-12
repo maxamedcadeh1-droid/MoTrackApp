@@ -213,6 +213,7 @@ export const Dashboard = memo(function Dashboard() {
   const [stats, setStats] = useState<DashboardStats>(emptyStats);
   const [lastSyncedAt, setLastSyncedAt] = useState<string>('');
   const [refreshKey, setRefreshKey] = useState(0);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
   const isMounted = useRef(true);
 
   const refreshDashboard = useCallback(() => {
@@ -542,14 +543,65 @@ export const Dashboard = memo(function Dashboard() {
         <p className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-blue-400 bg-clip-text font-display text-3xl font-bold text-transparent">
           MoTrack
         </p>
-        <button
-          type="button"
-          aria-label="Notifications"
-          className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.045] text-white shadow-lg shadow-black/25 backdrop-blur-xl"
-        >
-          <Bell className="h-5 w-5" />
-          <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.9)]" />
-        </button>
+        <div className="relative">
+          <button
+            type="button"
+            aria-label="Notifications"
+            aria-expanded={notificationsOpen}
+            onClick={() => setNotificationsOpen((value) => !value)}
+            className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.045] text-white shadow-lg shadow-black/25 backdrop-blur-xl transition-all active:scale-95"
+          >
+            <Bell className="h-5 w-5" />
+            {stats.recentActivity.length > 0 && (
+              <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.9)]" />
+            )}
+          </button>
+
+          {notificationsOpen && (
+            <div className="absolute right-0 top-14 z-40 w-[20rem] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#080b13]/95 p-3 shadow-2xl shadow-black/50 backdrop-blur-2xl">
+              <div className="mb-3 flex items-center justify-between px-1">
+                <div>
+                  <p className="text-sm font-bold text-white">Notifications</p>
+                  <p className="text-[11px] text-zinc-500">{syncStatus}</p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setNotificationsOpen(false)}
+                  className="rounded-xl border border-white/8 bg-white/[0.035] px-2 py-1 text-[10px] font-semibold text-zinc-400"
+                >
+                  Close
+                </button>
+              </div>
+              <div className="space-y-2">
+                {stats.recentActivity.length ? stats.recentActivity.slice(0, 3).map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => {
+                      setNotificationsOpen(false);
+                      navigate(item.type === 'note' ? '/notes' : item.type === 'habit' ? '/habits' : item.type === 'focus' ? '/focus' : '/projects');
+                    }}
+                    className="flex w-full items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.035] p-3 text-left transition-colors hover:bg-white/[0.055]"
+                  >
+                    <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">
+                      <item.icon className="h-4 w-4" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="truncate text-xs font-semibold text-white">{item.detail}</p>
+                      <p className="text-[10px] text-zinc-500">{item.title} - {formatActivityTime(item.date)}</p>
+                    </div>
+                  </button>
+                )) : (
+                  <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-center">
+                    <Sparkles className="mx-auto mb-2 h-5 w-5 text-zinc-600" />
+                    <p className="text-xs font-semibold text-white">No notifications yet</p>
+                    <p className="mt-1 text-[11px] text-zinc-500">Updates will appear here when you use MoTrack.</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+        </div>
       </div>
 
       {/* ── HERO ── */}

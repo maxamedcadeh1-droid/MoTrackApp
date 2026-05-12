@@ -18,6 +18,7 @@ import {
   Flame,
   Award,
   Filter,
+  MoreVertical,
   Sparkles,
   X
 } from 'lucide-react';
@@ -49,6 +50,8 @@ export function Habits() {
   const [loading, setLoading] = useState(true);
   const [isAdding, setIsAdding] = useState(false);
   const [editingHabit, setEditingHabit] = useState<Habit | null>(null);
+  const [pendingDeleteHabit, setPendingDeleteHabit] = useState<Habit | null>(null);
+  const [deletingHabitId, setDeletingHabitId] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
 
   const [newHabit, setNewHabit] = useState({ 
@@ -236,15 +239,20 @@ export function Habits() {
   };
 
   const handleDelete = async (id: string) => {
-    if (!user) return;
+    if (!user || deletingHabitId) return;
+
+    setDeletingHabitId(id);
     try {
       const { error } = await supabase.from('habits').delete().eq('id', id);
       if (error) throw error;
       setHabits(prev => prev.filter(h => h.id !== id));
-      showToast('Habit deleted', 'error');
+      setPendingDeleteHabit(null);
+      showToast('Habit deleted');
     } catch (error: any) {
       console.error('Delete habit error:', error);
       showToast('Something went wrong', 'error');
+    } finally {
+      setDeletingHabitId(null);
     }
   };
 
@@ -395,7 +403,7 @@ export function Habits() {
               key={habit.id} 
               habit={habit} 
               onToggle={() => toggleComplete(habit)}
-              onDelete={() => handleDelete(habit.id)}
+              onDelete={() => setPendingDeleteHabit(habit)}
               onEdit={() => openEdit(habit)}
             />
           ))}
@@ -556,6 +564,62 @@ export function Habits() {
         )}
       </AnimatePresence>
 
+      <AnimatePresence>
+        {pendingDeleteHabit && (
+          <>
+            <motion.button
+              type="button"
+              aria-label="Cancel habit deletion"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 z-[70] bg-black/70 backdrop-blur-md"
+              onClick={() => setPendingDeleteHabit(null)}
+            />
+            <motion.div
+              initial={{ opacity: 0, scale: 0.96, y: 18 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.96, y: 18 }}
+              className="mobile-dialog-panel fixed inset-x-4 top-1/2 z-[71] -translate-y-1/2 md:left-1/2 md:w-full md:max-w-md md:-translate-x-1/2"
+            >
+              <Card className="rounded-[1.7rem] border-red-500/20 p-5 shadow-2xl shadow-red-500/10">
+                <div className="mb-5 flex items-start gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-2xl border border-red-500/20 bg-red-500/10 text-red-300">
+                    <Trash2 className="h-5 w-5" />
+                  </div>
+                  <div className="min-w-0">
+                    <h3 className="font-display text-lg font-bold text-white">Delete habit?</h3>
+                    <p className="mt-2 text-sm leading-relaxed text-zinc-400">
+                      This will permanently remove "{pendingDeleteHabit.title}" from your account.
+                    </p>
+                  </div>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    className="flex-1"
+                    onClick={() => setPendingDeleteHabit(null)}
+                    disabled={deletingHabitId === pendingDeleteHabit.id}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="danger"
+                    className="flex-1"
+                    onClick={() => handleDelete(pendingDeleteHabit.id)}
+                    disabled={deletingHabitId === pendingDeleteHabit.id}
+                  >
+                    {deletingHabitId === pendingDeleteHabit.id ? 'Deleting...' : 'Delete'}
+                  </Button>
+                </div>
+              </Card>
+            </motion.div>
+          </>
+        )}
+      </AnimatePresence>
+
       <Toast 
         isVisible={toast.show} 
         message={toast.message} 
@@ -567,6 +631,7 @@ export function Habits() {
 }
 
 function HabitCard({ habit, onToggle, onDelete, onEdit }: { habit: Habit; onToggle: () => void; onDelete: () => void; onEdit: () => void }) {
+  const [menuOpen, setMenuOpen] = useState(false);
   const today = new Date().toISOString().split('T')[0];
   const isCompletedToday = habit.completed_dates?.includes(today);
   const Icon = ICONS.find(i => i.name === habit.icon)?.icon || Target;
@@ -578,11 +643,75 @@ function HabitCard({ habit, onToggle, onDelete, onEdit }: { habit: Habit; onTogg
   const completionPercent = Math.round((weeklyDone / 7) * 100);
 
   return (
-    <Card className="group relative overflow-hidden rounded-[1.7rem] border-white/10 p-4 transition-all duration-300 hover:border-accent/30">
+    <Card className="group relative min-h-[132px] overflow-visible rounded-[1.7rem] border-white/10 p-4 pr-20 transition-all duration-300 hover:border-accent/30 sm:pr-24">
       <div 
         className="absolute right-0 top-0 h-36 w-36 -translate-y-1/2 translate-x-1/2 rounded-full blur-[80px] opacity-20 transition-opacity group-hover:opacity-40"
         style={{ backgroundColor: habit.color }}
       />
+
+      {menuOpen && (
+        <button
+          type="button"
+          aria-label="Close habit actions"
+          className="fixed inset-0 z-20 cursor-default"
+          onClick={() => setMenuOpen(false)}
+        />
+      )}
+
+      <div className="absolute right-4 top-4 z-30">
+        <button
+          type="button"
+          aria-expanded={menuOpen}
+          aria-label={`Open actions for ${habit.title}`}
+          onClick={(event) => {
+            event.stopPropagation();
+            setMenuOpen((value) => !value);
+          }}
+          className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/8 bg-white/[0.035] text-zinc-500 transition-all hover:border-white/15 hover:text-white"
+        >
+          <MoreVertical className="h-4 w-4" />
+        </button>
+
+        {menuOpen && (
+          <div className="absolute right-0 top-10 w-40 overflow-hidden rounded-2xl border border-white/10 bg-[#080b13]/95 p-1.5 shadow-2xl shadow-black/50 backdrop-blur-2xl">
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                onEdit();
+              }}
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-zinc-300 transition-colors hover:bg-white/5 hover:text-white"
+            >
+              <Edit2 className="h-3.5 w-3.5" />
+              Edit habit
+            </button>
+            <button
+              type="button"
+              onClick={() => {
+                setMenuOpen(false);
+                onDelete();
+              }}
+              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-red-300 transition-colors hover:bg-red-500/10"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Delete habit
+            </button>
+          </div>
+        )}
+      </div>
+
+      <button
+        onClick={onToggle}
+        className={cn(
+          'absolute right-4 top-1/2 z-10 flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border transition-all active:scale-95',
+          isCompletedToday
+            ? 'border-emerald-400/30 bg-emerald-500 text-white shadow-[0_0_26px_rgba(16,185,129,0.45)]'
+            : 'border-white/12 bg-white/[0.055] text-zinc-400 shadow-[0_0_18px_rgba(139,92,246,0.08)] hover:border-emerald-400/30 hover:text-emerald-300'
+        )}
+        aria-label={isCompletedToday ? 'Mark incomplete' : 'Complete habit'}
+      >
+        <CheckCircle2 className="h-6 w-6" />
+      </button>
       
       <div className="relative z-10 flex items-center gap-4">
         <div 
@@ -603,7 +732,7 @@ function HabitCard({ habit, onToggle, onDelete, onEdit }: { habit: Habit; onTogg
           </div>
         </div>
 
-        <div className="flex shrink-0 items-center gap-4">
+        <div className="hidden shrink-0 items-center gap-4 sm:flex">
           <div className="text-center">
             <p className="font-mono text-lg font-bold text-white">{habit.streak || 0}</p>
             <p className="text-[10px] text-zinc-500">streak</p>
@@ -612,28 +741,11 @@ function HabitCard({ habit, onToggle, onDelete, onEdit }: { habit: Habit; onTogg
             <p className="font-mono text-lg font-bold text-white">{completionPercent}%</p>
             <p className="text-[10px] text-zinc-500">week</p>
           </div>
-          <button
-            onClick={onToggle}
-            className={cn(
-              'flex h-12 w-12 items-center justify-center rounded-2xl border transition-all active:scale-95',
-              isCompletedToday
-                ? 'border-emerald-500/20 bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.35)]'
-                : 'border-white/10 bg-white/[0.05] text-zinc-400 hover:border-accent/40 hover:text-white'
-            )}
-            aria-label={isCompletedToday ? 'Mark incomplete' : 'Complete habit'}
-          >
-            <CheckCircle2 className="h-5 w-5" />
-          </button>
         </div>
-
-        <div className="absolute right-4 top-4 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-          <button onClick={onEdit} className="rounded-xl p-2 text-zinc-500 transition-all hover:bg-white/5 hover:text-white">
-            <Edit2 className="h-4 w-4" />
-          </button>
-          <button onClick={onDelete} className="rounded-xl p-2 text-zinc-500 transition-all hover:bg-red-500/10 hover:text-red-400">
-            <Trash2 className="h-4 w-4" />
-          </button>
-        </div>
+      </div>
+      <div className="relative z-10 mt-3 flex items-center gap-4 pl-20 sm:hidden">
+        <span className="font-mono text-sm font-bold text-white">{habit.streak || 0}<span className="ml-1 font-sans text-[10px] font-medium text-zinc-500">streak</span></span>
+        <span className="font-mono text-sm font-bold text-white">{completionPercent}%<span className="ml-1 font-sans text-[10px] font-medium text-zinc-500">week</span></span>
       </div>
     </Card>
   );
