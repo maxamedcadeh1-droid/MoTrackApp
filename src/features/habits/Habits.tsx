@@ -491,7 +491,9 @@ export function Habits() {
               <select
                 value={newHabit.category}
                 onChange={(e) => setNewHabit({ ...newHabit, category: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-accent/50 appearance-none"
+                // text-base (16px) on mobile to prevent iOS Safari auto-zoom
+                // md:text-sm on desktop for consistent styling
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-base text-white focus:outline-none focus:ring-2 focus:ring-accent/50 appearance-none md:text-sm"
               >
                 {CATEGORIES.filter(c => c !== 'All').map(c => <option key={c} value={c}>{c}</option>)}
               </select>

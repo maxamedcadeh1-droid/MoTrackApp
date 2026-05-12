@@ -94,8 +94,10 @@ export function Button({
 export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInputElement>) {
   return (
     <input
+      // text-base (16px) on mobile to prevent iOS Safari auto-zoom
+      // md:text-sm on desktop for consistent styling
       className={cn(
-        "w-full min-h-11 touch-manipulation rounded-xl border border-white/10 bg-[#070a16]/75 px-4 py-3 text-sm text-white placeholder:text-zinc-600 shadow-inner shadow-black/20 transition-all focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/35",
+        "w-full min-h-11 touch-manipulation rounded-xl border border-white/10 bg-[#070a16]/75 px-4 py-3 text-base text-white placeholder:text-zinc-600 shadow-inner shadow-black/20 transition-all focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/35 md:text-sm",
         className
       )}
       {...props}
@@ -106,8 +108,10 @@ export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInp
 export function TextArea({ className, ...props }: React.TextareaHTMLAttributes<HTMLTextAreaElement>) {
   return (
     <textarea
+      // text-base (16px) on mobile to prevent iOS Safari auto-zoom
+      // md:text-sm on desktop for consistent styling
       className={cn(
-        "min-h-[100px] w-full touch-manipulation rounded-xl border border-white/10 bg-[#070a16]/75 px-4 py-3 text-sm text-white placeholder:text-zinc-600 shadow-inner shadow-black/20 transition-all focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/35",
+        "min-h-[100px] w-full touch-manipulation rounded-xl border border-white/10 bg-[#070a16]/75 px-4 py-3 text-base text-white placeholder:text-zinc-600 shadow-inner shadow-black/20 transition-all focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/35 md:text-sm",
         className
       )}
       {...props}
