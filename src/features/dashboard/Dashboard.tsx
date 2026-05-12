@@ -486,6 +486,26 @@ export const Dashboard = memo(function Dashboard() {
   const openCommandCenter = useCallback(() => window.dispatchEvent(new Event('motrack:open-command-center')), []);
 
   if (loading) {
+    return (
+      <div className="space-y-3 pb-36">
+        <div className="flex items-center justify-between">
+          <div className="space-y-2">
+            <Skeleton className="h-6 w-48 rounded-xl" />
+            <Skeleton className="h-4 w-32 rounded-lg" />
+          </div>
+          <Skeleton className="h-[72px] w-[72px] rounded-full" />
+        </div>
+        <div className="grid grid-cols-2 gap-3">
+          {[1,2,3,4].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+        </div>
+        <Skeleton className="h-48 rounded-2xl" />
+        <Skeleton className="h-40 rounded-2xl" />
+        <Skeleton className="h-52 rounded-2xl" />
+        <Skeleton className="h-40 rounded-2xl" />
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-3 pb-36">
 
