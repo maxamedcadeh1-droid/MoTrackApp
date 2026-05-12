@@ -57,7 +57,6 @@ export function DashboardLayout() {
 
       <Sidebar />
       <CommandCenter />
-      <QuickAdd isHidden={isAnyModalOpen} />
       
       <main className={cn('mobile-safe-main relative z-10 min-w-0 flex-1 pb-32 md:pb-0 transition-opacity duration-200', isAnyModalOpen && 'pointer-events-none')}>
         <div className="mx-auto w-full max-w-[430px] px-5 py-6 md:max-w-7xl md:p-8 lg:p-12">
@@ -83,6 +82,9 @@ export function DashboardLayout() {
       </main>
       
       {!isAnyModalOpen && <MobileNav />}
+      
+      {/* QuickAdd FAB - rendered outside main to ensure proper z-index stacking */}
+      <QuickAdd isHidden={isAnyModalOpen} />
     </div>
   );
 }
