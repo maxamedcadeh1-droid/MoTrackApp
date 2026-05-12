@@ -13,7 +13,9 @@ interface CinematicCardProps {
 
 export function CinematicCard({ title, subtitle, value, trend, progress, icon: Icon, color, glowColor }: CinematicCardProps) {
   const clampedProgress = Math.min(Math.max(progress, 0), 100);
-  const trendUp = trend.startsWith('Up') || trend.startsWith('↑') || trend.includes('reached') || trend.includes('progress');
+  const isUp = trend.startsWith('↑') || trend.startsWith('✓') || trend.includes('reached') || trend.includes('progress');
+  const isDown = trend.startsWith('↓');
+  const trendColor = isUp ? '#34d399' : isDown ? '#f87171' : '#a1a1aa';
 
   return (
     <div
@@ -59,9 +61,8 @@ export function CinematicCard({ title, subtitle, value, trend, progress, icon: I
       {/* Trend text */}
       <p
         className="mt-1.5 truncate text-[10px] font-semibold"
-        style={{ color: trendUp ? '#34d399' : '#a1a1aa' }}
+        style={{ color: trendColor }}
       >
-        {trendUp && <span className="mr-0.5">↑</span>}
         {trend}
       </p>
 

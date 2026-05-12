@@ -454,12 +454,16 @@ export const Dashboard = memo(function Dashboard() {
     }
 
     const dashboardChannel = supabase.channel(`dashboard-updates-${user.id}`);
-    const watchTables = ['habits', 'notes', 'projects', 'project_tasks', 'focus_sessions', 'settings'] as const;
-
-    watchTables.forEach((table) => {
+    // Tables with user_id column — filter to this user only
+    const userTables = ['habits', 'notes', 'projects', 'focus_sessions', 'settings'] as const;
+    userTables.forEach((table) => {
       dashboardChannel.on('postgres_changes', { event: '*', schema: 'public', table, filter: `user_id=eq.${user.id}` }, () => {
         refreshDashboard();
       });
+    });
+    // project_tasks has no direct user_id — listen without filter (RLS protects data)
+    dashboardChannel.on('postgres_changes', { event: '*', schema: 'public', table: 'project_tasks' }, () => {
+      refreshDashboard();
     });
 
     void dashboardChannel.subscribe();
@@ -476,33 +480,17 @@ export const Dashboard = memo(function Dashboard() {
 
   const heroCopy = useMemo(() => getHeroCopy(currentHour), [currentHour]);
   const trend = useMemo(() => getTrendIndicator(stats.momentum, stats.previousMomentum), [stats.momentum, stats.previousMomentum]);
-  const hasPulseData = useMemo(() => {
-    return stats.weeklyData.some((day) => day.habitsCompleted > 0 || day.focusMinutes > 0 || day.tasksCompleted > 0);
-  }, [stats.weeklyData]);
   const pulseChartData = useMemo(() => {
-    if (hasPulseData) return stats.weeklyData;
-
-    const days = stats.weeklyData.length
-      ? stats.weeklyData
-      : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => ({
-          day,
-          habitsCompleted: 0,
-          focusMinutes: 0,
-          tasksCompleted: 0,
-          projectProgress: 0,
-        }));
-
-    const starterFocus = [18, 32, 28, 44, 36, 52, 48];
-    const starterHabits = [1, 1, 2, 1, 2, 2, 3];
-    const starterTasks = [1, 2, 1, 3, 2, 3, 4];
-
-    return days.map((day, index) => ({
-      ...day,
-      focusMinutes: starterFocus[index] || 24,
-      habitsCompleted: starterHabits[index] || 1,
-      tasksCompleted: starterTasks[index] || 1,
+    // Always use real data — never inject fake numbers
+    if (stats.weeklyData.length) return stats.weeklyData;
+    return ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => ({
+      day,
+      habitsCompleted: 0,
+      focusMinutes: 0,
+      tasksCompleted: 0,
+      projectProgress: 0,
     }));
-  }, [hasPulseData, stats.weeklyData]);
+  }, [stats.weeklyData]);
 
   const hasNoData = stats.totalHabits === 0 && stats.activeProjects === 0 && stats.focusMinutes === 0;
   const incompleteHabits = Math.max(stats.totalHabits - stats.habitsCompleted, 0);
@@ -512,6 +500,12 @@ export const Dashboard = memo(function Dashboard() {
   const focusDelta = stats.focusMinutes - (yesterdayPulse?.focusMinutes || 0);
   const todayTasksDone = stats.weeklyData[stats.weeklyData.length - 1]?.tasksCompleted || 0;
   const taskDelta = todayTasksDone - (yesterdayPulse?.tasksCompleted || 0);
+
+  function trendText(delta: number, unit = '') {
+    if (delta > 0) return `↑ ${delta}${unit} vs yesterday`;
+    if (delta < 0) return `↓ ${Math.abs(delta)}${unit} vs yesterday`;
+    return 'Same as yesterday';
+  }
 
   const syncStatus = lastSyncedAt ? `Live - Synced at ${lastSyncedAt}` : 'Live sync activating...';
   const syncLabel = lastSyncedAt ? 'Live sync on' : 'Syncing...';
@@ -540,8 +534,8 @@ export const Dashboard = memo(function Dashboard() {
     {
       title: 'Habits',
       subtitle: 'Completed',
-      value: `${stats.habitsCompleted}/${stats.totalHabits}`,
-      trend: `${habitsDelta >= 0 ? 'Up' : 'Down'} ${Math.abs(habitsDelta)} vs yesterday`,
+      value: stats.totalHabits > 0 ? `${stats.habitsCompleted}/${stats.totalHabits}` : '0',
+      trend: trendText(habitsDelta),
       progress: stats.totalHabits ? Math.round((stats.habitsCompleted / stats.totalHabits) * 100) : 0,
       icon: CheckCircle2,
       color: '#10b981',
@@ -551,9 +545,7 @@ export const Dashboard = memo(function Dashboard() {
       title: 'Focus',
       subtitle: 'Minutes',
       value: `${stats.focusMinutes}m`,
-      trend: remainingFocusMinutes > 0
-        ? `${focusDelta >= 0 ? 'Up' : 'Down'} ${Math.abs(focusDelta)} min vs yesterday`
-        : 'Daily goal reached',
+      trend: remainingFocusMinutes === 0 ? '✓ Daily goal reached' : trendText(focusDelta, 'm'),
       progress: stats.dailyGoal ? Math.min(Math.round((stats.focusMinutes / stats.dailyGoal) * 100), 100) : 0,
       icon: Clock,
       color: '#3b82f6',
@@ -572,8 +564,8 @@ export const Dashboard = memo(function Dashboard() {
     {
       title: 'Tasks',
       subtitle: 'Completed',
-      value: `${stats.completedProjectTasks}/${stats.totalProjectTasks}`,
-      trend: `${taskDelta >= 0 ? 'Up' : 'Down'} ${Math.abs(taskDelta)} vs yesterday`,
+      value: stats.totalProjectTasks > 0 ? `${stats.completedProjectTasks}/${stats.totalProjectTasks}` : '0',
+      trend: trendText(taskDelta),
       progress: stats.totalProjectTasks ? Math.round((stats.completedProjectTasks / stats.totalProjectTasks) * 100) : 0,
       icon: Target,
       color: '#8b5cf6',
