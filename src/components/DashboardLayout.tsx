@@ -4,6 +4,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import { Sidebar, MobileNav } from './Navigation';
 import { CommandCenter } from './CommandCenter';
 import { QuickAdd } from './QuickAdd';
+import { useModalContext } from './ui/ModalContext';
+import { cn } from '../lib/utils';
 
 function getLayoutMotionState() {
   if (typeof window === 'undefined') {
@@ -21,6 +23,7 @@ function getLayoutMotionState() {
 
 export function DashboardLayout() {
   const location = useLocation();
+  const { isAnyModalOpen } = useModalContext();
   const [{ isMobile, reduceMotion }, setLayoutMotion] = useState(getLayoutMotionState);
 
   useEffect(() => {
@@ -54,9 +57,9 @@ export function DashboardLayout() {
 
       <Sidebar />
       <CommandCenter />
-      <QuickAdd />
+      <QuickAdd isHidden={isAnyModalOpen} />
       
-      <main className="mobile-safe-main relative z-10 min-w-0 flex-1 pb-32 md:pb-0">
+      <main className={cn('mobile-safe-main relative z-10 min-w-0 flex-1 pb-32 md:pb-0 transition-opacity duration-200', isAnyModalOpen && 'pointer-events-none')}>
         <div className="mx-auto w-full max-w-[430px] px-5 py-6 md:max-w-7xl md:p-8 lg:p-12">
           {reduceMotion ? (
             <div key={location.pathname} className="min-h-[calc(100vh-120px)]">
@@ -79,7 +82,7 @@ export function DashboardLayout() {
         </div>
       </main>
       
-      <MobileNav />
+      {!isAnyModalOpen && <MobileNav />}
     </div>
   );
 }

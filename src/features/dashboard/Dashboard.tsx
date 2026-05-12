@@ -764,7 +764,7 @@ export const Dashboard = memo(function Dashboard() {
       )}
 
       {/* ── METRIC CARDS 2x2 ── */}
-      <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 lg:grid-cols-4">
+      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-5 lg:grid-cols-4">
         {[
           {
             title: 'Habits',
@@ -774,7 +774,9 @@ export const Dashboard = memo(function Dashboard() {
             progress: stats.totalHabits ? Math.round((stats.habitsCompleted / stats.totalHabits) * 100) : 0,
             icon: CheckCircle2,
             color: '#10b981',
-            glow: 'from-emerald-500/8 to-transparent',
+            colorName: 'emerald',
+            glowColor: 'rgba(16, 185, 129, 0.25)',
+            shadowColor: 'rgba(16, 185, 129, 0.15)',
           },
           {
             title: 'Focus',
@@ -784,7 +786,9 @@ export const Dashboard = memo(function Dashboard() {
             progress: stats.dailyGoal ? Math.min(Math.round((stats.focusMinutes / stats.dailyGoal) * 100), 100) : 0,
             icon: Clock,
             color: '#3b82f6',
-            glow: 'from-blue-500/8 to-transparent',
+            colorName: 'blue',
+            glowColor: 'rgba(59, 130, 246, 0.25)',
+            shadowColor: 'rgba(59, 130, 246, 0.15)',
           },
           {
             title: 'Active',
@@ -794,7 +798,9 @@ export const Dashboard = memo(function Dashboard() {
             progress: stats.projectProgress,
             icon: Briefcase,
             color: '#f59e0b',
-            glow: 'from-amber-500/8 to-transparent',
+            colorName: 'amber',
+            glowColor: 'rgba(245, 158, 11, 0.25)',
+            shadowColor: 'rgba(245, 158, 11, 0.15)',
           },
           {
             title: 'Tasks',
@@ -804,21 +810,63 @@ export const Dashboard = memo(function Dashboard() {
             progress: stats.totalProjectTasks ? Math.round((stats.completedProjectTasks / stats.totalProjectTasks) * 100) : 0,
             icon: Target,
             color: '#8b5cf6',
-            glow: 'from-violet-500/8 to-transparent',
+            colorName: 'violet',
+            glowColor: 'rgba(139, 92, 246, 0.25)',
+            shadowColor: 'rgba(139, 92, 246, 0.15)',
           },
         ].map((card) => (
-          <div key={card.title} className="luxury-card min-h-[154px] rounded-[1.55rem] p-4 transition-all hover:-translate-y-0.5 active:scale-[0.98] sm:min-h-[168px]">
-            <div className={cn('pointer-events-none absolute inset-0 bg-gradient-to-br', card.glow)} />
-            <div className="relative flex h-full min-h-[122px] flex-col">
-              <div className="absolute right-0 top-0 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 shadow-[0_0_22px_rgba(139,92,246,0.12)]" style={{ background: `${card.color}18` }}>
-                <card.icon className="h-4 w-4" style={{ color: card.color }} />
+          <div
+            key={card.title}
+            className="group relative rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.08] to-white/[0.03] p-5 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-white/20 active:scale-[0.98]"
+            style={{
+              boxShadow: `0 0 32px ${card.shadowColor}, inset 0 1px 1px rgba(255,255,255,0.08)`,
+            }}
+          >
+            {/* Glow effect on hover */}
+            <div
+              className="pointer-events-none absolute -inset-0.5 rounded-3xl opacity-0 blur-xl transition-opacity duration-300 group-hover:opacity-60"
+              style={{ background: card.glowColor }}
+            />
+
+            <div className="relative flex h-full min-h-[160px] flex-col">
+              {/* Icon badge - top right */}
+              <div
+                className="absolute right-5 top-5 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/20 transition-all duration-300 group-hover:scale-110"
+                style={{
+                  background: `${card.color}15`,
+                  boxShadow: `0 0 20px ${card.glowColor}`,
+                }}
+              >
+                <card.icon className="h-5 w-5" style={{ color: card.color }} />
               </div>
-              <p className="pr-14 text-base font-bold leading-tight text-white">{card.title}</p>
-              <p className="mt-1 pr-14 text-sm text-zinc-400">{card.subtitle}</p>
-              <p className="mt-7 font-mono text-4xl font-bold leading-none text-white">{card.value}</p>
-              <p className="mt-3 text-xs font-medium text-zinc-400">{card.trend}</p>
-              <div className="mt-auto h-[3px] w-full overflow-hidden rounded-full bg-white/8">
-                <div className="h-full rounded-full transition-all duration-700" style={{ width: `${card.progress}%`, background: card.color }} />
+
+              {/* Title and subtitle - top left */}
+              <div className="pr-16">
+                <p className="font-poppins text-xs font-semibold uppercase tracking-wider text-zinc-400">{card.subtitle}</p>
+                <p className="mt-1 font-poppins text-lg font-bold text-white">{card.title}</p>
+              </div>
+
+              {/* Large metric value - center */}
+              <p
+                className="mt-8 font-poppins font-bold leading-none text-white"
+                style={{ fontSize: '2.5rem' }}
+              >
+                {card.value}
+              </p>
+
+              {/* Trend text - bottom left */}
+              <p className="mt-auto text-xs font-medium text-zinc-500">{card.trend}</p>
+
+              {/* Progress bar - very bottom */}
+              <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-white/8">
+                <div
+                  className="h-full transition-all duration-700"
+                  style={{
+                    width: `${card.progress}%`,
+                    background: card.color,
+                    boxShadow: `0 0 12px ${card.glowColor}`,
+                  }}
+                />
               </div>
             </div>
           </div>

@@ -4,6 +4,7 @@ import { AuthProvider } from './features/auth/AuthContext';
 import { ProtectedRoute, PublicRoute } from './features/auth/ProtectedRoute';
 import { DashboardLayout } from './components/DashboardLayout';
 import { ToastProvider } from './components/ui/ToastProvider';
+import { ModalProvider } from './components/ui/ModalContext';
 
 // Auth Pages
 import { LoginForm } from './features/auth/LoginForm';
@@ -35,8 +36,9 @@ function RouteLoader() {
 export default function App() {
   return (
     <AuthProvider>
-      <ToastProvider>
-        <Router>
+      <ModalProvider>
+        <ToastProvider>
+          <Router>
           <Routes>
             {/* Public Routes */}
             <Route element={<PublicRoute />}>
@@ -65,7 +67,8 @@ export default function App() {
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>
         </Router>
-      </ToastProvider>
+        </ToastProvider>
+      </ModalProvider>
     </AuthProvider>
   );
 }

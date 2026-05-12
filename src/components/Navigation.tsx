@@ -251,7 +251,7 @@ export function MobileNav() {
       )}
 
       {/* ── FLOATING GLASS DOCK ── */}
-      <nav className="mobile-bottom-nav fixed bottom-3 left-5 right-5 z-50 flex h-[4.75rem] items-center justify-between gap-1 overflow-hidden rounded-[1.75rem] border border-white/12 bg-[#070a16]/88 px-2 shadow-2xl shadow-black/50 backdrop-blur-2xl md:hidden">
+      <nav className="mobile-bottom-nav fixed bottom-3 left-5 right-5 z-[70] flex h-[4.75rem] items-center justify-between gap-1 overflow-hidden rounded-[1.75rem] border border-white/12 bg-[#070a16]/88 px-2 shadow-2xl shadow-black/50 backdrop-blur-2xl md:hidden">
         {/* Subtle top highlight */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
 

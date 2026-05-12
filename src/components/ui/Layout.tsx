@@ -154,3 +154,7 @@ export function Toast({
     </div>
   );
 }
+
+// Re-export Modal components for convenience
+export { Modal, ModalFooter, ModalBody } from './Modal';
+export { useModal, useModalContext, ModalProvider } from './ModalContext';
