@@ -3,39 +3,30 @@ import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   BarChart3,
-  Bell,
-  Book,
   Briefcase,
-  Calendar,
   CheckCircle2,
   Clock,
   Coffee,
+  Book,
   FileText,
   Flame,
   Moon,
-  Plus,
   Sparkles,
   Sun,
   Target,
   Timer,
-  TrendingDown,
-  TrendingUp,
-  Wifi,
   Zap,
 } from 'lucide-react';
-import { Button, Card, Skeleton } from '../../components/ui/Layout';
+import { Skeleton } from '../../components/ui/Layout';
 import { supabase } from '../../lib/supabase';
 import { cn } from '../../lib/utils';
 import { DashboardHero } from './components/DashboardHero';
 import { CinematicCard } from './components/CinematicCard';
-import { getMomentumInsight, getTrendIndicator } from '../../lib/insights';
+import { getTrendIndicator } from '../../lib/insights';
 import { useAuth } from '../auth/AuthContext';
 
 const DashboardChart = lazy(() => import('./DashboardChart').then((mod) => ({ default: mod.DashboardChart })));
-const SuggestedNextAction = lazy(() => import('./SuggestedNextAction').then((mod) => ({ default: mod.SuggestedNextAction })));
 const DashboardChecklist = lazy(() => import('./DashboardChecklist').then((mod) => ({ default: mod.DashboardChecklist })));
-const WelcomeEmptyState = lazy(() => import('./EnhancedEmptyState').then((mod) => ({ default: mod.WelcomeEmptyState })));
-
 const HABIT_ICONS = {
   target: Target,
   zap: Zap,
@@ -483,23 +474,7 @@ export const Dashboard = memo(function Dashboard() {
   }, [profile?.full_name, user?.email]);
 
   const heroCopy = useMemo(() => getHeroCopy(currentHour), [currentHour]);
-  const insight = useMemo(() => getMomentumInsight({
-    momentum: stats.momentum,
-    incompleteHabits: Math.max(stats.totalHabits - stats.habitsCompleted, 0),
-    focusMinutes: stats.focusMinutes,
-    dailyGoal: stats.dailyGoal,
-    activeProjects: stats.activeProjects,
-  }), [stats]);
-
-  const todayLabel = useMemo(() => {
-    return new Date().toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
-  }, []);
-
-  const hasNoData = stats.totalHabits === 0 && stats.activeProjects === 0 && stats.focusMinutes === 0;
+  const trend = useMemo(() => getTrendIndicator(stats.momentum, stats.previousMomentum), [stats.momentum, stats.previousMomentum]);
   const hasPulseData = useMemo(() => {
     return stats.weeklyData.some((day) => day.habitsCompleted > 0 || day.focusMinutes > 0 || day.tasksCompleted > 0);
   }, [stats.weeklyData]);
@@ -527,59 +502,17 @@ export const Dashboard = memo(function Dashboard() {
       tasksCompleted: starterTasks[index] || 1,
     }));
   }, [hasPulseData, stats.weeklyData]);
+  const hasNoData = stats.totalHabits === 0 && stats.activeProjects === 0 && stats.focusMinutes === 0;
   const incompleteHabits = Math.max(stats.totalHabits - stats.habitsCompleted, 0);
   const remainingFocusMinutes = Math.max(stats.dailyGoal - stats.focusMinutes, 0);
-  const remainingProjectTasks = Math.max(stats.totalProjectTasks - stats.completedProjectTasks, 0);
-  const trend = useMemo(() => getTrendIndicator(stats.momentum, stats.previousMomentum), [stats.momentum, stats.previousMomentum]);
   const yesterdayPulse = stats.weeklyData.length >= 2 ? stats.weeklyData[stats.weeklyData.length - 2] : undefined;
   const habitsDelta = stats.habitsCompleted - (yesterdayPulse?.habitsCompleted || 0);
   const focusDelta = stats.focusMinutes - (yesterdayPulse?.focusMinutes || 0);
   const todayTasksDone = stats.weeklyData[stats.weeklyData.length - 1]?.tasksCompleted || 0;
   const taskDelta = todayTasksDone - (yesterdayPulse?.tasksCompleted || 0);
 
-  const suggestion = useMemo(() => {
-    if (stats.totalHabits === 0) return 'Create your first habit.';
-    if (remainingFocusMinutes > 0) return 'Start a 25-minute focus session.';
-    if (stats.activeProjects > 0) return 'Review your active project.';
-    return 'Create a project for your next meaningful goal.';
-  }, [remainingFocusMinutes, stats.activeProjects, stats.totalHabits]);
-
   const syncStatus = lastSyncedAt ? `Live - Synced at ${lastSyncedAt}` : 'Live sync activating...';
   const syncLabel = lastSyncedAt ? 'Live sync on' : 'Syncing...';
-  const TrendIcon = trend.trend === 'down' ? TrendingDown : trend.trend === 'stable' ? ArrowRight : TrendingUp;
-  const trendBadgeText = trend.trend === 'stable' ? '0%' : `${trend.percentage}%`;
-
-  const priorityActions = useMemo(() => [
-    {
-      icon: CheckCircle2,
-      title: 'Complete habits',
-      detail: incompleteHabits > 0 ? `${incompleteHabits} habit${incompleteHabits === 1 ? '' : 's'} remaining today.` : 'All habits completed for today.',
-      action: 'Open Habits',
-      path: '/habits',
-      tone: 'text-emerald-300 bg-emerald-500/10',
-    },
-    {
-      icon: Clock,
-      title: 'Start focus session',
-      detail: remainingFocusMinutes > 0 ? `${remainingFocusMinutes} minutes left to reach your goal.` : 'Daily focus goal reached.',
-      action: 'Start Focus',
-      path: '/focus?start=true',
-      tone: 'text-blue-300 bg-blue-500/10',
-    },
-    {
-      icon: Briefcase,
-      title: 'Review active projects',
-      detail: stats.activeProjects > 0 ? `${stats.activeProjects} active project${stats.activeProjects === 1 ? '' : 's'} in motion.` : 'Create a project to track meaningful work.',
-      action: 'Open Projects',
-      path: '/projects',
-      tone: 'text-purple-300 bg-purple-500/10',
-    },
-  ], [incompleteHabits, remainingFocusMinutes, stats.activeProjects]);
-
-  const navigateToHabits = useCallback(() => navigate('/habits?add=true'), [navigate]);
-  const navigateToNotes = useCallback(() => navigate('/notes?add=true'), [navigate]);
-  const navigateToProjects = useCallback(() => navigate('/projects?add=true'), [navigate]);
-  const navigateToFocus = useCallback(() => navigate('/focus?start=true'), [navigate]);
   const openCommandCenter = useCallback(() => window.dispatchEvent(new Event('motrack:open-command-center')), []);
 
   if (loading) {

@@ -1,4 +1,3 @@
-import type { ElementType } from 'react';
 import type { LucideIcon } from 'lucide-react';
 
 interface CinematicCardProps {

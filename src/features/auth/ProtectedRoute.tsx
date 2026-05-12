@@ -12,11 +12,6 @@ export function ProtectedRoute() {
     );
   }
 
-  // Temporary: Allow access to dashboard for development
-  if (!user && window.location.pathname === '/dashboard') {
-    return <Outlet />;
-  }
-
   if (!user) {
     return <Navigate to="/login" replace />;
   }
