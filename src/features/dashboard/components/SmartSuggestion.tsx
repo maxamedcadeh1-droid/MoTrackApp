@@ -1,34 +1,13 @@
 import { ArrowRight, Sparkles } from 'lucide-react';
+import { RoutineSuggestion } from '../../../lib/RoutineSuggestionService';
 
 interface SmartSuggestionProps {
-  remainingFocusMinutes: number;
-  totalHabits: number;
+  suggestion: RoutineSuggestion;
   navigate: (path: string) => void;
 }
 
-export function SmartSuggestion({ remainingFocusMinutes, totalHabits, navigate }: SmartSuggestionProps) {
-  const headline =
-    remainingFocusMinutes > 0
-      ? 'You focus 32% better in the morning.'
-      : totalHabits === 0
-      ? 'Create your first habit.'
-      : 'Complete one more habit to increase momentum.';
-
-  const subtext =
-    remainingFocusMinutes > 0
-      ? 'Try scheduling deep work between 7AM - 11AM.'
-      : totalHabits === 0
-      ? 'Build a daily routine.'
-      : 'You are close to your daily goal.';
-
-  const actionPath =
-    remainingFocusMinutes > 0
-      ? '/focus?start=true'
-      : totalHabits === 0
-      ? '/habits?add=true'
-      : '/projects';
-
-  const progress = remainingFocusMinutes > 0 ? 30 : totalHabits === 0 ? 5 : 75;
+export function SmartSuggestion({ suggestion, navigate }: SmartSuggestionProps) {
+  const progress = suggestion.confidence;
   const circumference = 188.5;
   const offset = circumference - (circumference * progress) / 100;
 
@@ -56,17 +35,17 @@ export function SmartSuggestion({ remainingFocusMinutes, totalHabits, navigate }
             </span>
             <p className="text-xs font-bold text-violet-300">Smart Suggestion</p>
           </div>
-          <p className="text-sm font-bold leading-snug text-white">{headline}</p>
-          <p className="mt-1 text-xs text-zinc-400">{subtext}</p>
+          <p className="text-sm font-bold leading-snug text-white">{suggestion.headline}</p>
+          <p className="mt-1 text-xs text-zinc-400">{suggestion.subtext}</p>
           <button
-            onClick={() => navigate(actionPath)}
+            onClick={() => navigate(suggestion.actionPath)}
             className="mt-3 inline-flex min-h-10 items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold text-white transition-all active:scale-95"
             style={{
               background: 'linear-gradient(135deg, #7c3aed, #6366f1)',
               boxShadow: '0 4px 16px rgba(139,92,246,0.35)',
             }}
           >
-            Start Now <ArrowRight className="h-3 w-3" />
+            {suggestion.actionLabel} <ArrowRight className="h-3 w-3" />
           </button>
         </div>
 
@@ -92,7 +71,7 @@ export function SmartSuggestion({ remainingFocusMinutes, totalHabits, navigate }
           </svg>
           <div className="relative text-center">
             <p className="text-base font-bold leading-none text-white">{progress}%</p>
-            <p className="mt-0.5 text-[8px] font-semibold uppercase tracking-widest text-zinc-500">ready</p>
+            <p className="mt-0.5 text-[8px] font-semibold uppercase tracking-widest text-zinc-500">fit</p>
           </div>
         </div>
       </div>

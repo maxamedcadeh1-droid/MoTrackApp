@@ -24,6 +24,7 @@ import { ProductivityPulse } from './components/ProductivityPulse';
 import { SmartSuggestion } from './components/SmartSuggestion';
 import { RecentActivity } from './components/RecentActivity';
 import { getTrendIndicator } from '../../lib/insights';
+import { buildRoutineSuggestion } from '../../lib/RoutineSuggestionService';
 import { useAuth } from '../auth/AuthContext';
 
 const DashboardChecklist = lazy(() => import('./DashboardChecklist').then((mod) => ({ default: mod.DashboardChecklist })));
@@ -493,6 +494,14 @@ export const Dashboard = memo(function Dashboard() {
   const focusDelta = stats.focusMinutes - (yesterdayPulse?.focusMinutes || 0);
   const todayTasksDone = stats.weeklyData[stats.weeklyData.length - 1]?.tasksCompleted || 0;
   const taskDelta = todayTasksDone - (yesterdayPulse?.tasksCompleted || 0);
+  const routineSuggestion = buildRoutineSuggestion({
+    currentHour,
+    remainingFocusMinutes,
+    totalHabits: stats.totalHabits,
+    habitsCompleted: stats.habitsCompleted,
+    activeProjects: stats.activeProjects,
+    projectProgress: stats.projectProgress,
+  });
 
   function trendText(delta: number, unit = '') {
     if (delta > 0) return `↑ ${delta}${unit} vs yesterday`;
@@ -626,8 +635,7 @@ export const Dashboard = memo(function Dashboard() {
 
       {/* 5. Smart Suggestion */}
       <SmartSuggestion
-        remainingFocusMinutes={remainingFocusMinutes}
-        totalHabits={stats.totalHabits}
+        suggestion={routineSuggestion}
         navigate={navigate}
       />
 

@@ -5,6 +5,7 @@ import { ProtectedRoute, PublicRoute } from './features/auth/ProtectedRoute';
 import { DashboardLayout } from './components/DashboardLayout';
 import { ToastProvider } from './components/ui/ToastProvider';
 import { ModalProvider } from './components/ui/ModalContext';
+import { PWAInstallPrompt } from './components/PWAInstallPrompt';
 
 // Auth Pages
 import { LoginForm } from './features/auth/LoginForm';
@@ -18,6 +19,7 @@ const Habits = lazy(() => import('./features/habits/Habits').then(m => ({ defaul
 const Notes = lazy(() => import('./features/notes/Notes').then(m => ({ default: m.Notes })));
 const Projects = lazy(() => import('./features/projects/Projects').then(m => ({ default: m.Projects })));
 const Focus = lazy(() => import('./features/focus/Focus').then(m => ({ default: m.Focus })));
+const DailyTimeline = lazy(() => import('./features/timeline/DailyTimeline').then(m => ({ default: m.DailyTimeline })));
 const Analytics = lazy(() => import('./features/analytics/Analytics').then(m => ({ default: m.Analytics })));
 const Profile = lazy(() => import('./features/profile/Profile').then(m => ({ default: m.Profile })));
 const Settings = lazy(() => import('./features/settings/Settings').then(m => ({ default: m.Settings })));
@@ -39,6 +41,8 @@ export default function App() {
       <ModalProvider>
         <ToastProvider>
           <Router>
+            {/* PWA Install Prompt - shown when app can be installed */}
+            <PWAInstallPrompt />
           <Routes>
             {/* Public Routes */}
             <Route element={<PublicRoute />}>
@@ -57,6 +61,7 @@ export default function App() {
                 <Route path="/notes" element={<Suspense fallback={<RouteLoader />}><Notes /></Suspense>} />
                 <Route path="/projects" element={<Suspense fallback={<RouteLoader />}><Projects /></Suspense>} />
                 <Route path="/focus" element={<Suspense fallback={<RouteLoader />}><Focus /></Suspense>} />
+                <Route path="/timeline" element={<Suspense fallback={<RouteLoader />}><DailyTimeline /></Suspense>} />
                 <Route path="/analytics" element={<Suspense fallback={<RouteLoader />}><Analytics /></Suspense>} />
                 <Route path="/profile" element={<Suspense fallback={<RouteLoader />}><Profile /></Suspense>} />
                 <Route path="/settings" element={<Suspense fallback={<RouteLoader />}><Settings /></Suspense>} />

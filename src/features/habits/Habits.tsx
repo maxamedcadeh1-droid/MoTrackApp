@@ -1,6 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { Card, Button, Input, Badge, Toast, TextArea, Skeleton } from '../../components/ui/Layout';
+import { Card, Button, Input, Toast, TextArea, Skeleton } from '../../components/ui/Layout';
 import { MobileSheet } from '../../components/ui/MobileSheet';
+import { HabitHeatmap } from '../../components/HabitHeatmap';
+import { ReminderSettings, ReminderSettingsData } from '../../components/ReminderSettings';
+import { SuccessCelebration } from '../../components/SuccessCelebration';
 import { 
   Plus, 
   CheckCircle2, 
@@ -34,6 +37,12 @@ type Habit = Database['public']['Tables']['habits']['Row'];
 
 const CATEGORIES = ['All', 'Health', 'Work', 'Mind', 'Personal', 'Other'];
 const COLORS = ['#8b5cf6', '#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
+const DEFAULT_REMINDER_SETTINGS: ReminderSettingsData = {
+  reminderEnabled: false,
+  reminderTime: '',
+  reminderDays: [],
+  reminderSound: 'chime',
+};
 const ICONS = [
   { name: 'target', icon: Target },
   { name: 'zap', icon: Zap },
@@ -62,11 +71,13 @@ export function Habits() {
     color: '#8b5cf6', 
     icon: 'target' 
   });
+  const [reminderSettings, setReminderSettings] = useState<ReminderSettingsData>(DEFAULT_REMINDER_SETTINGS);
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('All');
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' as any });
+  const [showCelebration, setShowCelebration] = useState(false);
+  const [celebrationMessage, setCelebrationMessage] = useState('');
   const habitTitle = newHabit.title.trim();
-
   const fetchHabits = async () => {
     if (!user) return;
     setLoading(true);
@@ -87,10 +98,17 @@ export function Habits() {
     }
   };
 
+  const openCreate = () => {
+    setEditingHabit(null);
+    setNewHabit({ title: '', description: '', category: 'Health', color: '#8b5cf6', icon: 'target' });
+    setReminderSettings(DEFAULT_REMINDER_SETTINGS);
+    setIsAdding(true);
+  };
+
   useEffect(() => {
     fetchHabits();
     if (searchParams.get('add') === 'true') {
-      setIsAdding(true);
+      openCreate();
     }
   }, [user, searchParams]);
 
@@ -114,6 +132,10 @@ export function Habits() {
             category: newHabit.category,
             color: newHabit.color,
             icon: newHabit.icon,
+            reminder_enabled: reminderSettings.reminderEnabled,
+            reminder_time: reminderSettings.reminderTime || null,
+            reminder_days: reminderSettings.reminderDays,
+            reminder_sound: reminderSettings.reminderSound,
             updated_at: new Date().toISOString()
           })
           .eq('id', editingHabit.id)
@@ -124,6 +146,7 @@ export function Habits() {
         if (error) throw error;
         
         setHabits(prev => prev.map(h => h.id === editingHabit.id ? data : h));
+        window.dispatchEvent(new Event('motrack:reminders-updated'));
         showToast('Habit updated');
         closeModal();
       } else {
@@ -138,7 +161,11 @@ export function Habits() {
           streak: 0,
           best_streak: 0,
           completed_dates: [],
-          is_active: true
+          is_active: true,
+          reminder_enabled: reminderSettings.reminderEnabled,
+          reminder_time: reminderSettings.reminderTime || null,
+          reminder_days: reminderSettings.reminderDays,
+          reminder_sound: reminderSettings.reminderSound
         })
         .select()
         .single();
@@ -146,6 +173,7 @@ export function Habits() {
         if (error) throw error;
 
         setHabits(prev => [data, ...prev]);
+        window.dispatchEvent(new Event('motrack:reminders-updated'));
         showToast('Habit created');
         closeModal();
       }
@@ -248,6 +276,7 @@ export function Habits() {
       const { error } = await supabase.from('habits').delete().eq('id', id);
       if (error) throw error;
       setHabits(prev => prev.filter(h => h.id !== id));
+      window.dispatchEvent(new Event('motrack:reminders-updated'));
       setPendingDeleteHabit(null);
       showToast('Habit deleted');
     } catch (error: any) {
@@ -266,6 +295,7 @@ export function Habits() {
     setIsAdding(false);
     setEditingHabit(null);
     setNewHabit({ title: '', description: '', category: 'Health', color: '#8b5cf6', icon: 'target' });
+    setReminderSettings(DEFAULT_REMINDER_SETTINGS);
   };
 
   const openEdit = (habit: Habit) => {
@@ -276,6 +306,12 @@ export function Habits() {
       category: habit.category || 'Health',
       color: habit.color || '#8b5cf6',
       icon: habit.icon || 'target'
+    });
+    setReminderSettings({
+      reminderEnabled: habit.reminder_enabled || false,
+      reminderTime: habit.reminder_time || '',
+      reminderDays: habit.reminder_days || [],
+      reminderSound: (habit.reminder_sound as any) || 'chime',
     });
     setIsAdding(true);
   };
@@ -350,16 +386,33 @@ export function Habits() {
             <Sparkles className="h-6 w-6" />
           </div>
           <div className="min-w-0 flex-1">
-            <p className="text-sm font-bold text-violet-300">AI Insight</p>
-            <p className="mt-1 text-base font-bold text-white">You're on a {bestStreak || 7}-day streak.</p>
-            <p className="text-sm text-zinc-400">Keep it up, Mohamed.</p>
+            <p className="text-sm font-bold text-violet-300">Ritual Insight</p>
+            <p className="mt-1 text-base font-bold text-white">
+              {bestStreak > 0 ? `You're on a ${bestStreak}-day streak.` : `${completedToday}/${habits.length || 0} habits complete today.`}
+            </p>
+            <p className="text-sm text-zinc-400">{habits.length > 0 ? 'One small completion can shift the whole day.' : 'Create one habit to start building momentum.'}</p>
           </div>
         </div>
       </Card>
 
+      {/* Activity Heatmap */}
+      {habits.length > 0 && (
+        <Card className="rounded-[1.7rem] border-white/10 p-5">
+          <div className="mb-4 flex items-center justify-between">
+            <h3 className="font-display text-lg font-bold text-white">Activity</h3>
+            <span className="text-xs text-zinc-500">Last 6 months</span>
+          </div>
+          <HabitHeatmap
+            completedDates={habits.flatMap(h => h.completed_dates || [])}
+            months={6}
+            showStats={true}
+          />
+        </Card>
+      )}
+
       <div className="flex items-center justify-between">
         <h2 className="font-display text-xl font-bold text-white">Habits</h2>
-        <Button onClick={() => setIsAdding(true)} size="sm" className="rounded-2xl">
+        <Button onClick={openCreate} size="sm" className="rounded-2xl">
           <Plus className="mr-2 h-4 w-4" />
           Add Habit
         </Button>
@@ -430,7 +483,7 @@ export function Habits() {
                 setSearch('');
                 setFilter('All');
               } else {
-                setIsAdding(true);
+                openCreate();
               }
             }}
             variant="outline"
@@ -535,6 +588,14 @@ export function Habits() {
               ))}
             </div>
           </div>
+
+          {/* Reminder Settings */}
+          <div className="pt-2 border-t border-white/5">
+            <ReminderSettings
+              value={reminderSettings}
+              onChange={setReminderSettings}
+            />
+          </div>
         </form>
       </MobileSheet>
 
@@ -599,6 +660,14 @@ export function Habits() {
         message={toast.message} 
         type={toast.type} 
         onClose={() => setToast({ ...toast, show: false })} 
+      />
+
+      {/* Success Celebration for reminders */}
+      <SuccessCelebration
+        show={showCelebration}
+        message={celebrationMessage}
+        type="habit"
+        onComplete={() => setShowCelebration(false)}
       />
     </div>
   );

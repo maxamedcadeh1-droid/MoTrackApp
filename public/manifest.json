@@ -1,18 +1,74 @@
 {
-  "name": "MoTrack",
+  "name": "MoTrack - Cinematic Productivity",
   "short_name": "MoTrack",
-  "start_url": "/",
-  "display": "standalone",
-  "scope": "/",
   "description": "A cinematic productivity workspace for habits, focus, notes, projects, and analytics.",
-  "background_color": "#050505",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "orientation": "portrait-primary",
+  "background_color": "#05060a",
   "theme_color": "#8b5cf6",
+  "categories": ["productivity", "lifestyle", "utilities"],
   "icons": [
+    {
+      "src": "/motrack-icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/motrack-icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
     {
       "src": "/motrack-icon.svg",
       "sizes": "any",
       "type": "image/svg+xml",
       "purpose": "any maskable"
     }
-  ]
+  ],
+  "screenshots": [
+    {
+      "src": "/screenshot-wide.png",
+      "sizes": "1280x720",
+      "type": "image/png",
+      "form_factor": "wide"
+    },
+    {
+      "src": "/screenshot-narrow.png",
+      "sizes": "750x1334",
+      "type": "image/png",
+      "form_factor": "narrow"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "New Habit",
+      "short_name": "Habit",
+      "description": "Create a new habit",
+      "url": "/habits?add=true",
+      "icons": [
+        {
+          "src": "/motrack-icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    },
+    {
+      "name": "Start Focus",
+      "short_name": "Focus",
+      "description": "Start a focus session",
+      "url": "/focus?start=true",
+      "icons": [
+        {
+          "src": "/motrack-icon-192.png",
+          "sizes": "192x192"
+        }
+      ]
+    }
+  ],
+  "related_applications": [],
+  "prefer_related_applications": false
 }

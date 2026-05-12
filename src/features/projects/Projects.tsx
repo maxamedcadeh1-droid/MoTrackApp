@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button, Input, Badge, Toast, TextArea, Skeleton } from '../../components/ui/Layout';
 import { MobileSheet } from '../../components/ui/MobileSheet';
+import { ReminderSettings, ReminderSettingsData } from '../../components/ReminderSettings';
 import {
   Plus,
   Search,
@@ -35,6 +36,12 @@ type Task = Database['public']['Tables']['project_tasks']['Row'];
 
 const PRIORITIES = ['low', 'medium', 'high'] as const;
 const STATUSES = ['backlog', 'active', 'completed', 'on_hold'] as const;
+const DEFAULT_TASK_REMINDER: ReminderSettingsData = {
+  reminderEnabled: false,
+  reminderTime: '',
+  reminderDays: [],
+  reminderSound: 'chime',
+};
 
 export function Projects() {
   const { user } = useAuth();
@@ -149,6 +156,7 @@ export function Projects() {
       const { error } = await supabase.from('projects').delete().eq('id', id);
       if (error) throw error;
       setProjects(prev => prev.filter(p => p.id !== id));
+      window.dispatchEvent(new Event('motrack:reminders-updated'));
       showToast('Project deleted', 'error');
     } catch (error: any) {
       console.error('Delete project error:', error);
@@ -354,7 +362,9 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
   const [tasks, setTasks] = useState<Task[]>([]);
   const [showTasks, setShowTasks] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
+  const [newTaskDueDate, setNewTaskDueDate] = useState('');
   const [isAddingTask, setIsAddingTask] = useState(false);
+  const [taskReminder, setTaskReminder] = useState<ReminderSettingsData>(DEFAULT_TASK_REMINDER);
   const [localProgress, setLocalProgress] = useState(project.progress || 0);
   const trimmedTaskTitle = newTaskTitle.trim();
   const completedTasks = tasks.filter((task) => task.is_done).length;
@@ -386,8 +396,13 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
         project_id: project.id,
         user_id: authUser.id,
         title: trimmedTaskTitle,
+        due_date: newTaskDueDate || null,
         is_done: false,
-        position: tasks.length
+        position: tasks.length,
+        reminder_enabled: taskReminder.reminderEnabled,
+        reminder_time: taskReminder.reminderTime || null,
+        reminder_days: taskReminder.reminderDays,
+        reminder_sound: taskReminder.reminderSound,
       })
       .select()
       .single();
@@ -396,7 +411,10 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
 
       setTasks(prev => [...prev, data]);
       setNewTaskTitle('');
+      setNewTaskDueDate('');
+      setTaskReminder(DEFAULT_TASK_REMINDER);
       setIsAddingTask(false);
+      window.dispatchEvent(new Event('motrack:reminders-updated'));
       await updateProjectProgress();
     } catch (error: any) {
       console.error('Add task error:', error);
@@ -414,6 +432,7 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
       if (error) throw error;
 
       setTasks(prev => prev.map(t => t.id === task.id ? data : t));
+      window.dispatchEvent(new Event('motrack:reminders-updated'));
       await updateProjectProgress();
     } catch (error: any) {
       console.error('Toggle task error:', error);
@@ -555,16 +574,38 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
                 </div>
 
                 {isAddingTask && (
-                  <div className="mb-6 flex flex-col gap-3 duration-300 animate-in slide-in-from-top-4 sm:flex-row">
-                    <Input
-                      value={newTaskTitle}
-                      onChange={(e) => setNewTaskTitle(e.target.value)}
-                      placeholder="Task name..."
-                      className="bg-zinc-900 h-12 text-sm rounded-xl border-white/5 focus:border-accent/40"
-                      onKeyDown={(e) => e.key === 'Enter' && addTask()}
-                    />
-                    <Button onClick={addTask} disabled={!trimmedTaskTitle} className="h-12 px-6"><Check className="w-5 h-5" /></Button>
-                    <Button variant="ghost" onClick={() => setIsAddingTask(false)} className="h-12 px-6 text-zinc-500 rounded-xl hover:bg-white/5"><X className="w-5 h-5" /></Button>
+                  <div className="mb-6 space-y-4 rounded-3xl border border-white/8 bg-white/[0.025] p-4 duration-300 animate-in slide-in-from-top-4">
+                    <div className="grid grid-cols-1 gap-3 md:grid-cols-[minmax(0,1fr)_11rem_auto_auto]">
+                      <Input
+                        value={newTaskTitle}
+                        onChange={(e) => setNewTaskTitle(e.target.value)}
+                        placeholder="Task name..."
+                        className="h-12 rounded-xl border-white/5 bg-zinc-900 text-sm focus:border-accent/40"
+                        onKeyDown={(e) => e.key === 'Enter' && addTask()}
+                      />
+                      <Input
+                        type="date"
+                        value={newTaskDueDate}
+                        onChange={(e) => setNewTaskDueDate(e.target.value)}
+                        className="h-12 rounded-xl border-white/5 bg-zinc-900 text-sm focus:border-accent/40"
+                      />
+                      <Button onClick={addTask} disabled={!trimmedTaskTitle} className="h-12 px-6"><Check className="w-5 h-5" /></Button>
+                      <Button
+                        variant="ghost"
+                        onClick={() => {
+                          setIsAddingTask(false);
+                          setNewTaskTitle('');
+                          setNewTaskDueDate('');
+                          setTaskReminder(DEFAULT_TASK_REMINDER);
+                        }}
+                        className="h-12 px-6 rounded-xl text-zinc-500 hover:bg-white/5"
+                      >
+                        <X className="w-5 h-5" />
+                      </Button>
+                    </div>
+                    <div className="border-t border-white/5 pt-4">
+                      <ReminderSettings value={taskReminder} onChange={setTaskReminder} />
+                    </div>
                   </div>
                 )}
 
@@ -582,12 +623,20 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
                       )}>
                         <Check className="w-4 h-4" />
                       </div>
-                      <span className={cn(
-                        "text-[15px] font-medium transition-all flex-1",
-                        task.is_done ? "text-zinc-600 line-through" : "text-zinc-300 group-hover/task:text-white"
-                      )}>
-                        {task.title}
-                      </span>
+                      <div className="min-w-0 flex-1">
+                        <span className={cn(
+                          "block truncate text-[15px] font-medium transition-all",
+                          task.is_done ? "text-zinc-600 line-through" : "text-zinc-300 group-hover/task:text-white"
+                        )}>
+                          {task.title}
+                        </span>
+                        {(task.due_date || task.reminder_enabled) && (
+                          <div className="mt-1 flex flex-wrap items-center gap-2 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
+                            {task.due_date && <span>Due {new Date(task.due_date).toLocaleDateString()}</span>}
+                            {task.reminder_enabled && task.reminder_time && <span className="text-violet-300">Reminder {task.reminder_time}</span>}
+                          </div>
+                        )}
+                      </div>
                     </button>
                   ))}
                   {tasks.length === 0 && !isAddingTask && (

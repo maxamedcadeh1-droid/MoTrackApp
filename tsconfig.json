@@ -23,5 +23,15 @@
     "allowImportingTsExtensions": true,
     "noEmit": true,
     "types": ["vite/client"]
-  }
+  },
+  "include": [
+    "src",
+    "vite.config.ts",
+    "tailwind.config.ts",
+    "postcss.config.js"
+  ],
+  "exclude": [
+    "dist",
+    "node_modules"
+  ]
 }

@@ -1,5 +1,6 @@
 ﻿import { useEffect, useState } from 'react';
 import { Card, Button, Badge, Toast, Input } from '../../components/ui/Layout';
+import { ReminderSettings, ReminderSettingsData } from '../../components/ReminderSettings';
 import {
   Bell,
   BellOff,
@@ -33,6 +34,13 @@ const COLORS = [
   { name: 'Red', value: '#ef4444' },
 ];
 
+const DEFAULT_SLEEP_REMINDER: ReminderSettingsData = {
+  reminderEnabled: false,
+  reminderTime: '22:30',
+  reminderDays: [1, 2, 3, 4, 5, 6, 0],
+  reminderSound: 'night',
+};
+
 // ── 2FA helpers ────────────────────────────────────────────────────────────
 function generateBackupCodes(): string[] {
   return Array.from({ length: 8 }, () =>
@@ -50,6 +58,7 @@ export function Settings() {
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' as any });
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('unsupported');
   const [activeTab, setActiveTab] = useState('Appearance');
+  const [sleepReminder, setSleepReminder] = useState<ReminderSettingsData>(DEFAULT_SLEEP_REMINDER);
 
   // 2FA state
   const [twoFAEnabled, setTwoFAEnabled] = useState(false);
@@ -65,7 +74,15 @@ export function Settings() {
     async function fetchSettings() {
       if (!user) return;
       const { data } = await supabase.from('settings').select('*').eq('user_id', user.id).single();
-      if (data) setSettings(data);
+      if (data) {
+        setSettings(data);
+        setSleepReminder({
+          reminderEnabled: Boolean((data as any).sleep_reminder_enabled),
+          reminderTime: (data as any).sleep_reminder_time || DEFAULT_SLEEP_REMINDER.reminderTime,
+          reminderDays: (data as any).sleep_reminder_days || DEFAULT_SLEEP_REMINDER.reminderDays,
+          reminderSound: ((data as any).sleep_reminder_sound || DEFAULT_SLEEP_REMINDER.reminderSound) as any,
+        });
+      }
       setLoading(false);
     }
     fetchSettings();
@@ -138,6 +155,16 @@ export function Settings() {
       await updateSettings({ notifications_enabled: false }); return;
     }
     await updateSettings({ notifications_enabled: true });
+  };
+
+  const saveSleepReminder = async () => {
+    await updateSettings({
+      sleep_reminder_enabled: sleepReminder.reminderEnabled,
+      sleep_reminder_time: sleepReminder.reminderEnabled ? sleepReminder.reminderTime : null,
+      sleep_reminder_days: sleepReminder.reminderDays,
+      sleep_reminder_sound: sleepReminder.reminderSound,
+    } as any);
+    window.dispatchEvent(new Event('motrack:reminders-updated'));
   };
 
   // ── 2FA: Enroll ──────────────────────────────────────────────────────────
@@ -328,6 +355,25 @@ export function Settings() {
                   className={cn('relative h-8 w-16 rounded-full p-1 transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50', notificationsEnabled ? 'bg-accent shadow-glow' : 'bg-white/10')}>
                   <div className={cn('h-6 w-6 rounded-full bg-white shadow-xl transition-all duration-300', notificationsEnabled ? 'translate-x-8' : 'translate-x-0')} />
                 </button>
+              </div>
+
+              <div className="mt-6 rounded-3xl border border-blue-500/15 bg-blue-500/[0.035] p-5">
+                <div className="mb-5 flex items-start justify-between gap-4">
+                  <div>
+                    <p className="text-sm font-bold text-white">Night shutdown ritual</p>
+                    <p className="mt-1 text-xs leading-relaxed text-zinc-500">Schedule a calm end-of-day review with real habit and task data.</p>
+                  </div>
+                  <Badge variant="outline" className="shrink-0 border-blue-500/20 text-blue-300">Sleep</Badge>
+                </div>
+                <ReminderSettings value={sleepReminder} onChange={setSleepReminder} />
+                <Button
+                  type="button"
+                  onClick={saveSleepReminder}
+                  disabled={updating}
+                  className="mt-5 h-12 w-full rounded-2xl"
+                >
+                  Save Shutdown Ritual
+                </Button>
               </div>
             </Card>
           )}

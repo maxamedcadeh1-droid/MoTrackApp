@@ -4,6 +4,7 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
   Briefcase,
+  CalendarDays,
   CheckCircle2,
   Command,
   FileText,
@@ -96,6 +97,15 @@ export function CommandCenter() {
         icon: Briefcase,
         keywords: ['tasks', 'work'],
         action: () => navigate('/projects'),
+        group: 'Navigate',
+      },
+      {
+        id: 'timeline',
+        label: 'Open timeline',
+        description: 'Today’s habits, tasks, focus, and shutdown',
+        icon: CalendarDays,
+        keywords: ['day', 'ritual', 'schedule'],
+        action: () => navigate('/timeline'),
         group: 'Navigate',
       },
       {

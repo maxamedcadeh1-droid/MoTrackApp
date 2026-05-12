@@ -46,6 +46,11 @@ CREATE TABLE IF NOT EXISTS public.settings (
     focus_sound boolean DEFAULT true NOT NULL,
     daily_goal_minutes integer DEFAULT 120 NOT NULL,
     weekly_goal_habits integer DEFAULT 5 NOT NULL,
+    sleep_reminder_enabled boolean DEFAULT false NOT NULL,
+    sleep_reminder_time text,
+    sleep_reminder_days integer[] DEFAULT '{}' NOT NULL,
+    sleep_reminder_sound text DEFAULT 'night' NOT NULL,
+    sleep_last_triggered_at timestamptz,
     created_at timestamptz DEFAULT now() NOT NULL,
     updated_at timestamptz DEFAULT now() NOT NULL
 );
@@ -64,6 +69,11 @@ CREATE TABLE IF NOT EXISTS public.habits (
     best_streak integer DEFAULT 0 NOT NULL,
     completed_dates text[] DEFAULT '{}' NOT NULL,
     is_active boolean DEFAULT true NOT NULL,
+    reminder_enabled boolean DEFAULT false NOT NULL,
+    reminder_time text,
+    reminder_days integer[] DEFAULT '{}' NOT NULL,
+    reminder_sound text DEFAULT 'chime' NOT NULL,
+    last_triggered_at timestamptz,
     created_at timestamptz DEFAULT now() NOT NULL,
     updated_at timestamptz DEFAULT now() NOT NULL
 );
@@ -106,6 +116,11 @@ CREATE TABLE IF NOT EXISTS public.project_tasks (
     is_done boolean DEFAULT false NOT NULL,
     due_date timestamptz,
     position integer DEFAULT 0 NOT NULL,
+    reminder_enabled boolean DEFAULT false NOT NULL,
+    reminder_time text,
+    reminder_days integer[] DEFAULT '{}' NOT NULL,
+    reminder_sound text DEFAULT 'chime' NOT NULL,
+    last_triggered_at timestamptz,
     created_at timestamptz DEFAULT now() NOT NULL,
     updated_at timestamptz DEFAULT now() NOT NULL
 );
@@ -227,9 +242,11 @@ CREATE TRIGGER on_auth_user_created
 
 -- 15. INDEXES
 CREATE INDEX IF NOT EXISTS idx_habits_user_id ON public.habits(user_id);
+CREATE INDEX IF NOT EXISTS idx_habits_reminder_enabled ON public.habits(reminder_enabled) WHERE reminder_enabled = true;
 CREATE INDEX IF NOT EXISTS idx_notes_user_id ON public.notes(user_id);
 CREATE INDEX IF NOT EXISTS idx_projects_user_id ON public.projects(user_id);
 CREATE INDEX IF NOT EXISTS idx_project_tasks_project_id ON public.project_tasks(project_id);
 CREATE INDEX IF NOT EXISTS idx_project_tasks_user_id ON public.project_tasks(user_id);
+CREATE INDEX IF NOT EXISTS idx_project_tasks_reminder_enabled ON public.project_tasks(reminder_enabled) WHERE reminder_enabled = true;
 CREATE INDEX IF NOT EXISTS idx_focus_sessions_user_id ON public.focus_sessions(user_id);
 CREATE INDEX IF NOT EXISTS idx_analytics_user_id_date ON public.analytics(user_id, date);

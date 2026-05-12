@@ -3,6 +3,7 @@ import { NavLink, useNavigate } from 'react-router-dom';
 import {
   BarChart3,
   Briefcase,
+  CalendarDays,
   CheckCircle2,
   Command,
   FileText,
@@ -25,6 +26,7 @@ const navItems = [
   { icon: FileText, label: 'Notes', path: '/notes' },
   { icon: Briefcase, label: 'Projects', path: '/projects' },
   { icon: Timer, label: 'Focus', path: '/focus' },
+  { icon: CalendarDays, label: 'Timeline', path: '/timeline' },
   { icon: BarChart3, label: 'Analytics', path: '/analytics' },
 ];
 
@@ -172,6 +174,7 @@ export function MobileNav() {
 
   const moreItems = [
     { icon: FileText, label: 'Notes', path: '/notes' },
+    { icon: CalendarDays, label: 'Timeline', path: '/timeline' },
     { icon: BarChart3, label: 'Analytics', path: '/analytics' },
     { icon: Settings, label: 'Settings', path: '/settings' },
   ];

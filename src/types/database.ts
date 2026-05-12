@@ -54,6 +54,11 @@ export type Database = {
           focus_sound: boolean
           daily_goal_minutes: number
           weekly_goal_habits: number
+          sleep_reminder_enabled: boolean
+          sleep_reminder_time: string | null
+          sleep_reminder_days: number[]
+          sleep_reminder_sound: string
+          sleep_last_triggered_at: string | null
           created_at: string
           updated_at: string
         }
@@ -66,6 +71,11 @@ export type Database = {
           focus_sound?: boolean
           daily_goal_minutes?: number
           weekly_goal_habits?: number
+          sleep_reminder_enabled?: boolean
+          sleep_reminder_time?: string | null
+          sleep_reminder_days?: number[]
+          sleep_reminder_sound?: string
+          sleep_last_triggered_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -78,6 +88,11 @@ export type Database = {
           focus_sound?: boolean
           daily_goal_minutes?: number
           weekly_goal_habits?: number
+          sleep_reminder_enabled?: boolean
+          sleep_reminder_time?: string | null
+          sleep_reminder_days?: number[]
+          sleep_reminder_sound?: string
+          sleep_last_triggered_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -98,6 +113,12 @@ export type Database = {
           is_active: boolean
           created_at: string
           updated_at: string
+          // Reminder fields
+          reminder_enabled: boolean
+          reminder_time: string | null
+          reminder_days: number[]
+          reminder_sound: string
+          last_triggered_at: string | null
         }
         Insert: {
           id?: string
@@ -114,6 +135,12 @@ export type Database = {
           is_active?: boolean
           created_at?: string
           updated_at?: string
+          // Reminder fields
+          reminder_enabled?: boolean
+          reminder_time?: string | null
+          reminder_days?: number[]
+          reminder_sound?: string
+          last_triggered_at?: string | null
         }
         Update: {
           id?: string
@@ -130,6 +157,12 @@ export type Database = {
           is_active?: boolean
           created_at?: string
           updated_at?: string
+          // Reminder fields
+          reminder_enabled?: boolean
+          reminder_time?: string | null
+          reminder_days?: number[]
+          reminder_sound?: string
+          last_triggered_at?: string | null
         }
       }
       notes: {
@@ -220,6 +253,11 @@ export type Database = {
           position: number
           created_at: string
           updated_at: string
+          reminder_enabled: boolean
+          reminder_time: string | null
+          reminder_days: number[]
+          reminder_sound: string
+          last_triggered_at: string | null
         }
         Insert: {
           id?: string
@@ -232,6 +270,11 @@ export type Database = {
           position?: number
           created_at?: string
           updated_at?: string
+          reminder_enabled?: boolean
+          reminder_time?: string | null
+          reminder_days?: number[]
+          reminder_sound?: string
+          last_triggered_at?: string | null
         }
         Update: {
           id?: string
@@ -244,6 +287,11 @@ export type Database = {
           position?: number
           created_at?: string
           updated_at?: string
+          reminder_enabled?: boolean
+          reminder_time?: string | null
+          reminder_days?: number[]
+          reminder_sound?: string
+          last_triggered_at?: string | null
         }
       }
       focus_sessions: {
