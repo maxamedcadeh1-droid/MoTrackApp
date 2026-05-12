@@ -20,9 +20,15 @@
   --color-glass-border: rgba(255, 255, 255, 0.08);
 }
 
+:root {
+  --safe-area-top: env(safe-area-inset-top, 0px);
+  --safe-area-bottom: env(safe-area-inset-bottom, 0px);
+}
+
 @layer base {
   html {
     background: var(--color-bg-dark);
+    min-height: 100%;
   }
 
   body {
@@ -34,6 +40,7 @@
     -moz-osx-font-smoothing: grayscale;
     color-scheme: dark;
     min-width: 320px;
+    min-height: 100%;
     text-rendering: geometricPrecision;
   }
 
@@ -56,6 +63,7 @@
   textarea,
   select {
     -webkit-tap-highlight-color: transparent;
+    touch-action: manipulation;
   }
 }
 
@@ -206,6 +214,49 @@
 
 /* Mobile performance optimizations */
 @media (max-width: 768px) {
+  .mobile-safe-main {
+    padding-bottom: calc(8.25rem + var(--safe-area-bottom));
+  }
+
+  .mobile-bottom-nav {
+    bottom: calc(0.75rem + var(--safe-area-bottom));
+  }
+
+  .mobile-account-sheet {
+    bottom: calc(5.85rem + var(--safe-area-bottom));
+    max-height: min(70vh, calc(100svh - 7rem - var(--safe-area-bottom)));
+  }
+
+  .mobile-quick-add {
+    bottom: calc(6rem + var(--safe-area-bottom));
+    right: 1rem;
+  }
+
+  .mobile-quick-add-list {
+    bottom: 4.25rem;
+  }
+
+  .mobile-toast {
+    bottom: calc(5.85rem + var(--safe-area-bottom));
+  }
+
+  .mobile-command-center {
+    align-items: flex-end;
+    padding: 0 0.75rem calc(0.75rem + var(--safe-area-bottom));
+  }
+
+  .mobile-command-panel {
+    max-height: min(82svh, 42rem);
+    border-radius: 1.5rem;
+  }
+
+  .mobile-dialog-panel {
+    inset: auto 0.75rem calc(0.75rem + var(--safe-area-bottom)) 0.75rem !important;
+    top: auto !important;
+    max-height: calc(100svh - 1.5rem - var(--safe-area-bottom));
+    transform: none !important;
+  }
+
   .grid-bg {
     background-size: 64px 64px;
     mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.82), transparent 88%);

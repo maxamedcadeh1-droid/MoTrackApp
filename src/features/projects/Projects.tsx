@@ -272,7 +272,7 @@ export function Projects() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-x-3 top-1/2 z-[61] max-h-[calc(100vh-1.5rem)] w-auto -translate-y-1/2 overflow-y-auto md:left-1/2 md:w-full md:max-w-xl md:-translate-x-1/2"
+              className="mobile-dialog-panel fixed inset-x-3 top-1/2 z-[61] max-h-[calc(100vh-1.5rem)] w-auto -translate-y-1/2 overflow-y-auto md:left-1/2 md:w-full md:max-w-xl md:-translate-x-1/2"
             >
               <Card className="relative border-white/10 bg-[#0f0f0f] p-5 shadow-2xl sm:p-8">
                 <button onClick={closeModal} className="absolute top-6 right-6 text-zinc-500 hover:text-white">

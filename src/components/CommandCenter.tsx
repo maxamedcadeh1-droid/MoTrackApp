@@ -203,14 +203,14 @@ export function CommandCenter() {
   const groups = ['Navigate', 'Create', 'Focus'] as const;
 
   return isOpen ? (
-    <div className="fixed inset-0 z-[100] flex items-start justify-center px-4 pt-[12vh]">
+    <div className="mobile-command-center fixed inset-0 z-[100] flex items-start justify-center px-4 pt-[12vh]">
       <button
         type="button"
         onClick={() => setIsOpen(false)}
         className="absolute inset-0 bg-black/70 backdrop-blur-xl"
       />
 
-      <div className="relative w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-[#080b13]/94 shadow-xl shadow-black/40 backdrop-blur-xl">
+      <div className="mobile-command-panel relative w-full max-w-2xl overflow-hidden rounded-3xl border border-white/10 bg-[#080b13]/94 shadow-xl shadow-black/40 backdrop-blur-xl">
         <div className="pointer-events-none absolute inset-x-0 top-0 h-28 bg-gradient-to-b from-accent/10 to-transparent" />
         <div className="relative flex items-center gap-4 border-b border-white/10 px-5 py-4">
           <Search className="h-5 w-5 text-zinc-500" />
@@ -224,7 +224,7 @@ export function CommandCenter() {
           />
           <button
             onClick={() => setIsOpen(false)}
-            className="rounded-xl p-2 text-zinc-500 transition-colors hover:bg-white/5 hover:text-white"
+            className="touch-manipulation rounded-xl p-2 text-zinc-500 transition-colors hover:bg-white/5 hover:text-white"
           >
             <X className="h-4 w-4" />
           </button>
@@ -252,7 +252,7 @@ export function CommandCenter() {
                           onMouseEnter={() => setSelectedIndex(absoluteIndex)}
                           onClick={() => runCommand(cmd)}
                           className={cn(
-                            'flex w-full items-center justify-between rounded-2xl p-3 text-left transition-all',
+                            'flex w-full touch-manipulation items-center justify-between rounded-2xl p-3 text-left transition-all',
                             isSelected ? 'bg-white/10 text-white' : 'text-zinc-400 hover:bg-white/5 hover:text-white'
                           )}
                         >

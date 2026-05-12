@@ -3,18 +3,16 @@
   "short_name": "MoTrack",
   "start_url": "/",
   "display": "standalone",
+  "scope": "/",
+  "description": "A cinematic productivity workspace for habits, focus, notes, projects, and analytics.",
   "background_color": "#050505",
   "theme_color": "#8b5cf6",
   "icons": [
     {
-      "src": "https://cdn-icons-png.flaticon.com/512/3593/3593461.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "https://cdn-icons-png.flaticon.com/512/3593/3593461.png",
-      "sizes": "512x512",
-      "type": "image/png"
+      "src": "/motrack-icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
     }
   ]
 }

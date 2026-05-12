@@ -275,7 +275,7 @@ export function Analytics() {
                 <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11, fontWeight: 600 }} dy={12} />
                 <YAxis hide domain={[0, 100]} />
                 <Tooltip contentStyle={tooltipStyle} cursor={{ stroke: 'var(--color-accent)' }} />
-                <Area type="monotone" dataKey="score" stroke="var(--color-accent)" strokeWidth={3} fill="url(#analyticsTrend)" />
+                <Area type="monotone" dataKey="score" stroke="var(--color-accent)" strokeWidth={3} fill="url(#analyticsTrend)" isAnimationActive={false} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
@@ -319,7 +319,7 @@ export function Analytics() {
               <XAxis dataKey="day" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 11, fontWeight: 600 }} />
               <YAxis hide />
               <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
-              <Bar dataKey="minutes" fill="#3b82f6" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="minutes" fill="#3b82f6" radius={[8, 8, 0, 0]} isAnimationActive={false} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>
@@ -331,7 +331,7 @@ export function Analytics() {
               <XAxis dataKey="label" axisLine={false} tickLine={false} tick={{ fill: '#71717a', fontSize: 10, fontWeight: 600 }} />
               <YAxis hide />
               <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(255,255,255,0.04)' }} />
-              <Bar dataKey="minutes" fill="#8b5cf6" radius={[8, 8, 0, 0]} />
+              <Bar dataKey="minutes" fill="#8b5cf6" radius={[8, 8, 0, 0]} isAnimationActive={false} />
             </BarChart>
           </ResponsiveContainer>
         </ChartCard>

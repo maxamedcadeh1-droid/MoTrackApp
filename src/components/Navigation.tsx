@@ -176,7 +176,7 @@ export function MobileNav() {
             onClick={() => setAccountOpen(false)}
             className="fixed inset-0 z-[65] bg-black/40 backdrop-blur-sm md:hidden"
           />
-          <div className="fixed bottom-24 left-3 right-3 z-[70] max-h-[70vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#080b13]/95 p-2 shadow-lg md:hidden">
+          <div className="mobile-account-sheet fixed bottom-24 left-3 right-3 z-[70] max-h-[70vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#080b13]/95 p-2 shadow-lg md:hidden">
               <div className="mb-1 rounded-xl border border-white/10 bg-white/[0.035] p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
@@ -197,7 +197,7 @@ export function MobileNav() {
                     navigate(item.path);
                     setAccountOpen(false);
                   }}
-                  className="flex min-h-12 w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-zinc-300 transition-colors hover:bg-white/5 hover:text-white"
+                  className="flex min-h-12 w-full touch-manipulation items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-zinc-300 transition-colors hover:bg-white/5 hover:text-white"
                 >
                   <item.icon className="h-4 w-4 text-accent" />
                   {item.label}
@@ -207,7 +207,7 @@ export function MobileNav() {
                 type="button"
                 disabled={isLoggingOut}
                 onClick={() => handleLogout(() => setAccountOpen(false))}
-                className="flex min-h-12 w-full items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-red-300 transition-colors hover:bg-red-500/10 disabled:opacity-60"
+                className="flex min-h-12 w-full touch-manipulation items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-red-300 transition-colors hover:bg-red-500/10 disabled:opacity-60"
               >
                 <LogOut className="h-4 w-4" />
                 {isLoggingOut ? 'Logging out...' : 'Logout'}
@@ -216,14 +216,14 @@ export function MobileNav() {
           </>
         )}
 
-      <nav className="fixed bottom-3 left-3 right-3 z-50 flex h-[4.75rem] items-center justify-between gap-1 rounded-2xl border border-white/10 bg-[#080b13]/88 px-2 shadow-lg md:hidden">
+      <nav className="mobile-bottom-nav fixed bottom-3 left-3 right-3 z-50 flex h-[4.75rem] items-center justify-between gap-1 rounded-2xl border border-white/10 bg-[#080b13]/88 px-2 shadow-lg md:hidden">
         {mobileItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             className={({ isActive }) =>
               cn(
-                'relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 transition-all',
+                'relative flex min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 transition-all',
                 isActive ? 'text-white' : 'text-zinc-500'
               )}
           >
@@ -242,7 +242,7 @@ export function MobileNav() {
           type="button"
           onClick={() => setAccountOpen((value) => !value)}
           className={cn(
-            'relative flex min-w-0 flex-1 flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-zinc-500 transition-all',
+            'relative flex min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-zinc-500 transition-all',
             accountOpen && 'bg-accent/10 text-white'
           )}
         >

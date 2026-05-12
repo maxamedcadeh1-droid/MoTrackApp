@@ -133,6 +133,14 @@ export function Notes() {
       showToast('Please log in first', 'error');
       return;
     }
+    const optimisticNote = {
+      ...note,
+      is_pinned: !note.is_pinned,
+      updated_at: new Date().toISOString(),
+    } as Note;
+
+    setNotes(prev => prev.map(n => n.id === note.id ? optimisticNote : n));
+
     try {
       const { data, error } = await (supabase.from('notes') as any)
         .update({ 
@@ -140,6 +148,7 @@ export function Notes() {
           updated_at: new Date().toISOString()
         })
         .eq('id', note.id)
+        .eq('user_id', user.id)
         .select()
         .single();
       
@@ -149,6 +158,7 @@ export function Notes() {
         setNotes(prev => prev.map(n => n.id === note.id ? data : n));
       }
     } catch (error: any) {
+      setNotes(prev => prev.map(n => n.id === note.id ? note : n));
       console.error('Toggle pin error:', error);
       showToast('Something went wrong', 'error');
     }
@@ -310,7 +320,7 @@ export function Notes() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="fixed inset-x-3 top-1/2 z-[61] max-h-[calc(100vh-1.5rem)] w-auto -translate-y-1/2 overflow-y-auto md:left-1/2 md:w-full md:max-w-3xl md:-translate-x-1/2"
+              className="mobile-dialog-panel fixed inset-x-3 top-1/2 z-[61] max-h-[calc(100vh-1.5rem)] w-auto -translate-y-1/2 overflow-y-auto md:left-1/2 md:w-full md:max-w-3xl md:-translate-x-1/2"
             >
               <Card className="relative border-white/10 bg-[#0f0f0f] p-5 shadow-2xl sm:p-8 md:p-10">
                 <button onClick={closeModal} className="absolute top-6 right-6 text-zinc-500 hover:text-white">
@@ -406,7 +416,7 @@ export function Notes() {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="fixed inset-x-3 top-1/2 z-[61] max-h-[calc(100vh-1.5rem)] w-auto -translate-y-1/2 overflow-y-auto md:left-1/2 md:w-full md:max-w-4xl md:-translate-x-1/2"
+                    className="mobile-dialog-panel fixed inset-x-3 top-1/2 z-[61] max-h-[calc(100vh-1.5rem)] w-auto -translate-y-1/2 overflow-y-auto md:left-1/2 md:w-full md:max-w-4xl md:-translate-x-1/2"
                 >
                     <Card className="relative border-white/5 bg-transparent p-5 shadow-none sm:p-12 md:p-20">
                         <div className="absolute right-5 top-5 flex gap-4 sm:right-10 sm:top-10">

@@ -38,9 +38,9 @@ export function QuickAdd() {
         />
       )}
 
-      <div className="fixed bottom-24 right-5 z-50 md:bottom-8 md:right-8">
+      <div className="mobile-quick-add fixed bottom-24 right-5 z-50 md:bottom-8 md:right-8">
         {isOpen && (
-          <div className="absolute bottom-[4.5rem] right-0 space-y-3">
+          <div className="mobile-quick-add-list absolute bottom-[4.5rem] right-0 space-y-3">
             {actions.map((action) => (
               <button
                 key={action.label}
@@ -48,7 +48,7 @@ export function QuickAdd() {
                   navigate(action.path);
                   setIsOpen(false);
                 }}
-                className="group ml-auto flex min-h-12 items-center gap-3"
+                className="group ml-auto flex min-h-12 touch-manipulation items-center gap-3"
               >
                 <span className="whitespace-nowrap rounded-xl border border-white/10 bg-[#080b13]/95 px-3 py-2 text-xs font-semibold text-white opacity-100 shadow-xl backdrop-blur-md transition-all md:opacity-0 md:group-hover:opacity-100">
                   {action.label}
@@ -64,7 +64,7 @@ export function QuickAdd() {
         <button
           onClick={() => setIsOpen((value) => !value)}
           className={cn(
-            'flex h-14 w-14 items-center justify-center rounded-2xl border border-white/10 shadow-xl transition-all duration-300',
+            'flex h-14 w-14 touch-manipulation items-center justify-center rounded-2xl border border-white/10 shadow-xl transition-all duration-300',
             isOpen
               ? 'rotate-45 bg-white/10 text-white backdrop-blur-md'
               : 'momentum-gradient text-white shadow-accent/25'

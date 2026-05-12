@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="MoTrack">
+  <rect width="512" height="512" rx="112" fill="#05060a"/>
+  <circle cx="146" cy="122" r="118" fill="#8b5cf6" opacity="0.28"/>
+  <circle cx="392" cy="156" r="126" fill="#3b82f6" opacity="0.2"/>
+  <rect x="108" y="104" width="296" height="304" rx="72" fill="#080b13" stroke="#ffffff" stroke-opacity="0.18" stroke-width="10"/>
+  <path d="M150 314c30-82 70-123 119-123 42 0 73 29 93 86" fill="none" stroke="#8b5cf6" stroke-width="34" stroke-linecap="round"/>
+  <path d="M172 320h67l48-132 53 172" fill="none" stroke="#22d3ee" stroke-width="24" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="256" cy="256" r="28" fill="#ffffff"/>
+  <circle cx="256" cy="256" r="12" fill="#8b5cf6"/>
+</svg>

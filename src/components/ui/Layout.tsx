@@ -69,7 +69,7 @@ export function Button({
   return (
     <button
       className={cn(
-        "inline-flex items-center justify-center rounded-xl font-sans font-semibold tracking-normal transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]",
+        "inline-flex min-h-10 touch-manipulation items-center justify-center rounded-xl font-sans font-semibold tracking-normal transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#05060a] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.98]",
         variant === 'primary' && "bg-accent text-white shadow-lg shadow-accent/20 hover:-translate-y-0.5 hover:shadow-accent/35 hover:neon-glow-purple",
         variant === 'secondary' && "bg-white/10 text-white hover:bg-white/20",
         variant === 'ghost' && "bg-transparent text-zinc-400 hover:text-white hover:bg-white/5",
@@ -95,7 +95,7 @@ export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInp
   return (
     <input
       className={cn(
-        "w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-zinc-600 transition-all focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/35",
+        "w-full min-h-11 touch-manipulation rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-zinc-600 transition-all focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/35",
         className
       )}
       {...props}
@@ -107,7 +107,7 @@ export function TextArea({ className, ...props }: React.TextareaHTMLAttributes<H
   return (
     <textarea
       className={cn(
-        "min-h-[100px] w-full rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-zinc-600 transition-all focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/35",
+        "min-h-[100px] w-full touch-manipulation rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white placeholder:text-zinc-600 transition-all focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/35",
         className
       )}
       {...props}
@@ -137,7 +137,7 @@ export function Toast({
   return (
     <div
       className={cn(
-        "fixed bottom-24 left-1/2 z-[100] flex -translate-x-1/2 items-center gap-3 rounded-2xl border px-6 py-3 shadow-xl backdrop-blur-md md:bottom-8 transition-all duration-200",
+        "mobile-toast fixed bottom-24 left-1/2 z-[100] flex w-[calc(100vw-1.5rem)] max-w-md -translate-x-1/2 items-center gap-3 rounded-2xl border px-5 py-3 shadow-xl backdrop-blur-md transition-all duration-200 sm:w-auto sm:px-6 md:bottom-8",
         type === 'success' && "bg-emerald-500/10 border-emerald-500/20 text-emerald-400",
         type === 'error' && "bg-red-500/10 border-red-500/20 text-red-400",
         type === 'info' && "bg-blue-500/10 border-blue-500/20 text-blue-400",
@@ -148,7 +148,7 @@ export function Toast({
       {type === 'error' && <AlertCircle className="w-5 h-5" />}
       {type === 'info' && <Info className="w-5 h-5" />}
       <span className="text-sm font-medium">{message}</span>
-      <button onClick={onClose} className="p-1 hover:bg-white/10 rounded-md transition-colors ml-2">
+      <button onClick={onClose} className="ml-auto rounded-md p-1 transition-colors hover:bg-white/10">
         <X className="w-4 h-4" />
       </button>
     </div>

@@ -169,6 +169,15 @@ export function Habits() {
 
     const newStreak = calculateStreak(newCompletedDates);
     const newBestStreak = Math.max(newStreak, habit.best_streak);
+    const optimisticHabit = {
+      ...habit,
+      completed_dates: newCompletedDates,
+      streak: newStreak,
+      best_streak: newBestStreak,
+      updated_at: new Date().toISOString(),
+    } as Habit;
+
+    setHabits(prev => prev.map(h => h.id === habit.id ? optimisticHabit : h));
 
     try {
       const { data, error } = await (supabase.from('habits') as any)
@@ -179,6 +188,7 @@ export function Habits() {
           updated_at: new Date().toISOString()
         })
         .eq('id', habit.id)
+        .eq('user_id', user.id)
         .select()
         .single();
 
@@ -189,6 +199,7 @@ export function Habits() {
         if (!isCompleted) showToast('Habit completed');
       }
     } catch (error: any) {
+      setHabits(prev => prev.map(h => h.id === habit.id ? habit : h));
       console.error('Toggle habit error:', error);
       showToast('Something went wrong', 'error');
     }
@@ -376,7 +387,7 @@ export function Habits() {
               initial={{ opacity: 0, scale: 0.9, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="fixed inset-x-3 top-1/2 z-[61] max-h-[calc(100vh-1.5rem)] w-auto -translate-y-1/2 overflow-y-auto md:left-1/2 md:w-full md:max-w-lg md:-translate-x-1/2"
+              className="mobile-dialog-panel fixed inset-x-3 top-1/2 z-[61] max-h-[calc(100vh-1.5rem)] w-auto -translate-y-1/2 overflow-y-auto md:left-1/2 md:w-full md:max-w-lg md:-translate-x-1/2"
             >
               <Card className="relative border-white/10 bg-[#0f0f0f] p-5 shadow-2xl sm:p-8">
                 <button onClick={closeModal} className="absolute top-6 right-6 text-zinc-500 hover:text-white">
