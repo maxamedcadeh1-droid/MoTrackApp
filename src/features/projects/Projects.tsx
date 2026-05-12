@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button, Input, Badge, Toast, TextArea, Skeleton } from '../../components/ui/Layout';
-import { 
-  Plus, 
-  Search, 
-  MoreVertical, 
-  Clock, 
+import { MobileSheet } from '../../components/ui/MobileSheet';
+import {
+  Plus,
+  Search,
+  MoreVertical,
+  Clock,
   AlertCircle,
   CheckCircle2,
   ListTodo,
@@ -43,10 +44,10 @@ export function Projects() {
   const [search, setSearch] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [activeProject, setActiveProject] = useState<Project | null>(null);
-  const [projectForm, setProjectForm] = useState({ 
-    title: '', 
-    description: '', 
-    status: 'backlog' as any, 
+  const [projectForm, setProjectForm] = useState({
+    title: '',
+    description: '',
+    status: 'backlog' as any,
     priority: 'medium' as any,
     deadline: ''
   });
@@ -85,7 +86,7 @@ export function Projects() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const { data: { user: authUser } } = await supabase.auth.getUser();
-    
+
     if (!authUser) {
       showToast('Please log in first', 'error');
       return;
@@ -110,7 +111,7 @@ export function Projects() {
           .single();
 
         if (error) throw error;
-        
+
         setProjects(prev => prev.map(p => p.id === activeProject.id ? data : p));
         showToast('Project updated');
         closeModal();
@@ -177,7 +178,7 @@ export function Projects() {
     setIsModalOpen(true);
   };
 
-  const filteredProjects = projects.filter(p => 
+  const filteredProjects = projects.filter(p =>
     p.title.toLowerCase().includes(search.toLowerCase())
   );
   const isSearchingExistingProjects = projects.length > 0 && filteredProjects.length === 0;
@@ -204,31 +205,31 @@ export function Projects() {
       <div className="flex flex-col lg:flex-row gap-4 items-center">
         <div className="relative flex-1 w-full">
           <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-zinc-600" />
-          <Input 
-            placeholder="Search projects..." 
+          <Input
+            placeholder="Search projects..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-12 bg-white/5 border-white/5 focus:border-accent/40"
           />
         </div>
         <div className="flex gap-2">
-            <Badge className="bg-accent/10 border-accent/20 text-accent">Active work</Badge>
-            <Badge variant="outline" className="text-zinc-600 border-white/5">Archive</Badge>
+          <Badge className="bg-accent/10 border-accent/20 text-accent">Active work</Badge>
+          <Badge variant="outline" className="text-zinc-600 border-white/5">Archive</Badge>
         </div>
       </div>
 
       {loading ? (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {[1,2].map(i => <Skeleton key={i} className="h-72 rounded-3xl" />)}
+          {[1, 2].map(i => <Skeleton key={i} className="h-72 rounded-3xl" />)}
         </div>
       ) : filteredProjects.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {filteredProjects.map((project) => (
-            <ProjectCard 
-                key={project.id} 
-                project={project} 
-                onEdit={() => openEdit(project)}
-                onDelete={() => handleDelete(project.id)}
+            <ProjectCard
+              key={project.id}
+              project={project}
+              onEdit={() => openEdit(project)}
+              onDelete={() => handleDelete(project.id)}
             />
           ))}
         </div>
@@ -236,7 +237,9 @@ export function Projects() {
         <Card className="flex flex-col items-center justify-center rounded-3xl border-dashed border-white/5 bg-zinc-900/20 py-16 text-center sm:rounded-[3rem] sm:py-24">
           <div className="w-24 h-24 bg-zinc-900 border border-white/5 rounded-full flex items-center justify-center mb-10 shadow-2xl overflow-hidden relative group">
             <div className="absolute inset-0 bg-accent/20 blur-xl opacity-0 group-hover:opacity-100 transition-opacity" />
-            {isSearchingExistingProjects ? <Search className="w-10 h-10 text-zinc-700 relative z-10" /> : <Briefcase className="w-10 h-10 text-zinc-700 relative z-10" />}
+            {isSearchingExistingProjects
+              ? <Search className="w-10 h-10 text-zinc-700 relative z-10" />
+              : <Briefcase className="w-10 h-10 text-zinc-700 relative z-10" />}
           </div>
           <h3 className="text-2xl font-display font-bold text-white tracking-tight leading-none">
             {isSearchingExistingProjects ? 'No projects match your search' : 'Create your first project'}
@@ -257,119 +260,91 @@ export function Projects() {
         </Card>
       )}
 
-      {/* Editor Modal */}
-      <AnimatePresence>
-        {isModalOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60] bg-black/65 backdrop-blur-sm"
-              onClick={closeModal}
+      {/* ── Add / Edit Project Sheet (keyboard-safe) ── */}
+      <MobileSheet
+        open={isModalOpen}
+        onClose={closeModal}
+        title={activeProject ? 'Edit Project' : 'Create Project'}
+        badge="Project details"
+        footer={
+          <div className="flex gap-3">
+            <Button type="button" variant="ghost" className="flex-1" onClick={closeModal} disabled={submitting}>
+              Cancel
+            </Button>
+            <Button type="submit" form="project-form" className="flex-1" disabled={submitting || !projectTitle}>
+              {submitting ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{activeProject ? 'Updating...' : 'Creating...'}</>
+              ) : (
+                activeProject ? 'Save Changes' : 'Create Project'
+              )}
+            </Button>
+          </div>
+        }
+      >
+        <form id="project-form" onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Project name</label>
+            <Input
+              value={projectForm.title}
+              onChange={(e) => setProjectForm({ ...projectForm, title: e.target.value })}
+              placeholder="e.g. Website Redesign"
+              className="bg-white/5"
+              required
+              autoFocus
             />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="mobile-dialog-panel mobile-form-sheet fixed inset-x-3 top-1/2 z-[61] max-h-[85dvh] w-auto -translate-y-1/2 overflow-hidden md:left-1/2 md:w-full md:max-w-xl md:-translate-x-1/2"
-            >
-              <Card className="relative flex max-h-[85dvh] flex-col overflow-hidden rounded-t-[32px] rounded-b-none border-white/10 bg-[#0f0f0f] p-0 shadow-xl md:max-h-[calc(100vh-1.5rem)] md:rounded-3xl md:shadow-2xl">
-                <form onSubmit={handleSubmit} className="flex min-h-0 max-h-[85dvh] flex-col md:max-h-[calc(100vh-1.5rem)]">
-                  <div className="flex shrink-0 items-start justify-between gap-4 border-b border-white/5 px-5 pb-4 pt-5 sm:px-8 sm:pt-8">
-                    <div className="space-y-1">
-                      <Badge variant="outline" className="text-accent border-accent/20">Project details</Badge>
-                      <h3 className="text-2xl font-display font-bold text-white tracking-tight">
-                        {activeProject ? 'Edit Project' : 'Create Project'}
-                      </h3>
-                    </div>
-                    <button type="button" onClick={closeModal} className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.035] text-zinc-500 transition-colors hover:text-white">
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
+            <p className="ml-1 text-xs text-zinc-600">Required. Use a clear outcome or project name.</p>
+          </div>
 
-                  <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4 scrollbar-hide sm:px-8">
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Project name</label>
-                        <Input 
-                            value={projectForm.title}
-                            onChange={(e) => setProjectForm({ ...projectForm, title: e.target.value })}
-                            placeholder="e.g. Website Redesign" 
-                            className="bg-white/5"
-                            required
-                        />
-                        <p className="ml-1 text-xs text-zinc-600">Required. Use a clear outcome or project name.</p>
-                    </div>
-                    
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Description</label>
-                        <TextArea 
-                            value={projectForm.description}
-                            onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
-                            placeholder="Describe the outcome..." 
-                            className="bg-white/5"
-                        />
-                    </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Description</label>
+            <TextArea
+              value={projectForm.description}
+              onChange={(e) => setProjectForm({ ...projectForm, description: e.target.value })}
+              placeholder="Describe the outcome..."
+              className="bg-white/5"
+            />
+          </div>
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Status</label>
-                            <select 
-                                value={projectForm.status}
-                                onChange={(e) => setProjectForm({ ...projectForm, status: e.target.value })}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-accent/50 appearance-none"
-                            >
-                                {STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
-                            </select>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Priority</label>
-                            <select 
-                                value={projectForm.priority}
-                                onChange={(e) => setProjectForm({ ...projectForm, priority: e.target.value })}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-accent/50 appearance-none"
-                            >
-                                {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
-                            </select>
-                        </div>
-                    </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Status</label>
+              <select
+                value={projectForm.status}
+                onChange={(e) => setProjectForm({ ...projectForm, status: e.target.value })}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-accent/50 appearance-none"
+              >
+                {STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Priority</label>
+              <select
+                value={projectForm.priority}
+                onChange={(e) => setProjectForm({ ...projectForm, priority: e.target.value })}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-accent/50 appearance-none"
+              >
+                {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
+              </select>
+            </div>
+          </div>
 
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Deadline</label>
-                        <Input 
-                            type="date"
-                            value={projectForm.deadline}
-                            onChange={(e) => setProjectForm({ ...projectForm, deadline: e.target.value })}
-                            className="bg-white/5"
-                        />
-                    </div>
-                  </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Deadline</label>
+            <Input
+              type="date"
+              value={projectForm.deadline}
+              onChange={(e) => setProjectForm({ ...projectForm, deadline: e.target.value })}
+              className="bg-white/5"
+            />
+          </div>
+        </form>
+      </MobileSheet>
 
-                  <div className="sticky bottom-0 flex shrink-0 gap-3 border-t border-white/5 bg-zinc-950/90 px-5 pb-[calc(1rem+var(--safe-area-bottom))] pt-3 backdrop-blur-xl sm:px-8 sm:pb-5">
-                    <Button type="button" variant="ghost" className="flex-1" onClick={closeModal} disabled={submitting}>Cancel</Button>
-                    <Button type="submit" className="flex-1" disabled={submitting || !projectTitle}>
-                        {submitting ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            {activeProject ? 'Updating...' : 'Creating...'}
-                          </>
-                        ) : (
-                          activeProject ? 'Save Changes' : 'Create Project'
-                        )}
-                    </Button>
-                  </div>
-                </form>
-              </Card>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
-
-      <Toast 
-        isVisible={toast.show} 
-        message={toast.message} 
-        type={toast.type} 
-        onClose={() => setToast({ ...toast, show: false })} 
+      <Toast
+        isVisible={toast.show}
+        message={toast.message}
+        type={toast.type}
+        onClose={() => setToast({ ...toast, show: false })}
       />
     </div>
   );
@@ -418,7 +393,7 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
       .single();
 
       if (error) throw error;
-      
+
       setTasks(prev => [...prev, data]);
       setNewTaskTitle('');
       setIsAddingTask(false);
@@ -435,9 +410,9 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
         .eq('id', task.id)
         .select()
         .single();
-      
+
       if (error) throw error;
-      
+
       setTasks(prev => prev.map(t => t.id === task.id ? data : t));
       await updateProjectProgress();
     } catch (error: any) {
@@ -446,18 +421,17 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
   };
 
   const updateProjectProgress = async () => {
-      // Fetch latest tasks for progress calculation
-      const { data } = await supabase.from('project_tasks').select('is_done').eq('project_id', project.id);
-      const tasks = (data || []) as any[];
-      if (tasks.length > 0) {
-          const done = tasks.filter(t => t.is_done).length;
-          const progress = Math.round((done / tasks.length) * 100);
-          await (supabase.from('projects') as any).update({ progress }).eq('id', project.id);
-          setLocalProgress(progress);
-      } else {
-          await (supabase.from('projects') as any).update({ progress: 0 }).eq('id', project.id);
-          setLocalProgress(0);
-      }
+    const { data } = await supabase.from('project_tasks').select('is_done').eq('project_id', project.id);
+    const tasks = (data || []) as any[];
+    if (tasks.length > 0) {
+      const done = tasks.filter(t => t.is_done).length;
+      const progress = Math.round((done / tasks.length) * 100);
+      await (supabase.from('projects') as any).update({ progress }).eq('id', project.id);
+      setLocalProgress(progress);
+    } else {
+      await (supabase.from('projects') as any).update({ progress: 0 }).eq('id', project.id);
+      setLocalProgress(0);
+    }
   };
 
   const statusMap: any = {
@@ -476,18 +450,18 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
   return (
     <Card className="group relative flex h-full flex-col overflow-hidden rounded-[1.7rem] border-white/10 p-5 transition-all duration-500 hover:border-accent/30 sm:p-7">
       <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-1000" />
-      
+
       <div className="flex justify-between items-start mb-10 relative z-10">
         <Badge variant="outline" className={cn("uppercase tracking-[0.2em] text-[10px] font-bold border-none px-4 py-1.5 rounded-full shadow-lg", statusMap[project.status].color, statusMap[project.status].bg)}>
-            {project.status.replace('_', ' ')}
+          {project.status.replace('_', ' ')}
         </Badge>
         <div className="flex gap-1">
-            <button onClick={onEdit} className="p-2.5 hover:bg-white/5 rounded-2xl text-zinc-600 hover:text-white transition-all">
-                <SquarePen className="w-4 h-4" />
-            </button>
-            <button onClick={onDelete} className="p-2.5 hover:bg-red-500/10 rounded-2xl text-zinc-600 hover:text-red-400 transition-all">
-                <Trash2 className="w-4 h-4" />
-            </button>
+          <button onClick={onEdit} className="p-2.5 hover:bg-white/5 rounded-2xl text-zinc-600 hover:text-white transition-all">
+            <SquarePen className="w-4 h-4" />
+          </button>
+          <button onClick={onDelete} className="p-2.5 hover:bg-red-500/10 rounded-2xl text-zinc-600 hover:text-red-400 transition-all">
+            <Trash2 className="w-4 h-4" />
+          </button>
         </div>
       </div>
 
@@ -519,18 +493,18 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
         <div className="space-y-4">
           <div className="flex justify-between items-end">
             <div className="space-y-2">
-                 <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-600">Project progress</p>
-                 <p className="text-xs font-mono font-bold text-white uppercase">{localProgress}% completed</p>
+              <p className="text-[10px] font-bold uppercase tracking-[0.25em] text-zinc-600">Project progress</p>
+              <p className="text-xs font-mono font-bold text-white uppercase">{localProgress}% completed</p>
             </div>
             <div className="w-10 h-10 rounded-full bg-accent/5 border border-accent/10 flex items-center justify-center text-accent/50 group-hover:scale-110 transition-transform">
-                <TrendingUp className="w-5 h-5" />
+              <TrendingUp className="w-5 h-5" />
             </div>
           </div>
           <div className="h-2 w-full bg-zinc-900 rounded-full overflow-hidden border border-white/5 p-0.5">
-            <motion.div 
+            <motion.div
               initial={{ width: 0 }}
               animate={{ width: `${localProgress}%` }}
-              className="h-full rounded-full momentum-gradient shadow-[0_0_15px_rgba(139,92,246,0.3)]" 
+              className="h-full rounded-full momentum-gradient shadow-[0_0_15px_rgba(139,92,246,0.3)]"
             />
           </div>
         </div>
@@ -554,8 +528,8 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
               </span>
             </div>
           </div>
-          
-          <button 
+
+          <button
             onClick={() => setShowTasks(!showTasks)}
             className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-accent/10 bg-accent/5 px-6 text-accent shadow-xl shadow-accent/5 transition-all hover:bg-accent/10 xl:w-auto group/btn"
           >
@@ -565,76 +539,76 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
         </div>
 
         <AnimatePresence>
-            {showTasks && (
-                <motion.div
-                    initial={{ height: 0, opacity: 0 }}
-                    animate={{ height: 'auto', opacity: 1 }}
-                    exit={{ height: 0, opacity: 0 }}
-                    className="-mx-5 -mb-5 mt-6 overflow-hidden border-t border-white/5 bg-[#0c0c0c] shadow-inner sm:-mx-8 sm:-mb-8 lg:-mx-10 lg:-mb-10"
-                >
-                    <div className="space-y-6 p-5 sm:p-8 lg:p-10">
-                        <div className="mb-2 flex items-center justify-between">
-                             <h4 className="text-[11px] font-bold uppercase tracking-[.3em] text-zinc-600">Project tasks</h4>
-                             {!isAddingTask && (
-                                <button onClick={() => setIsAddingTask(true)} className="text-accent text-[10px] font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4">Add task</button>
-                             )}
-                        </div>
+          {showTasks && (
+            <motion.div
+              initial={{ height: 0, opacity: 0 }}
+              animate={{ height: 'auto', opacity: 1 }}
+              exit={{ height: 0, opacity: 0 }}
+              className="-mx-5 -mb-5 mt-6 overflow-hidden border-t border-white/5 bg-[#0c0c0c] shadow-inner sm:-mx-8 sm:-mb-8 lg:-mx-10 lg:-mb-10"
+            >
+              <div className="space-y-6 p-5 sm:p-8 lg:p-10">
+                <div className="mb-2 flex items-center justify-between">
+                  <h4 className="text-[11px] font-bold uppercase tracking-[.3em] text-zinc-600">Project tasks</h4>
+                  {!isAddingTask && (
+                    <button onClick={() => setIsAddingTask(true)} className="text-accent text-[10px] font-bold uppercase tracking-widest hover:underline decoration-2 underline-offset-4">Add task</button>
+                  )}
+                </div>
 
-                        {isAddingTask && (
-                            <div className="mb-6 flex flex-col gap-3 duration-300 animate-in slide-in-from-top-4 sm:flex-row">
-                                <Input 
-                                    value={newTaskTitle}
-                                    onChange={(e) => setNewTaskTitle(e.target.value)}
-                                    placeholder="Task name..."
-                                    className="bg-zinc-900 h-12 text-sm rounded-xl border-white/5 focus:border-accent/40"
-                                    onKeyDown={(e) => e.key === 'Enter' && addTask()}
-                                />
-                                <Button onClick={addTask} disabled={!trimmedTaskTitle} className="h-12 px-6"><Check className="w-5 h-5" /></Button>
-                                <Button variant="ghost" onClick={() => setIsAddingTask(false)} className="h-12 px-6 text-zinc-500 rounded-xl hover:bg-white/5"><X className="w-5 h-5" /></Button>
-                            </div>
-                        )}
+                {isAddingTask && (
+                  <div className="mb-6 flex flex-col gap-3 duration-300 animate-in slide-in-from-top-4 sm:flex-row">
+                    <Input
+                      value={newTaskTitle}
+                      onChange={(e) => setNewTaskTitle(e.target.value)}
+                      placeholder="Task name..."
+                      className="bg-zinc-900 h-12 text-sm rounded-xl border-white/5 focus:border-accent/40"
+                      onKeyDown={(e) => e.key === 'Enter' && addTask()}
+                    />
+                    <Button onClick={addTask} disabled={!trimmedTaskTitle} className="h-12 px-6"><Check className="w-5 h-5" /></Button>
+                    <Button variant="ghost" onClick={() => setIsAddingTask(false)} className="h-12 px-6 text-zinc-500 rounded-xl hover:bg-white/5"><X className="w-5 h-5" /></Button>
+                  </div>
+                )}
 
-                        <div className="space-y-3">
-                             {tasks.map(task => (
-                                <button
-                                    type="button"
-                                    key={task.id} 
-                                    onClick={() => toggleTask(task)}
-                                    className="flex w-full items-center gap-4 rounded-2xl border border-white/5 bg-[#080808] p-4 text-left shadow-xl transition-all hover:border-accent/20 group/task"
-                                >
-                                    <div className={cn(
-                                        "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-300",
-                                        task.is_done ? "bg-accent border-accent text-white shadow-[0_0_10px_rgba(139,92,246,0.4)]" : "border-white/10 text-transparent group-hover/task:border-accent/40"
-                                    )}>
-                                        <Check className="w-4 h-4" />
-                                    </div>
-                                    <span className={cn(
-                                        "text-[15px] font-medium transition-all flex-1",
-                                        task.is_done ? "text-zinc-600 line-through" : "text-zinc-300 group-hover/task:text-white"
-                                    )}>
-                                        {task.title}
-                                    </span>
-                                </button>
-                             ))}
-                             {tasks.length === 0 && !isAddingTask && (
-                                <div className="py-10 text-center space-y-4">
-                                     <div className="w-12 h-12 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center mx-auto opacity-20">
-                                        <ListTodo className="w-6 h-6" />
-                                     </div>
-                                     <p className="text-[11px] font-bold text-zinc-700 uppercase tracking-widest">No tasks yet</p>
-                                     <button
-                                        type="button"
-                                        onClick={() => setIsAddingTask(true)}
-                                        className="text-sm font-semibold text-accent transition-colors hover:text-white"
-                                     >
-                                        Add first task
-                                     </button>
-                                </div>
-                             )}
-                        </div>
+                <div className="space-y-3">
+                  {tasks.map(task => (
+                    <button
+                      type="button"
+                      key={task.id}
+                      onClick={() => toggleTask(task)}
+                      className="flex w-full items-center gap-4 rounded-2xl border border-white/5 bg-[#080808] p-4 text-left shadow-xl transition-all hover:border-accent/20 group/task"
+                    >
+                      <div className={cn(
+                        "w-6 h-6 rounded-lg border-2 flex items-center justify-center transition-all duration-300",
+                        task.is_done ? "bg-accent border-accent text-white shadow-[0_0_10px_rgba(139,92,246,0.4)]" : "border-white/10 text-transparent group-hover/task:border-accent/40"
+                      )}>
+                        <Check className="w-4 h-4" />
+                      </div>
+                      <span className={cn(
+                        "text-[15px] font-medium transition-all flex-1",
+                        task.is_done ? "text-zinc-600 line-through" : "text-zinc-300 group-hover/task:text-white"
+                      )}>
+                        {task.title}
+                      </span>
+                    </button>
+                  ))}
+                  {tasks.length === 0 && !isAddingTask && (
+                    <div className="py-10 text-center space-y-4">
+                      <div className="w-12 h-12 rounded-full bg-zinc-900 border border-white/5 flex items-center justify-center mx-auto opacity-20">
+                        <ListTodo className="w-6 h-6" />
+                      </div>
+                      <p className="text-[11px] font-bold text-zinc-700 uppercase tracking-widest">No tasks yet</p>
+                      <button
+                        type="button"
+                        onClick={() => setIsAddingTask(true)}
+                        className="text-sm font-semibold text-accent transition-colors hover:text-white"
+                      >
+                        Add first task
+                      </button>
                     </div>
-                </motion.div>
-            )}
+                  )}
+                </div>
+              </div>
+            </motion.div>
+          )}
         </AnimatePresence>
       </div>
     </Card>

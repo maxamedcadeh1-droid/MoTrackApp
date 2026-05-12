@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button, Input, Badge, Toast, TextArea, Skeleton } from '../../components/ui/Layout';
+import { MobileSheet } from '../../components/ui/MobileSheet';
 import { 
   Plus, 
   CheckCircle2, 
@@ -440,129 +441,99 @@ export function Habits() {
         </Card>
       )}
 
-      {/* Modal */}
-      <AnimatePresence>
-        {isAdding && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60] bg-black/65 backdrop-blur-sm"
-              onClick={closeModal}
+      {/* Add / Edit Habit Sheet */}
+      <MobileSheet
+        open={isAdding}
+        onClose={closeModal}
+        title={editingHabit ? 'Edit Habit' : 'Create Habit'}
+        badge="Habit setup"
+        footer={
+          <div className="flex gap-3">
+            <Button type="button" variant="ghost" className="flex-1" onClick={closeModal} disabled={submitting}>Cancel</Button>
+            <Button type="submit" form="habit-form" className="flex-1" disabled={submitting || !habitTitle}>
+              {submitting ? (
+                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{editingHabit ? 'Saving...' : 'Creating...'}</>
+              ) : (
+                editingHabit ? 'Save Changes' : 'Create Habit'
+              )}
+            </Button>
+          </div>
+        }
+      >
+        <form id="habit-form" onSubmit={handleSubmit} className="space-y-4">
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Habit title</label>
+            <Input
+              value={newHabit.title}
+              onChange={(e) => setNewHabit({ ...newHabit, title: e.target.value })}
+              placeholder="e.g. Morning walk"
+              className="bg-white/5"
+              required
+              autoFocus
             />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.9, y: 20 }}
-              className="mobile-dialog-panel mobile-form-sheet fixed inset-x-3 top-1/2 z-[61] max-h-[85dvh] w-auto -translate-y-1/2 overflow-hidden md:left-1/2 md:w-full md:max-w-lg md:-translate-x-1/2"
-            >
-              <Card className="relative flex max-h-[85dvh] flex-col overflow-hidden rounded-t-[32px] rounded-b-none border-white/10 bg-[#0f0f0f] p-0 shadow-xl md:max-h-[calc(100vh-1.5rem)] md:rounded-3xl md:shadow-2xl">
-                <form onSubmit={handleSubmit} className="flex min-h-0 max-h-[85dvh] flex-col md:max-h-[calc(100vh-1.5rem)]">
-                  <div className="flex shrink-0 items-start justify-between gap-4 border-b border-white/5 px-5 pb-4 pt-5 sm:px-8 sm:pt-8">
-                    <div className="space-y-1">
-                      <Badge variant="outline" className="text-accent border-accent/20">Habit setup</Badge>
-                      <h3 className="text-2xl font-display font-bold text-white tracking-tight">
-                        {editingHabit ? 'Edit Habit' : 'Create Habit'}
-                      </h3>
-                    </div>
-                    <button type="button" onClick={closeModal} className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.035] text-zinc-500 transition-colors hover:text-white">
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
+            <p className="ml-1 text-xs text-zinc-600">Required. Keep it short and easy to complete.</p>
+          </div>
 
-                  <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4 scrollbar-hide sm:px-8">
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Habit title</label>
-                        <Input 
-                            value={newHabit.title}
-                            onChange={(e) => setNewHabit({ ...newHabit, title: e.target.value })}
-                            placeholder="e.g. Morning walk" 
-                            className="bg-white/5"
-                            required
-                        />
-                        <p className="ml-1 text-xs text-zinc-600">Required. Keep it short and easy to complete.</p>
-                    </div>
-                    
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Description (optional)</label>
-                        <TextArea 
-                            value={newHabit.description}
-                            onChange={(e) => setNewHabit({ ...newHabit, description: e.target.value })}
-                            placeholder="Why is this important?" 
-                            className="bg-white/5"
-                        />
-                    </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Description (optional)</label>
+            <TextArea
+              value={newHabit.description}
+              onChange={(e) => setNewHabit({ ...newHabit, description: e.target.value })}
+              placeholder="Why is this important?"
+              className="bg-white/5"
+            />
+          </div>
 
-                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Category</label>
-                            <select 
-                                value={newHabit.category}
-                                onChange={(e) => setNewHabit({ ...newHabit, category: e.target.value })}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-accent/50 appearance-none"
-                            >
-                                {CATEGORIES.filter(c => c !== 'All').map(c => <option key={c} value={c}>{c}</option>)}
-                            </select>
-                        </div>
-                        <div className="space-y-2">
-                            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Icon</label>
-                            <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
-                                {ICONS.map(i => (
-                                    <button
-                                        key={i.name}
-                                        type="button"
-                                        onClick={() => setNewHabit({ ...newHabit, icon: i.name })}
-                                        className={cn(
-                                            "p-2.5 rounded-xl border transition-all",
-                                            newHabit.icon === i.name ? "bg-accent/10 border-accent/40 text-accent" : "bg-white/5 border-white/5 text-zinc-500"
-                                        )}
-                                    >
-                                        <i.icon className="w-4 h-4" />
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-                    </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Category</label>
+              <select
+                value={newHabit.category}
+                onChange={(e) => setNewHabit({ ...newHabit, category: e.target.value })}
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-accent/50 appearance-none"
+              >
+                {CATEGORIES.filter(c => c !== 'All').map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+            <div className="space-y-2">
+              <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Icon</label>
+              <div className="flex gap-2 overflow-x-auto pb-2 scrollbar-hide">
+                {ICONS.map(i => (
+                  <button
+                    key={i.name}
+                    type="button"
+                    onClick={() => setNewHabit({ ...newHabit, icon: i.name })}
+                    className={cn(
+                      'p-2.5 rounded-xl border transition-all',
+                      newHabit.icon === i.name ? 'bg-accent/10 border-accent/40 text-accent' : 'bg-white/5 border-white/5 text-zinc-500'
+                    )}
+                  >
+                    <i.icon className="w-4 h-4" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          </div>
 
-                    <div className="space-y-2">
-                        <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Color</label>
-                        <div className="flex gap-3">
-                            {COLORS.map(c => (
-                                <button
-                                    key={c}
-                                    type="button"
-                                    onClick={() => setNewHabit({ ...newHabit, color: c })}
-                                    className={cn(
-                                        "w-8 h-8 rounded-full transition-all border-2",
-                                        newHabit.color === c ? "border-white scale-110 shadow-lg" : "border-transparent opacity-60 hover:opacity-100"
-                                    )}
-                                    style={{ backgroundColor: c }}
-                                />
-                            ))}
-                        </div>
-                    </div>
-                  </div>
-
-                  <div className="sticky bottom-0 flex shrink-0 gap-3 border-t border-white/5 bg-zinc-950/90 px-5 pb-[calc(1rem+var(--safe-area-bottom))] pt-3 backdrop-blur-xl sm:px-8 sm:pb-5">
-                    <Button type="button" variant="ghost" className="flex-1" onClick={closeModal} disabled={submitting}>Cancel</Button>
-                    <Button type="submit" className="flex-1" disabled={submitting || !habitTitle}>
-                        {submitting ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            {editingHabit ? 'Saving...' : 'Creating...'}
-                          </>
-                        ) : (
-                          editingHabit ? 'Save Changes' : 'Create Habit'
-                        )}
-                    </Button>
-                  </div>
-                </form>
-              </Card>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Color</label>
+            <div className="flex gap-3">
+              {COLORS.map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setNewHabit({ ...newHabit, color: c })}
+                  className={cn(
+                    'w-8 h-8 rounded-full transition-all border-2',
+                    newHabit.color === c ? 'border-white scale-110 shadow-lg' : 'border-transparent opacity-60 hover:opacity-100'
+                  )}
+                  style={{ backgroundColor: c }}
+                />
+              ))}
+            </div>
+          </div>
+        </form>
+      </MobileSheet>
 
       <AnimatePresence>
         {pendingDeleteHabit && (
