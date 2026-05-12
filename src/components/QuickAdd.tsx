@@ -40,7 +40,7 @@ export function QuickAdd() {
       )}
 
       {/* FAB Container */}
-      <div className="mobile-quick-add fixed bottom-24 right-4 z-50 md:bottom-8 md:right-8">
+      <div className="mobile-quick-add fixed bottom-28 right-6 z-50 md:bottom-8 md:right-8">
         {/* Action buttons */}
         {isOpen && (
           <div className="mobile-quick-add-list absolute bottom-[4.5rem] right-0 flex flex-col gap-3">
@@ -69,7 +69,7 @@ export function QuickAdd() {
         <button
           onClick={() => setIsOpen((v) => !v)}
           className={cn(
-            'relative flex h-14 w-14 touch-manipulation items-center justify-center rounded-2xl border shadow-2xl transition-all duration-300 active:scale-95',
+                  'relative flex h-16 w-16 touch-manipulation items-center justify-center rounded-[1.4rem] border shadow-2xl transition-all duration-300 active:scale-95',
             isOpen
               ? 'rotate-45 border-white/20 bg-white/10 text-white backdrop-blur-xl'
               : 'border-white/10 bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-500 text-white shadow-violet-500/30'

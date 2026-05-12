@@ -57,7 +57,7 @@ export function DashboardLayout() {
       <QuickAdd />
       
       <main className="mobile-safe-main relative z-10 min-w-0 flex-1 pb-32 md:pb-0">
-        <div className="mx-auto w-full max-w-7xl px-3 py-4 sm:px-4 sm:py-5 md:p-8 lg:p-12">
+        <div className="mx-auto w-full max-w-[430px] px-5 py-6 md:max-w-7xl md:p-8 lg:p-12">
           {reduceMotion ? (
             <div key={location.pathname} className="min-h-[calc(100vh-120px)]">
               <Outlet />

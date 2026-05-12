@@ -68,18 +68,31 @@
 }
 
 @utility glass {
-  background-color: rgba(11, 13, 20, 0.58);
+  background:
+    linear-gradient(135deg, rgba(255, 255, 255, 0.075), rgba(255, 255, 255, 0.018)),
+    radial-gradient(circle at 18% 0%, rgba(139, 92, 246, 0.12), transparent 36%),
+    rgba(6, 8, 18, 0.72);
   backdrop-filter: blur(24px); /* blur-xl approx */
-  border: 1px solid var(--color-glass-border);
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(147, 197, 253, 0.11);
+  box-shadow:
+    0 28px 90px rgba(0, 0, 0, 0.36),
+    0 0 38px rgba(139, 92, 246, 0.08),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
 }
 
 @utility glass-card {
-  background-color: rgba(11, 13, 20, 0.58);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.018)),
+    radial-gradient(circle at 14% 0%, rgba(139, 92, 246, 0.12), transparent 40%),
+    radial-gradient(circle at 100% 20%, rgba(59, 130, 246, 0.08), transparent 34%),
+    rgba(7, 10, 23, 0.82);
   backdrop-filter: blur(12px); /* Reduced for mobile */
-  border: 1px solid var(--color-glass-border);
-  border-radius: 28px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  border-radius: 24px;
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.35),
+    0 0 32px rgba(59, 130, 246, 0.045),
+    inset 0 1px 0 rgba(255, 255, 255, 0.055);
   transition: all 200ms ease; /* Faster transition */
 }
 
@@ -216,9 +229,44 @@
 
 .premium-bg {
   background:
-    radial-gradient(circle at 12% 12%, rgba(139, 92, 246, 0.13), transparent 34%),
-    radial-gradient(circle at 86% 18%, rgba(59, 130, 246, 0.11), transparent 32%),
-    linear-gradient(180deg, #05060a 0%, #070914 52%, #05060a 100%);
+    radial-gradient(circle at 15% 4%, rgba(139, 92, 246, 0.2), transparent 30%),
+    radial-gradient(circle at 84% 8%, rgba(37, 99, 235, 0.2), transparent 32%),
+    radial-gradient(circle at 50% 55%, rgba(12, 28, 70, 0.55), transparent 48%),
+    linear-gradient(180deg, #02040b 0%, #060817 46%, #03040a 100%);
+}
+
+.luxury-card {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  background:
+    linear-gradient(145deg, rgba(255, 255, 255, 0.07), rgba(255, 255, 255, 0.018)),
+    radial-gradient(circle at 0% 0%, rgba(139, 92, 246, 0.13), transparent 38%),
+    radial-gradient(circle at 100% 20%, rgba(59, 130, 246, 0.09), transparent 36%),
+    rgba(7, 10, 23, 0.86);
+  box-shadow:
+    0 24px 70px rgba(0, 0, 0, 0.36),
+    0 0 38px rgba(139, 92, 246, 0.075),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.luxury-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(120deg, rgba(255,255,255,0.1), transparent 26%, transparent 72%, rgba(59,130,246,0.08));
+  opacity: 0.65;
+}
+
+.orb-glow {
+  filter: drop-shadow(0 0 18px rgba(139, 92, 246, 0.55)) drop-shadow(0 0 42px rgba(37, 99, 235, 0.45));
+}
+
+.wave-line {
+  background-image:
+    linear-gradient(90deg, transparent 0%, rgba(139, 92, 246, 0.9) 16%, rgba(59, 130, 246, 0.95) 55%, rgba(34, 211, 238, 0.85) 100%);
+  box-shadow: 0 0 24px rgba(59, 130, 246, 0.35);
 }
 
 .recharts-tooltip-wrapper {
@@ -281,9 +329,9 @@
 
   .premium-bg {
     background:
-      radial-gradient(circle at 14% 10%, rgba(139, 92, 246, 0.1), transparent 32%),
-      radial-gradient(circle at 90% 18%, rgba(59, 130, 246, 0.08), transparent 30%),
-      linear-gradient(180deg, #05060a 0%, #070914 52%, #05060a 100%);
+      radial-gradient(circle at 12% 5%, rgba(139, 92, 246, 0.18), transparent 34%),
+      radial-gradient(circle at 90% 12%, rgba(59, 130, 246, 0.16), transparent 32%),
+      linear-gradient(180deg, #02040b 0%, #060817 50%, #03040a 100%);
   }
 
   .glass-card {
@@ -332,11 +380,6 @@
 
   .skeleton-shimmer::after {
     animation-duration: 1.2s !important;
-  }
-
-  /* Reduce shadows on mobile */
-  [class*="shadow"] {
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
   }
 
   .animate-float {

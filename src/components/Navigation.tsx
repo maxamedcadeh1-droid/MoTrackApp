@@ -251,7 +251,7 @@ export function MobileNav() {
       )}
 
       {/* ── FLOATING GLASS DOCK ── */}
-      <nav className="mobile-bottom-nav fixed bottom-3 left-3 right-3 z-50 flex h-[4.5rem] items-center justify-between gap-1 overflow-hidden rounded-3xl border border-white/10 bg-[#080b13]/90 px-2 shadow-2xl shadow-black/40 backdrop-blur-2xl md:hidden">
+      <nav className="mobile-bottom-nav fixed bottom-3 left-5 right-5 z-50 flex h-[4.75rem] items-center justify-between gap-1 overflow-hidden rounded-[1.75rem] border border-white/12 bg-[#070a16]/88 px-2 shadow-2xl shadow-black/50 backdrop-blur-2xl md:hidden">
         {/* Subtle top highlight */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
 
@@ -270,8 +270,8 @@ export function MobileNav() {
               <>
                 {isActive && (
                   <>
-                    <span className="absolute inset-0 rounded-2xl bg-accent/12" />
-                    <span className="absolute bottom-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full bg-accent shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
+                    <span className="absolute inset-0 rounded-[1.45rem] bg-gradient-to-b from-violet-500/22 to-blue-500/8 shadow-[0_0_26px_rgba(139,92,246,0.18)]" />
+                    <span className="absolute bottom-1 left-1/2 h-0.5 w-7 -translate-x-1/2 rounded-full bg-accent shadow-[0_0_10px_rgba(139,92,246,0.9)]" />
                   </>
                 )}
                 <item.icon className={cn('relative z-10 h-5 w-5 transition-all duration-200', isActive ? 'text-accent scale-110' : '')} />
@@ -292,8 +292,8 @@ export function MobileNav() {
         >
           {profileOpen && (
             <>
-              <span className="absolute inset-0 rounded-2xl bg-accent/12" />
-              <span className="absolute bottom-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full bg-accent shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
+              <span className="absolute inset-0 rounded-[1.45rem] bg-gradient-to-b from-violet-500/22 to-blue-500/8 shadow-[0_0_26px_rgba(139,92,246,0.18)]" />
+              <span className="absolute bottom-1 left-1/2 h-0.5 w-7 -translate-x-1/2 rounded-full bg-accent shadow-[0_0_10px_rgba(139,92,246,0.9)]" />
             </>
           )}
           <div className={cn('relative z-10 flex h-6 w-6 items-center justify-center overflow-hidden rounded-full border transition-all duration-200', profileOpen ? 'border-accent scale-110' : 'border-white/20')}>

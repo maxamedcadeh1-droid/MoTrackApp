@@ -183,22 +183,22 @@ export function Projects() {
   const isSearchingExistingProjects = projects.length > 0 && filteredProjects.length === 0;
 
   return (
-    <div className="space-y-8 pb-20">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-              <div className="w-1.5 h-6 bg-accent rounded-full" />
-              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500">Projects and tasks</span>
+    <div className="space-y-5 pb-24">
+      <header className="luxury-card rounded-[2rem] p-6">
+        <div className="pointer-events-none absolute -right-10 -top-12 h-44 w-44 rounded-full bg-blue-500/18 blur-3xl" />
+        <div className="relative flex items-end justify-between gap-5">
+          <div>
+            <p className="text-sm font-semibold text-violet-300">Productivity OS</p>
+            <h1 className="mt-2 font-display text-3xl font-bold leading-tight text-white">
+              Projects <span className="bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">Overview</span>
+            </h1>
+            <p className="mt-3 max-w-xl text-sm font-medium text-zinc-400">Track project momentum, timelines, tasks, and next actions in one premium workspace.</p>
           </div>
-          <h1 className="text-4xl md:text-5xl font-display font-bold text-white tracking-tight leading-tight">
-            Projects
-          </h1>
-          <p className="text-zinc-500 mt-4 font-medium tracking-tight max-w-xl">Plan meaningful work, break it into tasks, and keep completion visible at a glance.</p>
+          <Button onClick={() => setIsModalOpen(true)} size="sm" className="shrink-0 rounded-2xl">
+            <Plus className="mr-2 h-4 w-4" />
+            New
+          </Button>
         </div>
-        <Button onClick={() => setIsModalOpen(true)} className="h-14 px-8 shadow-xl shadow-accent/20">
-          <Plus className="w-5 h-5 mr-3" />
-          Create Project
-        </Button>
       </header>
 
       <div className="flex flex-col lg:flex-row gap-4 items-center">
@@ -474,7 +474,7 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
   };
 
   return (
-    <Card className="group relative flex h-full flex-col overflow-hidden rounded-3xl border-white/5 bg-[#0a0a0a] p-5 transition-all duration-700 hover:border-accent/30 sm:rounded-[2.5rem] sm:p-8 lg:p-10">
+    <Card className="group relative flex h-full flex-col overflow-hidden rounded-[1.7rem] border-white/10 p-5 transition-all duration-500 hover:border-accent/30 sm:p-7">
       <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-1000" />
       
       <div className="flex justify-between items-start mb-10 relative z-10">
@@ -491,13 +491,28 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
         </div>
       </div>
 
-      <div className="space-y-6 mb-12 relative z-10">
+      <div className="relative z-10 mb-8 space-y-5">
         <h3 className="font-display text-2xl font-bold leading-tight tracking-tight text-white transition-colors duration-500 group-hover:text-accent sm:text-4xl line-clamp-1">
           {project.title}
         </h3>
         <p className="text-zinc-500 text-[15px] line-clamp-2 leading-relaxed font-medium opacity-70 group-hover:opacity-100 transition-opacity">
           {project.description || 'No project description yet.'}
         </p>
+        <div className="flex items-center justify-center py-2">
+          <div className="relative flex h-28 w-28 items-center justify-center">
+            <svg viewBox="0 0 112 112" className="absolute inset-0 h-full w-full -rotate-90">
+              <circle cx="56" cy="56" r="42" stroke="rgba(255,255,255,0.07)" strokeWidth="8" fill="none" />
+              <circle cx="56" cy="56" r="42" stroke="url(#projectRing)" strokeWidth="8" strokeLinecap="round" fill="none" strokeDasharray="263.9" strokeDashoffset={`${263.9 - (263.9 * localProgress) / 100}`} />
+              <defs>
+                <linearGradient id="projectRing" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#8b5cf6" />
+                  <stop offset="100%" stopColor="#3b82f6" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <span className="font-mono text-2xl font-bold text-white">{localProgress}%</span>
+          </div>
+        </div>
       </div>
 
       <div className="mt-auto space-y-10 relative z-10">

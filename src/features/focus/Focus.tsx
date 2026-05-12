@@ -198,33 +198,29 @@ export function Focus() {
   const progress = (1 - timeLeft / (MODES[mode].minutes * 60)) * 100;
 
   return (
-    <div className="mx-auto max-w-6xl space-y-8 pb-20 sm:space-y-12">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-              <div className="w-1.5 h-6 bg-accent rounded-full" />
-              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500">Focus session</span>
+    <div className="mx-auto space-y-5 pb-24 sm:space-y-8">
+      <header className="luxury-card rounded-[2rem] p-6">
+        <div className="pointer-events-none absolute -right-10 -top-12 h-44 w-44 rounded-full bg-blue-500/18 blur-3xl" />
+        <div className="relative flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold text-violet-300">Focus Session</p>
+            <h1 className="mt-2 font-display text-3xl font-bold leading-tight text-white">Deep Focus</h1>
+            <p className="mt-3 flex items-center gap-2 text-sm text-zinc-400">
+              <span className="h-2 w-2 rounded-full bg-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.9)]" />
+              Distraction-free mode
+            </p>
           </div>
-          <h1 className="text-4xl md:text-5xl font-display font-bold text-white tracking-tight leading-tight">
-            Focus Time
-          </h1>
-          <p className="text-zinc-500 mt-4 font-medium tracking-tight max-w-xl">Set a clear block, reduce context switching, and give one important thing your best attention.</p>
-        </div>
-        <div className="flex gap-4">
-            <div className="flex items-center h-14 gap-3 bg-white/5 px-6 rounded-2xl border border-white/5 shadow-xl transition-all hover:bg-white/[0.08]">
-                <Flame className="w-5 h-5 text-orange-500 animate-pulse" />
-                <div className="flex flex-col">
-                    <span className="text-[10px] font-bold text-zinc-500 uppercase tracking-widest leading-none">Today</span>
-                    <span className="text-xs font-mono font-bold text-white uppercase mt-1 tracking-tight">{sessions.length} sessions</span>
-                </div>
-            </div>
+          <div className="rounded-2xl border border-white/10 bg-white/[0.045] px-4 py-3 text-right">
+            <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Today</p>
+            <p className="mt-1 font-mono text-sm font-bold text-white">{sessions.length} sessions</p>
+          </div>
         </div>
       </header>
 
       <div className="grid grid-cols-1 gap-8 lg:grid-cols-12 lg:gap-12">
         {/* Main Timer Display */}
-        <div className="flex flex-col items-center justify-center space-y-8 lg:col-span-8 lg:space-y-12">
-            <div className="relative flex aspect-square w-full max-w-[34rem] flex-col items-center justify-center">
+        <div className="luxury-card flex flex-col items-center justify-center rounded-[2rem] p-5 lg:col-span-8">
+            <div className="relative flex aspect-square w-full max-w-[25rem] flex-col items-center justify-center">
                 {/* Circular Progress Ring */}
                 <svg className="absolute inset-0 w-full h-full -rotate-90">
                     <circle
@@ -268,8 +264,17 @@ export function Focus() {
                         ))}
                     </div>
                     
-                    <div className="font-mono text-[4.5rem] font-bold leading-none tracking-tight text-white tabular-nums sm:text-[7rem] md:text-[10rem] lg:text-[11.25rem]">
+                    <div className="font-mono text-[4.25rem] font-bold leading-none tracking-tight text-white tabular-nums sm:text-[7rem] md:text-[8rem]">
                         {formatTime(timeLeft)}
+                    </div>
+                    <div className="mx-auto mt-5 flex h-10 w-48 items-end justify-center gap-1 overflow-hidden">
+                      {[12, 28, 18, 34, 16, 26, 42, 20, 32, 14, 30, 18, 36, 22, 44, 24, 34, 16].map((height, index) => (
+                        <span
+                          key={index}
+                          className="w-1 rounded-full bg-gradient-to-t from-violet-500 to-blue-400 shadow-[0_0_10px_rgba(59,130,246,0.35)]"
+                          style={{ height: `${height}px`, opacity: isActive ? 1 : 0.55 }}
+                        />
+                      ))}
                     </div>
                 </div>
 
@@ -309,7 +314,7 @@ export function Focus() {
 
         {/* Side Controls: Sounds & History */}
         <div className="lg:col-span-4 space-y-8">
-            <Card className="border-white/5 bg-white/[0.02] p-5 sm:p-8">
+            <Card className="rounded-[1.7rem] border-white/10 p-5 sm:p-8">
                 <h3 className="text-sm font-display font-semibold uppercase tracking-[0.3em] text-zinc-600 mb-6">Background audio</h3>
                 <div className="space-y-4">
                     {SOUNDS.map(sound => (

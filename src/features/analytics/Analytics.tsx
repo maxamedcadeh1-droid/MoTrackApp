@@ -204,19 +204,14 @@ export function Analytics() {
   }
 
   return (
-    <div className="space-y-8 pb-12">
-      <header className="flex flex-col gap-5 md:flex-row md:items-end md:justify-between">
+    <div className="space-y-5 pb-24">
+      <header className="luxury-card rounded-[2rem] p-6 md:flex md:items-end md:justify-between">
         <div className="max-w-3xl">
-          <div className="mb-4 flex items-center gap-2">
-            <span className="h-2 w-2 rounded-full bg-accent shadow-[0_0_18px_rgba(139,92,246,0.5)]" />
-            <span className="text-[11px] font-semibold uppercase tracking-[0.2em] text-zinc-500">
-              Productivity overview
-            </span>
-          </div>
-          <h1 className="font-display text-4xl font-bold leading-tight tracking-normal text-white md:text-6xl">
-            Performance insights
+          <h1 className="font-display text-3xl font-bold leading-tight tracking-normal text-white md:text-6xl">
+            Your Productivity <span className="bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">Pulse</span>
           </h1>
-          <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-500">{insight}</p>
+          <p className="mt-3 max-w-2xl text-base leading-relaxed text-zinc-400">AI-powered weekly summary.</p>
+          <p className="mt-2 text-sm font-semibold text-emerald-400">{insight}</p>
         </div>
         <Button onClick={() => navigate('/focus?start=true')}>
           <Timer className="mr-2 h-4 w-4" />

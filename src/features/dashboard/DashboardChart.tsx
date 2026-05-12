@@ -1,8 +1,8 @@
 import {
   Area,
+  Bar,
   CartesianGrid,
   ComposedChart,
-  Line,
   ResponsiveContainer,
   Tooltip,
   XAxis,
@@ -27,9 +27,9 @@ const tooltipStyle = {
 
 export function DashboardChart({ data }: { data: DashboardChartPoint[] }) {
   return (
-    <div className="h-[300px] w-full min-w-0">
+    <div className="h-full w-full min-w-0">
       <ResponsiveContainer width="100%" height="100%">
-        <ComposedChart data={data} margin={{ top: 18, right: 8, bottom: 0, left: 0 }}>
+        <ComposedChart data={data} margin={{ top: 8, right: 4, bottom: 0, left: 0 }}>
           <defs>
             <linearGradient id="focusGradient" x1="0" y1="0" x2="0" y2="1">
               <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.36} />
@@ -45,8 +45,8 @@ export function DashboardChart({ data }: { data: DashboardChartPoint[] }) {
             dataKey="day"
             axisLine={false}
             tickLine={false}
-            tick={{ fill: '#a1a1aa', fontSize: 11, fontWeight: 600 }}
-            dy={12}
+            tick={{ fill: '#a1a1aa', fontSize: 10, fontWeight: 600 }}
+            dy={8}
           />
           <YAxis hide />
           <Tooltip contentStyle={tooltipStyle} cursor={{ fill: 'rgba(255,255,255,0.05)' }} />
@@ -56,9 +56,9 @@ export function DashboardChart({ data }: { data: DashboardChartPoint[] }) {
             name="Focus minutes"
             stroke="#3b82f6"
             fill="url(#focusGradient)"
-            strokeWidth={3}
+            strokeWidth={2.5}
             dot={false}
-            activeDot={{ r: 5, fill: '#3b82f6' }}
+            activeDot={{ r: 4, fill: '#3b82f6' }}
             isAnimationActive={false}
           />
           <Area
@@ -67,18 +67,16 @@ export function DashboardChart({ data }: { data: DashboardChartPoint[] }) {
             name="Habits completed"
             stroke="#10b981"
             fill="url(#habitsGradient)"
-            strokeWidth={3}
+            strokeWidth={2.5}
             dot={false}
             isAnimationActive={false}
           />
-          <Line
-            type="monotone"
+          <Bar
             dataKey="tasksCompleted"
             name="Tasks completed"
-            stroke="#a855f7"
-            strokeWidth={3}
-            dot={{ r: 4, fill: '#a855f7' }}
-            activeDot={{ r: 6 }}
+            fill="#f59e0b"
+            radius={[6, 6, 2, 2]}
+            barSize={10}
             isAnimationActive={false}
           />
         </ComposedChart>

@@ -18,6 +18,7 @@ import {
   Flame,
   Award,
   Filter,
+  Sparkles,
   X
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
@@ -275,25 +276,84 @@ export function Habits() {
     return matchesSearch && matchesFilter;
   });
   const isFilteringExistingHabits = habits.length > 0 && filteredHabits.length === 0;
+  const todayKey = new Date().toISOString().split('T')[0];
+  const completedToday = habits.filter((habit) => habit.completed_dates?.includes(todayKey)).length;
+  const completionRate = habits.length ? Math.round((completedToday / habits.length) * 100) : 0;
+  const bestStreak = Math.max(0, ...habits.map((habit) => habit.streak || 0));
+  const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   return (
-    <div className="space-y-8 pb-20">
-      <header className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-        <div>
-          <div className="flex items-center gap-2 mb-4">
-              <div className="w-1.5 h-6 bg-accent rounded-full" />
-              <span className="text-[10px] font-bold uppercase tracking-[0.3em] text-zinc-500">Daily routines</span>
+    <div className="space-y-5 pb-24">
+      <header className="luxury-card rounded-[2rem] p-6">
+        <div className="pointer-events-none absolute -right-10 -top-12 h-44 w-44 rounded-full bg-blue-500/18 blur-3xl" />
+        <div className="relative flex items-start justify-between gap-4">
+          <div className="min-w-0">
+            <h1 className="font-display text-3xl font-bold leading-tight text-white">
+              Momentum <span className="bg-gradient-to-r from-violet-400 to-blue-400 bg-clip-text text-transparent">Engine</span>
+            </h1>
+            <p className="mt-2 text-sm font-medium text-zinc-400">Small habits. Massive momentum.</p>
+            <div className="mt-6 flex gap-3">
+              {weekDays.map((day, index) => {
+                const date = new Date();
+                date.setDate(date.getDate() - (6 - index));
+                const done = habits.some((habit) => habit.completed_dates?.includes(date.toISOString().split('T')[0]));
+
+                return (
+                  <div key={`${day}-${index}`} className="flex flex-col items-center gap-2">
+                    <span className="text-[10px] font-semibold text-zinc-500">{day}</span>
+                    <span className={cn(
+                      'flex h-9 w-9 items-center justify-center rounded-full border text-xs font-bold',
+                      done
+                        ? 'border-blue-500/35 bg-blue-500/15 text-blue-300 shadow-[0_0_18px_rgba(59,130,246,0.26)]'
+                        : 'border-white/10 bg-white/[0.03] text-zinc-600'
+                    )}>
+                      {done ? <Check className="h-4 w-4" /> : day}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <h1 className="text-4xl md:text-5xl font-display font-bold text-white tracking-tight leading-tight">
-            Habits
-          </h1>
-          <p className="text-zinc-500 mt-4 font-medium tracking-tight max-w-xl">Design steady routines, protect your streaks, and make progress feel visible every day.</p>
+
+          <div className="relative flex h-28 w-28 shrink-0 items-center justify-center orb-glow">
+            <svg viewBox="0 0 112 112" className="absolute inset-0 h-full w-full -rotate-90">
+              <circle cx="56" cy="56" r="48" stroke="rgba(255,255,255,0.08)" strokeWidth="5" fill="none" />
+              <circle cx="56" cy="56" r="48" stroke="url(#habitMomentum)" strokeWidth="5" strokeLinecap="round" fill="none" strokeDasharray="301.6" strokeDashoffset={`${301.6 - (301.6 * completionRate) / 100}`} />
+              <defs>
+                <linearGradient id="habitMomentum" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#8b5cf6" />
+                  <stop offset="100%" stopColor="#3b82f6" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div className="text-center">
+              <p className="font-mono text-3xl font-bold text-white">{completionRate}</p>
+              <p className="text-[10px] text-zinc-400">Momentum</p>
+            </div>
+          </div>
         </div>
-        <Button onClick={() => setIsAdding(true)} className="h-14 px-8 shadow-xl shadow-accent/20">
-          <Plus className="w-5 h-5 mr-3" />
-          Create Habit
-        </Button>
       </header>
+
+      <Card className="rounded-[1.7rem] border-violet-500/20 p-5">
+        <div className="flex items-center gap-4">
+          <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-violet-500/18 text-violet-300 shadow-[0_0_24px_rgba(139,92,246,0.22)]">
+            <Sparkles className="h-6 w-6" />
+          </div>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold text-violet-300">AI Insight</p>
+            <p className="mt-1 text-base font-bold text-white">You're on a {bestStreak || 7}-day streak.</p>
+            <p className="text-sm text-zinc-400">Keep it up, Mohamed.</p>
+          </div>
+        </div>
+      </Card>
+
+      <div className="flex items-center justify-between">
+        <h2 className="font-display text-xl font-bold text-white">Habits</h2>
+        <Button onClick={() => setIsAdding(true)} size="sm" className="rounded-2xl">
+          <Plus className="mr-2 h-4 w-4" />
+          Add Habit
+        </Button>
+      </div>
 
       {/* Filters & Search */}
       <div className="flex flex-col lg:flex-row gap-4 items-center">
@@ -325,11 +385,11 @@ export function Habits() {
       </div>
 
       {loading ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {[1,2,3].map(i => <Skeleton key={i} className="h-48 rounded-3xl" />)}
+        <div className="space-y-3">
+          {[1,2,3].map(i => <Skeleton key={i} className="h-28 rounded-3xl" />)}
         </div>
       ) : filteredHabits.length > 0 ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div className="space-y-3">
           {filteredHabits.map((habit) => (
             <HabitCard 
               key={habit.id} 
@@ -510,94 +570,70 @@ function HabitCard({ habit, onToggle, onDelete, onEdit }: { habit: Habit; onTogg
   const today = new Date().toISOString().split('T')[0];
   const isCompletedToday = habit.completed_dates?.includes(today);
   const Icon = ICONS.find(i => i.name === habit.icon)?.icon || Target;
+  const weeklyDone = [...Array(7)].filter((_, i) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - i));
+    return habit.completed_dates?.includes(date.toISOString().split('T')[0]);
+  }).length;
+  const completionPercent = Math.round((weeklyDone / 7) * 100);
 
   return (
-    <Card className="group relative overflow-hidden rounded-3xl border-white/5 bg-[#0a0a0a] p-5 transition-all duration-500 hover:border-accent/30 sm:rounded-[2.5rem] sm:p-8">
+    <Card className="group relative overflow-hidden rounded-[1.7rem] border-white/10 p-4 transition-all duration-300 hover:border-accent/30">
       <div 
-        className="absolute top-0 right-0 w-40 h-40 blur-[80px] rounded-full -translate-y-1/2 translate-x-1/2 opacity-20 group-hover:opacity-40 transition-opacity" 
+        className="absolute right-0 top-0 h-36 w-36 -translate-y-1/2 translate-x-1/2 rounded-full blur-[80px] opacity-20 transition-opacity group-hover:opacity-40"
         style={{ backgroundColor: habit.color }}
       />
       
-      <div className="relative z-10 mb-8 flex items-start justify-between gap-3">
-        <div className="flex items-center gap-4">
-          <div 
-            className="w-14 h-14 rounded-2xl flex items-center justify-center shadow-2xl group-hover:scale-105 transition-all bg-zinc-900 border border-white/5"
-            style={{ color: habit.color }}
-          >
-            <Icon className="w-7 h-7" />
-          </div>
-          <div>
-            <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-zinc-500">{habit.category || 'General'}</p>
-            <h3 className="text-xl font-display font-bold text-white tracking-tight mt-1">
-                {habit.title}
-            </h3>
-          </div>
-        </div>
-        <div className="flex gap-1">
-          <button onClick={onEdit} className="p-2.5 hover:bg-white/5 rounded-2xl text-zinc-600 hover:text-white transition-all">
-            <Edit2 className="w-4 h-4" />
-          </button>
-          <button onClick={onDelete} className="p-2.5 hover:bg-red-500/10 rounded-2xl text-zinc-600 hover:text-red-400 transition-all">
-            <Trash2 className="w-4 h-4" />
-          </button>
-        </div>
-      </div>
-
-      <div className="relative z-10 mb-8 mt-8 grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <div className="bg-zinc-900/50 border border-white/5 p-5 rounded-3xl flex items-center gap-4">
-              <div className="p-2 w-10 h-10 rounded-xl bg-orange-500/10 text-orange-400 flex items-center justify-center">
-                  <Flame className="w-5 h-5" />
-              </div>
-              <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Streak</p>
-                  <p className="text-xl font-mono font-bold text-white leading-none tracking-tighter mt-1">{habit.streak}d</p>
-              </div>
-          </div>
-          <div className="bg-zinc-900/50 border border-white/5 p-5 rounded-3xl flex items-center gap-4">
-              <div className="p-2 w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-400 flex items-center justify-center">
-                  <Award className="w-5 h-5" />
-              </div>
-              <div>
-                  <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-600">Best</p>
-                  <p className="text-xl font-mono font-bold text-white leading-none tracking-tighter mt-1">{habit.best_streak}d</p>
-              </div>
-          </div>
-      </div>
-
-      <div className="relative z-10 flex flex-col gap-5 border-t border-white/5 pt-6 sm:flex-row sm:items-center sm:justify-between">
-        <div className="flex gap-2">
-            {[...Array(7)].map((_, i) => {
-                const date = new Date();
-                date.setDate(date.getDate() - (6 - i));
-                const dateStr = date.toISOString().split('T')[0];
-                const done = habit.completed_dates?.includes(dateStr);
-                return (
-                    <div 
-                        key={i} 
-                        className={cn(
-                            "w-3 h-3 rounded shadow-inner transition-all",
-                            done ? "bg-accent/60" : "bg-zinc-800"
-                        )}
-                        style={done ? { backgroundColor: `${habit.color}80` } : {}}
-                    />
-                );
-            })}
-        </div>
-        <button
-          onClick={onToggle}
-          className={cn(
-            "px-8 h-12 rounded-2xl flex items-center justify-center gap-3 transition-all duration-500 text-[11px] font-bold uppercase tracking-widest border shadow-xl relative overflow-hidden group w-full sm:w-auto",
-            isCompletedToday 
-              ? "bg-emerald-500/10 text-emerald-400 border-emerald-500/20" 
-              : "bg-zinc-900 text-zinc-400 border-white/5 hover:border-accent/40 hover:text-white"
-          )}
+      <div className="relative z-10 flex items-center gap-4">
+        <div 
+          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] shadow-2xl transition-all group-hover:scale-105"
+          style={{ color: habit.color, boxShadow: `0 0 24px ${habit.color}22` }}
         >
-          {isCompletedToday ? <CheckCircle2 className="w-4 h-4" /> : <Zap className="w-4 h-4" />}
-          {isCompletedToday ? 'Done' : 'Complete'}
-          {!isCompletedToday && (
-              <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/[0.05] to-transparent -translate-x-full group-hover:translate-x-full transition-transform duration-1000" />
-          )}
-        </button>
+          <Icon className="h-7 w-7" />
+        </div>
+
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center gap-2">
+            <h3 className="truncate font-display text-lg font-bold text-white">{habit.title}</h3>
+            <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.7)]" />
+          </div>
+          <p className="mt-0.5 text-sm text-zinc-400">{habit.frequency || 'Daily'}</p>
+          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/8">
+            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${completionPercent}%`, backgroundColor: habit.color, boxShadow: `0 0 18px ${habit.color}66` }} />
+          </div>
+        </div>
+
+        <div className="flex shrink-0 items-center gap-4">
+          <div className="text-center">
+            <p className="font-mono text-lg font-bold text-white">{habit.streak || 0}</p>
+            <p className="text-[10px] text-zinc-500">streak</p>
+          </div>
+          <div className="text-center">
+            <p className="font-mono text-lg font-bold text-white">{completionPercent}%</p>
+            <p className="text-[10px] text-zinc-500">week</p>
+          </div>
+          <button
+            onClick={onToggle}
+            className={cn(
+              'flex h-12 w-12 items-center justify-center rounded-2xl border transition-all active:scale-95',
+              isCompletedToday
+                ? 'border-emerald-500/20 bg-emerald-500 text-white shadow-[0_0_20px_rgba(16,185,129,0.35)]'
+                : 'border-white/10 bg-white/[0.05] text-zinc-400 hover:border-accent/40 hover:text-white'
+            )}
+            aria-label={isCompletedToday ? 'Mark incomplete' : 'Complete habit'}
+          >
+            <CheckCircle2 className="h-5 w-5" />
+          </button>
+        </div>
+
+        <div className="absolute right-4 top-4 flex gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+          <button onClick={onEdit} className="rounded-xl p-2 text-zinc-500 transition-all hover:bg-white/5 hover:text-white">
+            <Edit2 className="h-4 w-4" />
+          </button>
+          <button onClick={onDelete} className="rounded-xl p-2 text-zinc-500 transition-all hover:bg-red-500/10 hover:text-red-400">
+            <Trash2 className="h-4 w-4" />
+          </button>
+        </div>
       </div>
     </Card>
   );

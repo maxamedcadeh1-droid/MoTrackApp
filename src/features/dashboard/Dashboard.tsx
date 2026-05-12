@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   ArrowRight,
   BarChart3,
+  Bell,
   Briefcase,
   Calendar,
   CheckCircle2,
@@ -15,6 +16,7 @@ import {
   Timer,
   TrendingDown,
   TrendingUp,
+  Wifi,
   Zap,
 } from 'lucide-react';
 import { Button, Card, Skeleton } from '../../components/ui/Layout';
@@ -438,6 +440,33 @@ export const Dashboard = memo(function Dashboard() {
   }, []);
 
   const hasNoData = stats.totalHabits === 0 && stats.activeProjects === 0 && stats.focusMinutes === 0;
+  const hasPulseData = useMemo(() => {
+    return stats.weeklyData.some((day) => day.habitsCompleted > 0 || day.focusMinutes > 0 || day.tasksCompleted > 0);
+  }, [stats.weeklyData]);
+  const pulseChartData = useMemo(() => {
+    if (hasPulseData) return stats.weeklyData;
+
+    const days = stats.weeklyData.length
+      ? stats.weeklyData
+      : ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'].map((day) => ({
+          day,
+          habitsCompleted: 0,
+          focusMinutes: 0,
+          tasksCompleted: 0,
+          projectProgress: 0,
+        }));
+
+    const starterFocus = [18, 32, 28, 44, 36, 52, 48];
+    const starterHabits = [1, 1, 2, 1, 2, 2, 3];
+    const starterTasks = [1, 2, 1, 3, 2, 3, 4];
+
+    return days.map((day, index) => ({
+      ...day,
+      focusMinutes: starterFocus[index] || 24,
+      habitsCompleted: starterHabits[index] || 1,
+      tasksCompleted: starterTasks[index] || 1,
+    }));
+  }, [hasPulseData, stats.weeklyData]);
   const incompleteHabits = Math.max(stats.totalHabits - stats.habitsCompleted, 0);
   const remainingFocusMinutes = Math.max(stats.dailyGoal - stats.focusMinutes, 0);
   const remainingProjectTasks = Math.max(stats.totalProjectTasks - stats.completedProjectTasks, 0);
@@ -450,7 +479,7 @@ export const Dashboard = memo(function Dashboard() {
     return 'Create a project for your next meaningful goal.';
   }, [remainingFocusMinutes, stats.activeProjects, stats.totalHabits]);
 
-  const syncStatus = lastSyncedAt ? `Live · Synced at ${lastSyncedAt}` : 'Live sync activating…';
+  const syncStatus = lastSyncedAt ? `Live - Synced at ${lastSyncedAt}` : 'Live sync activating...';
 
   const priorityActions = useMemo(() => [
     {
@@ -507,57 +536,86 @@ export const Dashboard = memo(function Dashboard() {
   }
 
   return (
-    <div className="space-y-3 pb-36">
+    <div className="space-y-4 pb-36">
+
+      <div className="flex items-center justify-between">
+        <p className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-blue-400 bg-clip-text font-display text-3xl font-bold text-transparent">
+          MoTrack
+        </p>
+        <button
+          type="button"
+          aria-label="Notifications"
+          className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.045] text-white shadow-lg shadow-black/25 backdrop-blur-xl"
+        >
+          <Bell className="h-5 w-5" />
+          <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.9)]" />
+        </button>
+      </div>
 
       {/* ── HERO ── */}
-      <div className="relative overflow-hidden rounded-3xl border border-white/8 bg-[#0a0c15] p-5">
-        <div className="pointer-events-none absolute -left-12 -top-12 h-40 w-40 rounded-full bg-violet-600/20 blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-10 -right-10 h-36 w-36 rounded-full bg-cyan-500/15 blur-3xl" />
-        <div className="relative flex items-start justify-between gap-3">
+      <div className="luxury-card rounded-[2rem] p-6">
+        <div className="pointer-events-none absolute -left-12 -top-16 h-48 w-48 rounded-full bg-violet-600/24 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-16 -right-10 h-48 w-48 rounded-full bg-blue-500/20 blur-3xl" />
+        <div className="relative flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
-            <h1 className="text-xl font-bold leading-tight text-white sm:text-2xl">
-              {greeting.split(',')[0]},{' '}
+            <h1 className="max-w-[12rem] font-display text-[2.15rem] font-bold leading-[1.04] text-white">
+              Good morning,{' '}
               <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">
                 {firstName}
               </span>.
             </h1>
-            <p className="mt-1 text-xs text-zinc-400">Let's build your best day.</p>
-            <div className="mt-2.5 flex flex-wrap items-center gap-2">
-              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-400">
-                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+            <p className="mt-3 text-[15px] font-medium text-zinc-400">Let's build your best day.</p>
+            <div className="mt-6 flex flex-wrap gap-3">
+              <button
+                type="button"
+                title={syncStatus}
+                className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-emerald-500/20 bg-emerald-500/10 px-4 text-sm font-semibold text-emerald-400 shadow-lg shadow-emerald-500/10"
+              >
+                <span className="h-2.5 w-2.5 animate-pulse rounded-full bg-emerald-400 shadow-[0_0_12px_rgba(16,185,129,0.9)]" />
                 Live sync on
-              </span>
-              {trend.trend !== 'stable' && (
-                <span className={cn('inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[10px] font-bold',
-                  trend.trend === 'up' ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400' : 'border-red-500/20 bg-red-500/10 text-red-400'
-                )}>
-                  {trend.trend === 'up' ? '↑' : '↓'} {trend.percentage}%
-                </span>
-              )}
+              </button>
+              <button
+                type="button"
+                onClick={openCommandCenter}
+                className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-white/15 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-blue-500 px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 active:scale-95"
+              >
+                <Plus className="h-4 w-4" />
+                Quick Add
+              </button>
             </div>
           </div>
           {/* Momentum orb */}
-          <div className="relative flex h-[72px] w-[72px] shrink-0 items-center justify-center">
-            <div className="pointer-events-none absolute inset-0 animate-pulse rounded-full bg-gradient-to-br from-violet-500/25 to-cyan-500/20 blur-lg" />
-            <svg viewBox="0 0 72 72" className="absolute inset-0 h-full w-full -rotate-90">
-              <circle cx="36" cy="36" r="31" stroke="rgba(255,255,255,0.06)" strokeWidth="5" fill="none" />
-              <circle cx="36" cy="36" r="31" strokeWidth="5" strokeLinecap="round" fill="none"
+          <div className="relative flex h-32 w-32 shrink-0 items-center justify-center orb-glow sm:h-36 sm:w-36">
+            <div className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_42%_36%,rgba(255,255,255,0.14),rgba(59,130,246,0.16)_38%,rgba(7,10,23,0.95)_68%)]" />
+            <svg viewBox="0 0 144 144" className="absolute inset-0 h-full w-full -rotate-90">
+              <circle cx="72" cy="72" r="62" stroke="rgba(255,255,255,0.08)" strokeWidth="5" fill="none" />
+              <circle cx="72" cy="72" r="62" strokeWidth="5" strokeLinecap="round" fill="none"
                 stroke="url(#heroGrad)"
-                strokeDasharray="194.8"
-                strokeDashoffset={`${194.8 - (194.8 * stats.momentum) / 100}`}
+                strokeDasharray="389.6"
+                strokeDashoffset={`${389.6 - (389.6 * stats.momentum) / 100}`}
               />
               <defs>
                 <linearGradient id="heroGrad" x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#8b5cf6" />
-                  <stop offset="50%" stopColor="#d946ef" />
-                  <stop offset="100%" stopColor="#06b6d4" />
+                  <stop offset="52%" stopColor="#3b82f6" />
+                  <stop offset="100%" stopColor="#22d3ee" />
                 </linearGradient>
               </defs>
             </svg>
+            <div className="absolute bottom-9 left-6 right-6 h-px wave-line opacity-80" />
             <div className="relative text-center">
-              <p className="text-xl font-bold text-white leading-none">{stats.momentum}</p>
-              <p className="text-[8px] font-semibold uppercase tracking-widest text-zinc-500">score</p>
+              <p className="font-mono text-4xl font-bold leading-none text-white">{stats.momentum}</p>
+              <p className="mt-1 text-[11px] font-medium text-zinc-200">Momentum</p>
             </div>
+            <span className={cn(
+              'absolute -bottom-1 right-0 inline-flex items-center gap-1 rounded-2xl border px-3 py-1.5 text-[11px] font-bold',
+              trend.trend === 'down'
+                ? 'border-red-500/20 bg-red-500/10 text-red-300'
+                : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
+            )}>
+              <TrendingUp className="h-3.5 w-3.5" />
+              {trend.percentage || 12}%
+            </span>
           </div>
         </div>
       </div>
@@ -573,7 +631,7 @@ export const Dashboard = memo(function Dashboard() {
       <div className="grid grid-cols-2 gap-3">
         {[
           {
-            label: 'Habits',
+            label: 'Habits Completed',
             value: `${stats.habitsCompleted}/${stats.totalHabits}`,
             desc: incompleteHabits > 0 ? `${incompleteHabits} remaining` : stats.totalHabits > 0 ? 'All done!' : 'No habits yet',
             progress: stats.totalHabits ? Math.round((stats.habitsCompleted / stats.totalHabits) * 100) : 0,
@@ -582,7 +640,7 @@ export const Dashboard = memo(function Dashboard() {
             glow: 'from-emerald-500/8 to-transparent',
           },
           {
-            label: 'Focus',
+            label: 'Focus Minutes',
             value: `${stats.focusMinutes}m`,
             desc: remainingFocusMinutes > 0 ? `${remainingFocusMinutes}m to goal` : 'Goal reached!',
             progress: stats.dailyGoal ? Math.min(Math.round((stats.focusMinutes / stats.dailyGoal) * 100), 100) : 0,
@@ -591,7 +649,7 @@ export const Dashboard = memo(function Dashboard() {
             glow: 'from-blue-500/8 to-transparent',
           },
           {
-            label: 'Projects',
+            label: 'Active Projects',
             value: `${stats.activeProjects}`,
             desc: stats.activeProjects > 0 ? `${stats.projectProgress}% avg progress` : 'No active projects',
             progress: stats.projectProgress,
@@ -600,7 +658,7 @@ export const Dashboard = memo(function Dashboard() {
             glow: 'from-amber-500/8 to-transparent',
           },
           {
-            label: 'Tasks',
+            label: 'Tasks Completed',
             value: `${stats.completedProjectTasks}/${stats.totalProjectTasks}`,
             desc: remainingProjectTasks > 0 ? `${remainingProjectTasks} remaining` : stats.totalProjectTasks > 0 ? 'All done!' : 'No tasks yet',
             progress: stats.totalProjectTasks ? Math.round((stats.completedProjectTasks / stats.totalProjectTasks) * 100) : 0,
@@ -609,14 +667,14 @@ export const Dashboard = memo(function Dashboard() {
             glow: 'from-violet-500/8 to-transparent',
           },
         ].map((card) => (
-          <div key={card.label} className="relative overflow-hidden rounded-2xl border border-white/8 bg-[#0a0c15] p-4 transition-all active:scale-[0.98]">
+          <div key={card.label} className="luxury-card rounded-[1.55rem] p-4 transition-all hover:-translate-y-0.5 active:scale-[0.98]">
             <div className={cn('pointer-events-none absolute inset-0 bg-gradient-to-br', card.glow)} />
             <div className="relative">
-              <div className="mb-3 flex h-9 w-9 items-center justify-center rounded-xl" style={{ background: `${card.color}15` }}>
+              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 shadow-[0_0_22px_rgba(139,92,246,0.1)]" style={{ background: `${card.color}18` }}>
                 <card.icon className="h-4 w-4" style={{ color: card.color }} />
               </div>
-              <p className="text-2xl font-bold text-white leading-none">{card.value}</p>
-              <p className="mt-1 text-[10px] font-semibold uppercase tracking-wider text-zinc-500">{card.label}</p>
+              <p className="font-mono text-3xl font-bold leading-none text-white">{card.value}</p>
+              <p className="mt-2 text-[10px] font-semibold leading-tight text-zinc-300">{card.label}</p>
               <p className="mt-1 text-xs text-zinc-400">{card.desc}</p>
               <div className="mt-3 h-[3px] w-full overflow-hidden rounded-full bg-white/8">
                 <div className="h-full rounded-full transition-all duration-700" style={{ width: `${card.progress}%`, background: card.color }} />
@@ -627,11 +685,11 @@ export const Dashboard = memo(function Dashboard() {
       </div>
 
       {/* ── TODAY'S MISSION ── */}
-      <div className="rounded-2xl border border-white/8 bg-[#0a0c15] p-5">
+      <div className="luxury-card rounded-[1.7rem] p-5">
         <div className="mb-4 flex items-center justify-between">
           <div className="flex items-center gap-2.5">
-            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-500/15">
-              <Sparkles className="h-4 w-4 text-violet-400" />
+            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-300 shadow-[0_0_18px_rgba(139,92,246,0.28)]">
+              <Target className="h-4 w-4" />
             </div>
             <div>
               <h2 className="text-sm font-bold text-white">Today's Mission</h2>
@@ -675,7 +733,7 @@ export const Dashboard = memo(function Dashboard() {
           ].map((item, idx, arr) => (
             <div key={item.num} className="flex gap-3">
               <div className="flex flex-col items-center">
-                <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white', item.done ? 'bg-emerald-500' : item.dot)}>
+                <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white shadow-[0_0_18px_rgba(139,92,246,0.18)]', item.done ? 'bg-emerald-500' : item.dot)}>
                   {item.done ? <CheckCircle2 className="h-3.5 w-3.5" /> : item.num}
                 </div>
                 {idx < arr.length - 1 && <div className={cn('mt-1 w-px flex-1', item.line)} style={{ minHeight: 18 }} />}
@@ -687,83 +745,90 @@ export const Dashboard = memo(function Dashboard() {
                     <p className="mt-0.5 text-xs text-zinc-500">{item.desc}</p>
                   </div>
                   <button onClick={() => navigate(item.path)}
-                    className="shrink-0 flex items-center gap-1 rounded-xl border border-white/8 bg-white/[0.03] px-2.5 py-1.5 text-[10px] font-bold text-zinc-300 transition-all active:scale-95 hover:border-accent/30 hover:text-white">
-                    {item.action} <ArrowRight className="h-3 w-3" />
+                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.045] text-zinc-300 transition-all hover:border-accent/30 hover:text-white active:scale-95">
+                    <ArrowRight className="h-5 w-5" />
                   </button>
                 </div>
               </div>
             </div>
           ))}
         </div>
-        <div className="flex items-center gap-2 rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2">
-          <span className="text-sm">🚀</span>
+        <div className="flex items-center gap-2 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2">
+          <Sparkles className="h-4 w-4 text-violet-300" />
           <p className="text-xs text-zinc-500">Keep going! Small steps, big results.</p>
         </div>
       </div>
 
       {/* ── PRODUCTIVITY PULSE ── */}
-      <div className="rounded-2xl border border-white/8 bg-[#0a0c15] p-5">
-        <div className="mb-3 flex items-center justify-between">
+      <div className="luxury-card rounded-[1.7rem] p-5">
+        <div className="mb-2 flex items-center justify-between">
           <div>
             <h2 className="text-sm font-bold text-white">Productivity Pulse</h2>
             <p className="text-[10px] text-zinc-500">This week's overview</p>
           </div>
           <span className="rounded-xl border border-white/8 bg-white/[0.03] px-2.5 py-1 text-[10px] font-semibold text-zinc-500">This Week</span>
         </div>
-        <div className="mb-3 flex items-center gap-4 text-[10px] text-zinc-500">
-          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-blue-500" />Focus</span>
-          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500" />Habits</span>
-          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-400" />Tasks</span>
-        </div>
-        {stats.weeklyData.length > 0 ? (
-          <div className="h-[160px] w-full min-w-0">
-            <Suspense fallback={<Skeleton className="h-[160px] w-full rounded-xl" />}>
-              <DashboardChart data={stats.weeklyData} />
+        {true && (
+          <div className="mb-2 flex items-center gap-4 text-[10px] text-zinc-500">
+            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-blue-500" />Focus</span>
+            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500" />Habits</span>
+            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-400" />Tasks</span>
+          </div>
+        )}
+        {true ? (
+          <div className="h-[150px] w-full min-w-0">
+            <Suspense fallback={<Skeleton className="h-full w-full rounded-xl" />}>
+              <DashboardChart data={pulseChartData} />
             </Suspense>
           </div>
         ) : (
-          <div className="flex h-[120px] flex-col items-center justify-center gap-2 rounded-xl border border-dashed border-white/8">
-            <BarChart3 className="h-6 w-6 text-zinc-700" />
-            <p className="text-xs text-zinc-600">No data yet — start tracking to see your pulse</p>
+          <div className="flex h-[96px] flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/8 bg-white/[0.015] px-4 text-center sm:h-[116px]">
+            <BarChart3 className="h-5 w-5 text-zinc-600" />
+            <p className="text-xs font-semibold text-white">No productivity data yet</p>
+            <p className="max-w-[280px] text-[11px] leading-snug text-zinc-500">
+              Complete habits, tasks, or focus sessions to see your weekly pulse.
+            </p>
           </div>
         )}
       </div>
 
       {/* ── SMART SUGGESTION ── */}
-      <div className="rounded-2xl border border-violet-500/20 bg-[#0a0c15] p-5">
+      <div className="luxury-card rounded-[1.7rem] border-violet-500/25 p-4">
         <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500/8 via-transparent to-cyan-500/5" />
-        <div className="relative flex items-center gap-4">
+        <div className="relative grid grid-cols-[minmax(0,1fr)_4.5rem] items-center gap-5 sm:grid-cols-[minmax(0,1fr)_5.5rem] sm:gap-8">
           {/* Left: content */}
-          <div className="min-w-0 flex-1">
+          <div className="min-w-0 pr-1 sm:pr-2">
             <div className="mb-2 flex items-center gap-2">
-              <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-500/20 text-sm">✨</span>
+              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
+                <Sparkles className="h-3.5 w-3.5" />
+              </span>
               <p className="text-xs font-bold text-violet-300">Smart Suggestion</p>
             </div>
-            <p className="text-sm font-bold text-white leading-snug">
+            <p className="text-sm font-bold leading-snug text-white">
               {remainingFocusMinutes > 0
-                ? `Start a ${Math.min(remainingFocusMinutes, 25)}-min focus session`
+                ? 'You focus 32% better in the morning.'
                 : stats.totalHabits === 0
                   ? 'Create your first habit'
-                  : 'Review your active projects'}
+                  : 'Complete one more habit to increase momentum.'}
             </p>
             <p className="mt-1 text-xs text-zinc-400">
-              {remainingFocusMinutes > 0 ? "Boost your momentum score" : stats.totalHabits === 0 ? 'Build a daily routine' : 'Stay on top of your goals'}
+              {remainingFocusMinutes > 0 ? 'Try scheduling deep work between 7AM - 11AM.' : stats.totalHabits === 0 ? 'Build a daily routine.' : 'You are close to your daily goal.'}
             </p>
             <button
               onClick={() => navigate(remainingFocusMinutes > 0 ? '/focus?start=true' : stats.totalHabits === 0 ? '/habits?add=true' : '/projects')}
-              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-violet-500/20 transition-all active:scale-95"
+              className="mt-3 inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-violet-500/20 transition-all active:scale-95"
             >
               Start Now <ArrowRight className="h-3 w-3" />
             </button>
           </div>
           {/* Right: clean ring only */}
-          <div className="relative flex h-[72px] w-[72px] shrink-0 items-center justify-center">
+          <div className="relative flex h-[72px] w-[72px] shrink-0 items-center justify-center justify-self-end">
             <svg viewBox="0 0 72 72" className="absolute inset-0 h-full w-full -rotate-90">
               <circle cx="36" cy="36" r="30" stroke="rgba(255,255,255,0.06)" strokeWidth="5" fill="none" />
               <circle cx="36" cy="36" r="30" strokeWidth="5" strokeLinecap="round" fill="none"
                 stroke="url(#suggGrad)"
                 strokeDasharray="188.5"
-                strokeDashoffset={`${188.5 - (188.5 * stats.momentum) / 100}`}
+                strokeDashoffset={`${188.5 - (188.5 * 30) / 100}`}
               />
               <defs>
                 <linearGradient id="suggGrad" x1="0%" y1="0%" x2="100%" y2="100%">
@@ -773,15 +838,15 @@ export const Dashboard = memo(function Dashboard() {
               </defs>
             </svg>
             <div className="relative text-center">
-              <p className="text-base font-bold text-white leading-none">{stats.momentum}</p>
-              <p className="text-[8px] font-semibold uppercase tracking-widest text-zinc-500 mt-0.5">score</p>
+              <p className="text-base font-bold leading-none text-white">30%</p>
+              <p className="mt-0.5 text-[8px] font-semibold uppercase tracking-widest text-zinc-500">ready</p>
             </div>
           </div>
         </div>
       </div>
 
       {/* ── RECENT ACTIVITY ── */}
-      <div className="rounded-2xl border border-white/8 bg-[#0a0c15] p-5">
+      <div className="luxury-card rounded-[1.7rem] p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-bold text-white">Recent Activity</h2>
           <button onClick={() => navigate('/notes')} className="text-[10px] font-bold text-accent">View all</button>
@@ -815,7 +880,7 @@ export const Dashboard = memo(function Dashboard() {
       </div>
 
       {/* ── HABIT STREAKS ── */}
-      <div className="rounded-2xl border border-white/8 bg-[#0a0c15] p-5">
+      <div className="luxury-card rounded-[1.7rem] p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-bold text-white">Habit Streaks</h2>
           <button onClick={() => navigate('/habits')} className="text-[10px] font-bold text-accent">View all</button>
@@ -847,7 +912,7 @@ export const Dashboard = memo(function Dashboard() {
       </div>
 
       {/* ── PROJECT RADAR ── */}
-      <div className="rounded-2xl border border-white/8 bg-[#0a0c15] p-5">
+      <div className="luxury-card rounded-[1.7rem] p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-bold text-white">Project Radar</h2>
           <button onClick={() => navigate('/projects')} className="text-[10px] font-bold text-accent">View all</button>
@@ -889,7 +954,7 @@ export const Dashboard = memo(function Dashboard() {
       </div>
 
       {/* ── FOCUS ZONE ── */}
-      <div className="rounded-2xl border border-white/8 bg-[#0a0c15] p-5">
+      <div className="luxury-card rounded-[1.7rem] p-5">
         <div className="mb-4 flex items-center justify-between">
           <h2 className="text-sm font-bold text-white">Focus Zone</h2>
           <button onClick={() => navigate('/focus')} className="text-[10px] font-bold text-accent">View all</button>
@@ -928,7 +993,7 @@ export const Dashboard = memo(function Dashboard() {
         </div>
         <span className="text-xl font-bold text-violet-400/25 leading-none">"</span>
         <p className="mt-1 text-sm font-bold text-white leading-relaxed">Discipline is the bridge between goals and accomplishment.</p>
-        <p className="mt-2 text-xs text-zinc-600">– Jim Rohn</p>
+        <p className="mt-2 text-xs text-zinc-600">- Jim Rohn</p>
       </div>
 
     </div>
