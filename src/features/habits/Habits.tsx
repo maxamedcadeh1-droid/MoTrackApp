@@ -28,7 +28,7 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 import { Database } from '../../types/database';
-import { cn } from '../../lib/utils';
+import { cn, dateKey } from '../../lib/utils';
 
 type Habit = Database['public']['Tables']['habits']['Row'];
 
@@ -162,12 +162,12 @@ export function Habits() {
       showToast('Please log in first', 'error');
       return;
     }
-    const today = new Date().toISOString().split('T')[0];
+    const today = dateKey(new Date());
     const isCompleted = habit.completed_dates?.includes(today);
 
     let newCompletedDates = [...(habit.completed_dates || [])];
     if (isCompleted) {
-      newCompletedDates = newCompletedDates.filter(d => d !== today);
+      newCompletedDates = newCompletedDates.filter((d) => d !== today);
     } else {
       newCompletedDates.push(today);
     }
@@ -201,6 +201,7 @@ export function Habits() {
 
       if (data) {
         setHabits(prev => prev.map(h => h.id === habit.id ? data : h));
+        window.dispatchEvent(new Event('motrack:habit-updated'));
         if (!isCompleted) showToast('Habit completed');
       }
     } catch (error: any) {
@@ -285,7 +286,7 @@ export function Habits() {
     return matchesSearch && matchesFilter;
   });
   const isFilteringExistingHabits = habits.length > 0 && filteredHabits.length === 0;
-  const todayKey = new Date().toISOString().split('T')[0];
+  const todayKey = dateKey(new Date());
   const completedToday = habits.filter((habit) => habit.completed_dates?.includes(todayKey)).length;
   const completionRate = habits.length ? Math.round((completedToday / habits.length) * 100) : 0;
   const bestStreak = Math.max(0, ...habits.map((habit) => habit.streak || 0));
@@ -305,7 +306,7 @@ export function Habits() {
               {weekDays.map((day, index) => {
                 const date = new Date();
                 date.setDate(date.getDate() - (6 - index));
-                const done = habits.some((habit) => habit.completed_dates?.includes(date.toISOString().split('T')[0]));
+                const done = habits.some((habit) => habit.completed_dates?.includes(dateKey(date)));
 
                 return (
                   <div key={`${day}-${index}`} className="flex flex-col items-center gap-2">
@@ -603,13 +604,13 @@ export function Habits() {
 
 function HabitCard({ habit, onToggle, onDelete, onEdit }: { habit: Habit; onToggle: () => void; onDelete: () => void; onEdit: () => void }) {
   const [menuOpen, setMenuOpen] = useState(false);
-  const today = new Date().toISOString().split('T')[0];
+  const today = dateKey(new Date());
   const isCompletedToday = habit.completed_dates?.includes(today);
   const Icon = ICONS.find(i => i.name === habit.icon)?.icon || Target;
   const weeklyDone = [...Array(7)].filter((_, i) => {
     const date = new Date();
     date.setDate(date.getDate() - (6 - i));
-    return habit.completed_dates?.includes(date.toISOString().split('T')[0]);
+    return habit.completed_dates?.includes(dateKey(date));
   }).length;
   const completionPercent = Math.round((weeklyDone / 7) * 100);
 

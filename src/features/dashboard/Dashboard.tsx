@@ -116,16 +116,6 @@ const emptyStats: DashboardStats = {
   habitStreaks: [],
 };
 
-function dateKey(date: Date) {
-  return date.toISOString().split('T')[0];
-}
-
-function startOfDay(date: Date) {
-  const copy = new Date(date);
-  copy.setHours(0, 0, 0, 0);
-  return copy;
-}
-
 function formatActivityTime(value: string) {
   const date = new Date(value);
   const now = new Date();
@@ -468,7 +458,10 @@ export const Dashboard = memo(function Dashboard() {
 
     void dashboardChannel.subscribe();
 
+    window.addEventListener('motrack:habit-updated', refreshDashboard);
+
     return () => {
+      window.removeEventListener('motrack:habit-updated', refreshDashboard);
       void supabase.removeChannel(dashboardChannel);
     };
   }, [user, refreshDashboard]);
@@ -534,7 +527,7 @@ export const Dashboard = memo(function Dashboard() {
     {
       title: 'Habits',
       subtitle: 'Completed',
-      value: stats.totalHabits > 0 ? `${stats.habitsCompleted}/${stats.totalHabits}` : '0',
+      value: `${stats.habitsCompleted}/${stats.totalHabits}`,
       trend: trendText(habitsDelta),
       progress: stats.totalHabits ? Math.round((stats.habitsCompleted / stats.totalHabits) * 100) : 0,
       icon: CheckCircle2,
@@ -564,7 +557,7 @@ export const Dashboard = memo(function Dashboard() {
     {
       title: 'Tasks',
       subtitle: 'Completed',
-      value: stats.totalProjectTasks > 0 ? `${stats.completedProjectTasks}/${stats.totalProjectTasks}` : '0',
+      value: `${stats.completedProjectTasks}/${stats.totalProjectTasks}`,
       trend: trendText(taskDelta),
       progress: stats.totalProjectTasks ? Math.round((stats.completedProjectTasks / stats.totalProjectTasks) * 100) : 0,
       icon: Target,

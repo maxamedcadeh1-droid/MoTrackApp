@@ -27,7 +27,7 @@ import {
 } from 'recharts';
 import { Button, Card, Skeleton } from '../../components/ui/Layout';
 import { supabase } from '../../lib/supabase';
-import { cn } from '../../lib/utils';
+import { cn, dateKey, startOfDay } from '../../lib/utils';
 import { useAuth } from '../auth/AuthContext';
 
 type AnalyticsStats = {
@@ -51,16 +51,6 @@ const initialStats: AnalyticsStats = {
   projectCompletionRate: 0,
   bestFocusHour: 'No data',
 };
-
-function dateKey(date: Date) {
-  return date.toISOString().split('T')[0];
-}
-
-function startOfDay(date: Date) {
-  const copy = new Date(date);
-  copy.setHours(0, 0, 0, 0);
-  return copy;
-}
 
 export function Analytics() {
   const { user } = useAuth();

@@ -52,8 +52,11 @@ export function CinematicCard({ title, subtitle, value, trend, progress, icon: I
 
       {/* Large metric value */}
       <p
-        className="relative font-display text-[1.75rem] font-bold leading-none tracking-tight text-white"
-        style={{ textShadow: `0 0 24px ${glowColor}` }}
+        className="relative font-display font-bold leading-none tracking-tight text-white"
+        style={{
+          fontSize: value.includes('/') ? '1.35rem' : '1.75rem',
+          textShadow: `0 0 24px ${glowColor}`,
+        }}
       >
         {value}
       </p>
