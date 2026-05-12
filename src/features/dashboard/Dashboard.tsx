@@ -485,8 +485,8 @@ export const Dashboard = memo(function Dashboard() {
   const navigateToFocus = useCallback(() => navigate('/focus?start=true'), [navigate]);
   const openCommandCenter = useCallback(() => window.dispatchEvent(new Event('motrack:open-command-center')), []);
 
-﻿  if (loading) {
-﻿  return (
+  if (loading) {
+  return (
     <div className="space-y-3 pb-36">
 
       {/* ── HERO ── */}
