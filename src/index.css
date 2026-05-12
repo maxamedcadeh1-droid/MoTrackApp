@@ -232,7 +232,7 @@
 /* Mobile performance optimizations */
 @media (max-width: 768px) {
   .mobile-safe-main {
-    padding-bottom: calc(8.25rem + var(--safe-area-bottom));
+    padding-bottom: calc(9rem + var(--safe-area-bottom));
   }
 
   .mobile-bottom-nav {
@@ -240,21 +240,21 @@
   }
 
   .mobile-account-sheet {
-    bottom: calc(5.85rem + var(--safe-area-bottom));
+    bottom: calc(6rem + var(--safe-area-bottom));
     max-height: min(70vh, calc(100svh - 7rem - var(--safe-area-bottom)));
   }
 
   .mobile-quick-add {
-    bottom: calc(6rem + var(--safe-area-bottom));
+    bottom: calc(5.5rem + var(--safe-area-bottom));
     right: 1rem;
   }
 
   .mobile-quick-add-list {
-    bottom: 4.25rem;
+    bottom: 4rem;
   }
 
   .mobile-toast {
-    bottom: calc(5.85rem + var(--safe-area-bottom));
+    bottom: calc(6rem + var(--safe-area-bottom));
   }
 
   .mobile-command-center {
