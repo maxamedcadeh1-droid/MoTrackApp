@@ -591,7 +591,9 @@ export const Dashboard = memo(function Dashboard() {
           <Skeleton className="h-[72px] w-[72px] rounded-full" />
         </div>
         <div className="grid grid-cols-2 gap-3">
-          {[1,2,3,4].map(i => <Skeleton key={i} className="h-28 rounded-2xl" />)}
+          {[1,2,3,4].map((item) => (
+            <Skeleton key={item} className="h-28 rounded-3xl" />
+          ))}
         </div>
         <Skeleton className="h-48 rounded-2xl" />
         <Skeleton className="h-40 rounded-2xl" />
@@ -764,7 +766,7 @@ export const Dashboard = memo(function Dashboard() {
       )}
 
       {/* ── METRIC CARDS 2x2 ── */}
-      <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:gap-5 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {[
           {
             title: 'Habits',
