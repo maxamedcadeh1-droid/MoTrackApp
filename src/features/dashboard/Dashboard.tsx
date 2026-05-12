@@ -26,6 +26,8 @@ import {
 import { Button, Card, Skeleton } from '../../components/ui/Layout';
 import { supabase } from '../../lib/supabase';
 import { cn } from '../../lib/utils';
+import { DashboardHero } from './components/DashboardHero';
+import { CinematicCard } from './components/CinematicCard';
 import { getMomentumInsight, getTrendIndicator } from '../../lib/insights';
 import { useAuth } from '../auth/AuthContext';
 
@@ -606,157 +608,22 @@ export const Dashboard = memo(function Dashboard() {
   return (
     <div className="space-y-4 pb-36">
 
-      {/* ── HERO ── */}
-      <section className="luxury-card rounded-[2rem] px-5 py-5 sm:p-6 lg:p-7">
-        <div className="pointer-events-none absolute -left-10 -top-14 h-36 w-36 rounded-full bg-violet-600/20 blur-2xl md:h-48 md:w-48 md:blur-3xl" />
-        <div className="pointer-events-none absolute -bottom-14 -right-8 h-40 w-40 rounded-full bg-blue-500/18 blur-2xl md:h-52 md:w-52 md:blur-3xl" />
-        <div className="relative z-10 flex items-start justify-between gap-4">
-          <p className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-blue-400 bg-clip-text font-display text-3xl font-bold leading-none text-transparent sm:text-4xl">
-            MoTrack
-          </p>
-          <div className="relative">
-            <button
-              type="button"
-              aria-label="Notifications"
-              aria-expanded={notificationsOpen}
-              onClick={() => setNotificationsOpen((value) => !value)}
-              className="relative flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.045] text-white shadow-lg shadow-black/25 backdrop-blur-xl transition-all hover:border-violet-400/25 active:scale-95"
-            >
-              <Bell className="h-5 w-5" />
-              {stats.recentActivity.length > 0 && (
-                <span className="absolute right-2 top-2 h-2.5 w-2.5 rounded-full bg-violet-500 shadow-[0_0_12px_rgba(139,92,246,0.9)]" />
-              )}
-            </button>
-
-            {notificationsOpen && (
-              <div className="absolute right-0 top-14 z-40 w-[20rem] max-w-[calc(100vw-2.5rem)] overflow-hidden rounded-[1.5rem] border border-white/10 bg-[#080b13]/95 p-3 shadow-2xl shadow-black/50 backdrop-blur-2xl">
-                <div className="mb-3 flex items-center justify-between px-1">
-                  <div>
-                    <p className="text-sm font-bold text-white">Notifications</p>
-                    <p className="text-[11px] text-zinc-500">{syncStatus}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => setNotificationsOpen(false)}
-                    className="rounded-xl border border-white/8 bg-white/[0.035] px-2 py-1 text-[10px] font-semibold text-zinc-400"
-                  >
-                    Close
-                  </button>
-                </div>
-                <div className="space-y-2">
-                  {stats.recentActivity.length ? stats.recentActivity.slice(0, 3).map((item) => (
-                    <button
-                      key={item.id}
-                      type="button"
-                      onClick={() => {
-                        setNotificationsOpen(false);
-                        navigate(item.type === 'note' ? '/notes' : item.type === 'habit' ? '/habits' : item.type === 'focus' ? '/focus' : '/projects');
-                      }}
-                      className="flex w-full items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.035] p-3 text-left transition-colors hover:bg-white/[0.055]"
-                    >
-                      <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl bg-violet-500/15 text-violet-300">
-                        <item.icon className="h-4 w-4" />
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="truncate text-xs font-semibold text-white">{item.detail}</p>
-                        <p className="text-[10px] text-zinc-500">{item.title} - {formatActivityTime(item.date)}</p>
-                      </div>
-                    </button>
-                  )) : (
-                    <div className="rounded-2xl border border-dashed border-white/10 bg-white/[0.02] p-5 text-center">
-                      <Sparkles className="mx-auto mb-2 h-5 w-5 text-zinc-600" />
-                      <p className="text-xs font-semibold text-white">No notifications yet</p>
-                      <p className="mt-1 text-[11px] text-zinc-500">Updates will appear here when you use MoTrack.</p>
-                    </div>
-                  )}
-                </div>
-              </div>
-            )}
-          </div>
-        </div>
-
-        <div className="relative z-10 mt-7 grid grid-cols-[minmax(0,1fr)_7.35rem] items-start gap-3 sm:grid-cols-[minmax(0,1fr)_9rem] sm:gap-5 lg:mt-8 lg:grid-cols-[minmax(0,1fr)_10.5rem] lg:items-center">
-          <div className="min-w-0 flex-1">
-            <h1 className="font-display text-[2.45rem] font-semibold leading-[1.04] tracking-normal text-white sm:text-5xl lg:text-6xl">
-              <span className="block font-normal">{heroCopy.greeting}</span>
-              <span className="block bg-gradient-to-r from-violet-400 via-fuchsia-400 to-blue-400 bg-clip-text font-bold text-transparent">
-                {firstName}.
-              </span>
-            </h1>
-            <p className="mt-4 max-w-sm text-[15px] font-medium text-zinc-400 sm:text-base">{heroCopy.subtitle}</p>
-            <div className="mt-6 flex flex-wrap gap-3">
-              <button
-                type="button"
-                title={syncStatus}
-                className={cn(
-                  'inline-flex min-h-11 items-center gap-2 rounded-2xl border px-4 text-sm font-semibold shadow-lg transition-colors',
-                  lastSyncedAt
-                    ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400 shadow-emerald-500/10'
-                    : 'border-blue-500/20 bg-blue-500/10 text-blue-300 shadow-blue-500/10'
-                )}
-              >
-                <span className={cn(
-                  'h-2.5 w-2.5 rounded-full shadow-[0_0_12px_currentColor]',
-                  lastSyncedAt ? 'animate-pulse bg-emerald-400 text-emerald-400' : 'bg-blue-400 text-blue-400'
-                )} />
-                {syncLabel}
-              </button>
-              <button
-                type="button"
-                onClick={openCommandCenter}
-                className="inline-flex min-h-11 items-center gap-2 rounded-2xl border border-white/15 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-blue-500 px-4 text-sm font-semibold text-white shadow-lg shadow-violet-500/25 transition-transform active:scale-95"
-              >
-                <Plus className="h-4 w-4" />
-                Quick Add
-              </button>
-            </div>
-          </div>
-
-          <div className="relative mt-1 flex h-[7.35rem] w-[7.35rem] shrink-0 items-center justify-center justify-self-end orb-glow sm:h-36 sm:w-36 lg:h-40 lg:w-40">
-            <div className="pointer-events-none absolute inset-0 rounded-full bg-[radial-gradient(circle_at_42%_36%,rgba(255,255,255,0.14),rgba(59,130,246,0.16)_38%,rgba(7,10,23,0.95)_68%)]" />
-            <svg viewBox="0 0 144 144" className="absolute inset-0 h-full w-full -rotate-90">
-              <circle cx="72" cy="72" r="62" stroke="rgba(255,255,255,0.08)" strokeWidth="5" fill="none" />
-              <circle cx="72" cy="72" r="62" strokeWidth="5" strokeLinecap="round" fill="none"
-                stroke="url(#heroGrad)"
-                strokeDasharray="389.6"
-                strokeDashoffset={`${389.6 - (389.6 * stats.momentum) / 100}`}
-              />
-              <defs>
-                <linearGradient id="heroGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#8b5cf6" />
-                  <stop offset="52%" stopColor="#3b82f6" />
-                  <stop offset="100%" stopColor="#22d3ee" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <svg viewBox="0 0 100 34" className="pointer-events-none absolute bottom-8 left-5 right-5 h-9 opacity-80 sm:bottom-9">
-              <path className="hero-orb-wave" d="M0 22 C10 28 18 28 28 20 C38 12 46 12 56 20 C66 28 74 28 84 18 C92 10 96 10 100 12" fill="none" stroke="url(#heroWaveGrad)" strokeWidth="2.6" strokeLinecap="round" />
-              <defs>
-                <linearGradient id="heroWaveGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#8b5cf6" />
-                  <stop offset="55%" stopColor="#3b82f6" />
-                  <stop offset="100%" stopColor="#22d3ee" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <div className="relative text-center">
-              <p className="font-mono text-4xl font-bold leading-none text-white sm:text-5xl">{stats.momentum}</p>
-              <p className="mt-1 text-[10px] font-medium text-zinc-200 sm:text-[11px]">Momentum</p>
-            </div>
-            <span className={cn(
-              'absolute -bottom-2 right-0 inline-flex items-center gap-1 rounded-2xl border px-2.5 py-1.5 text-[11px] font-bold shadow-lg backdrop-blur-md sm:px-3',
-              trend.trend === 'down'
-                ? 'border-red-500/20 bg-red-500/10 text-red-300'
-                : trend.trend === 'stable'
-                  ? 'border-white/10 bg-white/[0.06] text-zinc-300'
-                : 'border-emerald-500/20 bg-emerald-500/10 text-emerald-300'
-            )}>
-              <TrendIcon className="h-3.5 w-3.5" />
-              {trendBadgeText}
-            </span>
-          </div>
-        </div>
-      </section>
+      {/* ── REDESIGNED HERO ── */}
+      <DashboardHero
+        greeting={heroCopy.greeting}
+        firstName={firstName}
+        subtitle={heroCopy.subtitle}
+        stats={stats}
+        syncLabel={syncLabel}
+        syncStatus={syncStatus}
+        lastSyncedAt={lastSyncedAt}
+        onQuickAdd={openCommandCenter}
+        notificationsOpen={notificationsOpen}
+        setNotificationsOpen={setNotificationsOpen}
+        formatActivityTime={formatActivityTime}
+        trend={trend}
+        navigate={navigate}
+      />
 
       {/* ── ONBOARDING ── */}
       {hasNoData && (
@@ -765,7 +632,7 @@ export const Dashboard = memo(function Dashboard() {
         </Suspense>
       )}
 
-      {/* ── METRIC CARDS 2x2 ── */}
+      {/* ── REDESIGNED METRIC CARDS 2x2 ── */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {[
           {
@@ -817,61 +684,17 @@ export const Dashboard = memo(function Dashboard() {
             shadowColor: 'rgba(139, 92, 246, 0.15)',
           },
         ].map((card) => (
-          <div
+          <CinematicCard
             key={card.title}
-            className="group relative rounded-3xl border border-white/10 bg-gradient-to-br from-white/[0.08] to-white/[0.03] p-5 backdrop-blur-xl transition-all duration-300 hover:-translate-y-1 hover:border-white/20 active:scale-[0.98]"
-            style={{
-              boxShadow: `0 0 32px ${card.shadowColor}, inset 0 1px 1px rgba(255,255,255,0.08)`,
-            }}
-          >
-            {/* Glow effect on hover */}
-            <div
-              className="pointer-events-none absolute -inset-0.5 rounded-3xl opacity-0 blur-xl transition-opacity duration-300 group-hover:opacity-60"
-              style={{ background: card.glowColor }}
-            />
-
-            <div className="relative flex h-full min-h-[160px] flex-col">
-              {/* Icon badge - top right */}
-              <div
-                className="absolute right-5 top-5 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/20 transition-all duration-300 group-hover:scale-110"
-                style={{
-                  background: `${card.color}15`,
-                  boxShadow: `0 0 20px ${card.glowColor}`,
-                }}
-              >
-                <card.icon className="h-5 w-5" style={{ color: card.color }} />
-              </div>
-
-              {/* Title and subtitle - top left */}
-              <div className="pr-16">
-                <p className="font-poppins text-xs font-semibold uppercase tracking-wider text-zinc-400">{card.subtitle}</p>
-                <p className="mt-1 font-poppins text-lg font-bold text-white">{card.title}</p>
-              </div>
-
-              {/* Large metric value - center */}
-              <p
-                className="mt-8 font-poppins font-bold leading-none text-white"
-                style={{ fontSize: '2.5rem' }}
-              >
-                {card.value}
-              </p>
-
-              {/* Trend text - bottom left */}
-              <p className="mt-auto text-xs font-medium text-zinc-500">{card.trend}</p>
-
-              {/* Progress bar - very bottom */}
-              <div className="mt-4 h-1 w-full overflow-hidden rounded-full bg-white/8">
-                <div
-                  className="h-full transition-all duration-700"
-                  style={{
-                    width: `${card.progress}%`,
-                    background: card.color,
-                    boxShadow: `0 0 12px ${card.glowColor}`,
-                  }}
-                />
-              </div>
-            </div>
-          </div>
+            title={card.title}
+            subtitle={card.subtitle}
+            value={card.value}
+            trend={card.trend}
+            progress={card.progress}
+            icon={card.icon}
+            color={card.color}
+            glowColor={card.glowColor}
+          />
         ))}
       </div>
 
