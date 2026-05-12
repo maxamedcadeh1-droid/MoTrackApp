@@ -318,8 +318,21 @@
   .mobile-dialog-panel {
     inset: auto 0.75rem calc(0.75rem + var(--safe-area-bottom)) 0.75rem !important;
     top: auto !important;
-    max-height: calc(100svh - 1.5rem - var(--safe-area-bottom));
+    max-height: calc(100dvh - 1.5rem - var(--safe-area-bottom));
     transform: none !important;
+    overscroll-behavior: contain;
+    scroll-padding: 1rem 1rem calc(7rem + var(--safe-area-bottom));
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .mobile-dialog-panel :is(input, textarea, select) {
+    scroll-margin-block: 1rem;
+  }
+
+  @supports not (height: 100dvh) {
+    .mobile-dialog-panel {
+      max-height: calc(100svh - 1.5rem - var(--safe-area-bottom));
+    }
   }
 
   .grid-bg {

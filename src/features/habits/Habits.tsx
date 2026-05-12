@@ -479,7 +479,6 @@ export function Habits() {
                             placeholder="e.g. Morning walk" 
                             className="bg-white/5"
                             required
-                            autoFocus
                         />
                         <p className="ml-1 text-xs text-zinc-600">Required. Keep it short and easy to complete.</p>
                     </div>
@@ -643,7 +642,7 @@ function HabitCard({ habit, onToggle, onDelete, onEdit }: { habit: Habit; onTogg
   const completionPercent = Math.round((weeklyDone / 7) * 100);
 
   return (
-    <Card className="group relative min-h-[132px] overflow-visible rounded-[1.7rem] border-white/10 p-4 pr-20 transition-all duration-300 hover:border-accent/30 sm:pr-24">
+    <Card className="group relative overflow-visible rounded-[1.7rem] border-white/10 p-4 transition-all duration-300 hover:border-accent/30 sm:p-5">
       <div 
         className="absolute right-0 top-0 h-36 w-36 -translate-y-1/2 translate-x-1/2 rounded-full blur-[80px] opacity-20 transition-opacity group-hover:opacity-40"
         style={{ backgroundColor: habit.color }}
@@ -658,94 +657,99 @@ function HabitCard({ habit, onToggle, onDelete, onEdit }: { habit: Habit; onTogg
         />
       )}
 
-      <div className="absolute right-4 top-4 z-30">
-        <button
-          type="button"
-          aria-expanded={menuOpen}
-          aria-label={`Open actions for ${habit.title}`}
-          onClick={(event) => {
-            event.stopPropagation();
-            setMenuOpen((value) => !value);
-          }}
-          className="flex h-8 w-8 items-center justify-center rounded-xl border border-white/8 bg-white/[0.035] text-zinc-500 transition-all hover:border-white/15 hover:text-white"
-        >
-          <MoreVertical className="h-4 w-4" />
-        </button>
-
-        {menuOpen && (
-          <div className="absolute right-0 top-10 w-40 overflow-hidden rounded-2xl border border-white/10 bg-[#080b13]/95 p-1.5 shadow-2xl shadow-black/50 backdrop-blur-2xl">
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                onEdit();
-              }}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-zinc-300 transition-colors hover:bg-white/5 hover:text-white"
-            >
-              <Edit2 className="h-3.5 w-3.5" />
-              Edit habit
-            </button>
-            <button
-              type="button"
-              onClick={() => {
-                setMenuOpen(false);
-                onDelete();
-              }}
-              className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-left text-xs font-semibold text-red-300 transition-colors hover:bg-red-500/10"
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-              Delete habit
-            </button>
-          </div>
-        )}
-      </div>
-
-      <button
-        onClick={onToggle}
-        className={cn(
-          'absolute right-4 top-1/2 z-10 flex h-14 w-14 -translate-y-1/2 items-center justify-center rounded-full border transition-all active:scale-95',
-          isCompletedToday
-            ? 'border-emerald-400/30 bg-emerald-500 text-white shadow-[0_0_26px_rgba(16,185,129,0.45)]'
-            : 'border-white/12 bg-white/[0.055] text-zinc-400 shadow-[0_0_18px_rgba(139,92,246,0.08)] hover:border-emerald-400/30 hover:text-emerald-300'
-        )}
-        aria-label={isCompletedToday ? 'Mark incomplete' : 'Complete habit'}
-      >
-        <CheckCircle2 className="h-6 w-6" />
-      </button>
-      
-      <div className="relative z-10 flex items-center gap-4">
+      <div className="relative z-10 grid grid-cols-[auto_minmax(0,1fr)_3.75rem] items-center gap-3 sm:grid-cols-[auto_minmax(0,1fr)_auto_auto_4rem] sm:gap-5">
         <div 
-          className="flex h-16 w-16 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] shadow-2xl transition-all group-hover:scale-105"
+          className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] shadow-2xl transition-all group-hover:scale-105 sm:h-16 sm:w-16"
           style={{ color: habit.color, boxShadow: `0 0 24px ${habit.color}22` }}
         >
-          <Icon className="h-7 w-7" />
+          <Icon className="h-6 w-6 sm:h-7 sm:w-7" />
         </div>
 
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h3 className="truncate font-display text-lg font-bold text-white">{habit.title}</h3>
-            <span className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.7)]" />
+          <div className="flex min-w-0 items-start justify-between gap-2">
+            <div className="min-w-0">
+              <div className="flex min-w-0 items-center gap-2">
+                <h3 className="truncate font-display text-base font-bold text-white sm:text-lg">{habit.title}</h3>
+                <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.7)]" />
+              </div>
+              <p className="mt-0.5 text-sm text-zinc-400">{habit.frequency || 'Daily'}</p>
+            </div>
+
+            <div className="relative z-30 shrink-0">
+              <button
+                type="button"
+                aria-expanded={menuOpen}
+                aria-label={`Open actions for ${habit.title}`}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  setMenuOpen((value) => !value);
+                }}
+                className="flex h-9 w-9 items-center justify-center rounded-xl border border-white/8 bg-white/[0.035] text-zinc-500 transition-all hover:border-white/15 hover:text-white"
+              >
+                <MoreVertical className="h-4 w-4" />
+              </button>
+
+              {menuOpen && (
+                <div className="absolute right-0 top-11 w-44 overflow-hidden rounded-2xl border border-white/10 bg-[#080b13]/95 p-1.5 shadow-2xl shadow-black/50 backdrop-blur-2xl">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onEdit();
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs font-semibold text-zinc-300 transition-colors hover:bg-white/5 hover:text-white"
+                  >
+                    <Edit2 className="h-3.5 w-3.5" />
+                    Edit habit
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setMenuOpen(false);
+                      onDelete();
+                    }}
+                    className="flex w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-xs font-semibold text-red-300 transition-colors hover:bg-red-500/10"
+                  >
+                    <Trash2 className="h-3.5 w-3.5" />
+                    Delete habit
+                  </button>
+                </div>
+              )}
+            </div>
           </div>
-          <p className="mt-0.5 text-sm text-zinc-400">{habit.frequency || 'Daily'}</p>
-          <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-white/8">
-            <div className="h-full rounded-full transition-all duration-700" style={{ width: `${completionPercent}%`, backgroundColor: habit.color, boxShadow: `0 0 18px ${habit.color}66` }} />
+          <div className="mt-3 flex items-center gap-4 sm:hidden">
+            <span className="inline-flex items-center gap-1 font-mono text-sm font-bold text-white"><Flame className="h-3.5 w-3.5 text-orange-400" />{habit.streak || 0}<span className="font-sans text-[10px] font-medium text-zinc-500">streak</span></span>
+            <span className="font-mono text-sm font-bold text-white">{completionPercent}%</span>
           </div>
         </div>
 
-        <div className="hidden shrink-0 items-center gap-4 sm:flex">
-          <div className="text-center">
-            <p className="font-mono text-lg font-bold text-white">{habit.streak || 0}</p>
+        <div className="hidden shrink-0 items-center gap-2 text-center sm:flex">
+          <Flame className="h-4 w-4 text-orange-400" />
+          <div>
+            <p className="font-mono text-xl font-bold leading-none text-white">{habit.streak || 0}</p>
             <p className="text-[10px] text-zinc-500">streak</p>
           </div>
-          <div className="text-center">
-            <p className="font-mono text-lg font-bold text-white">{completionPercent}%</p>
-            <p className="text-[10px] text-zinc-500">week</p>
-          </div>
         </div>
+
+        <div className="hidden shrink-0 text-center sm:block">
+          <p className="font-mono text-2xl font-bold leading-none text-white">{completionPercent}%</p>
+        </div>
+
+        <button
+          onClick={onToggle}
+          className={cn(
+            'flex h-14 w-14 shrink-0 items-center justify-center justify-self-end rounded-full border transition-all active:scale-95 sm:h-16 sm:w-16',
+            isCompletedToday
+              ? 'border-emerald-400/30 bg-emerald-500 text-white shadow-[0_0_26px_rgba(16,185,129,0.45)]'
+              : 'border-white/12 bg-white/[0.055] text-zinc-400 shadow-[0_0_18px_rgba(139,92,246,0.08)] hover:border-emerald-400/30 hover:text-emerald-300'
+          )}
+          aria-label={isCompletedToday ? 'Mark incomplete' : 'Complete habit'}
+        >
+          <CheckCircle2 className="h-6 w-6" />
+        </button>
       </div>
-      <div className="relative z-10 mt-3 flex items-center gap-4 pl-20 sm:hidden">
-        <span className="font-mono text-sm font-bold text-white">{habit.streak || 0}<span className="ml-1 font-sans text-[10px] font-medium text-zinc-500">streak</span></span>
-        <span className="font-mono text-sm font-bold text-white">{completionPercent}%<span className="ml-1 font-sans text-[10px] font-medium text-zinc-500">week</span></span>
+      <div className="relative z-10 ml-[4.25rem] mr-[4.25rem] mt-4 h-1.5 overflow-hidden rounded-full bg-white/8 sm:ml-[5.25rem] sm:mr-[5.25rem]">
+        <div className="h-full rounded-full transition-all duration-700" style={{ width: `${completionPercent}%`, backgroundColor: habit.color, boxShadow: `0 0 18px ${habit.color}66` }} />
       </div>
     </Card>
   );

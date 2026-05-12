@@ -296,7 +296,6 @@ export function Projects() {
                             placeholder="e.g. Website Redesign" 
                             className="bg-white/5"
                             required
-                            autoFocus
                         />
                         <p className="ml-1 text-xs text-zinc-600">Required. Use a clear outcome or project name.</p>
                     </div>
@@ -587,7 +586,6 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
                                     onChange={(e) => setNewTaskTitle(e.target.value)}
                                     placeholder="Task name..."
                                     className="bg-zinc-900 h-12 text-sm rounded-xl border-white/5 focus:border-accent/40"
-                                    autoFocus
                                     onKeyDown={(e) => e.key === 'Enter' && addTask()}
                                 />
                                 <Button onClick={addTask} disabled={!trimmedTaskTitle} className="h-12 px-6"><Check className="w-5 h-5" /></Button>

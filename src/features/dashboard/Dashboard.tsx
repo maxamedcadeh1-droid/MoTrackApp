@@ -4,14 +4,18 @@ import {
   ArrowRight,
   BarChart3,
   Bell,
+  Book,
   Briefcase,
   Calendar,
   CheckCircle2,
   Clock,
+  Coffee,
   FileText,
   Flame,
+  Moon,
   Plus,
   Sparkles,
+  Sun,
   Target,
   Timer,
   TrendingDown,
@@ -29,6 +33,16 @@ const DashboardChart = lazy(() => import('./DashboardChart').then((mod) => ({ de
 const SuggestedNextAction = lazy(() => import('./SuggestedNextAction').then((mod) => ({ default: mod.SuggestedNextAction })));
 const DashboardChecklist = lazy(() => import('./DashboardChecklist').then((mod) => ({ default: mod.DashboardChecklist })));
 const WelcomeEmptyState = lazy(() => import('./EnhancedEmptyState').then((mod) => ({ default: mod.WelcomeEmptyState })));
+
+const HABIT_ICONS = {
+  target: Target,
+  zap: Zap,
+  coffee: Coffee,
+  book: Book,
+  moon: Moon,
+  sun: Sun,
+  flame: Flame,
+};
 
 type WeeklyDashboardData = {
   day: string;
@@ -54,6 +68,9 @@ type HabitStreak = {
   streak: number;
   bestStreak: number;
   color: string;
+  frequency: string;
+  icon: string;
+  completedDates: string[];
 };
 
 type ActivityItem = {
@@ -356,6 +373,9 @@ export const Dashboard = memo(function Dashboard() {
             streak: habit.streak || 0,
             bestStreak: habit.best_streak || 0,
             color: habit.color || '#8b5cf6',
+            frequency: habit.frequency || 'Daily',
+            icon: habit.icon || 'target',
+            completedDates: habit.completed_dates || [],
           }));
 
         if (isMounted.current) {
@@ -472,6 +492,11 @@ export const Dashboard = memo(function Dashboard() {
   const remainingFocusMinutes = Math.max(stats.dailyGoal - stats.focusMinutes, 0);
   const remainingProjectTasks = Math.max(stats.totalProjectTasks - stats.completedProjectTasks, 0);
   const trend = useMemo(() => getTrendIndicator(stats.momentum, stats.previousMomentum), [stats.momentum, stats.previousMomentum]);
+  const yesterdayPulse = stats.weeklyData.length >= 2 ? stats.weeklyData[stats.weeklyData.length - 2] : undefined;
+  const habitsDelta = stats.habitsCompleted - (yesterdayPulse?.habitsCompleted || 0);
+  const focusDelta = stats.focusMinutes - (yesterdayPulse?.focusMinutes || 0);
+  const todayTasksDone = stats.weeklyData[stats.weeklyData.length - 1]?.tasksCompleted || 0;
+  const taskDelta = todayTasksDone - (yesterdayPulse?.tasksCompleted || 0);
 
   const suggestion = useMemo(() => {
     if (stats.totalHabits === 0) return 'Create your first habit.';
@@ -680,55 +705,60 @@ export const Dashboard = memo(function Dashboard() {
       )}
 
       {/* ── METRIC CARDS 2x2 ── */}
-      <div className="grid grid-cols-2 gap-3">
+      <div className="grid grid-cols-1 gap-3 min-[360px]:grid-cols-2 lg:grid-cols-4">
         {[
           {
-            label: 'Habits Completed',
+            title: 'Habits',
+            subtitle: 'Completed',
             value: `${stats.habitsCompleted}/${stats.totalHabits}`,
-            desc: incompleteHabits > 0 ? `${incompleteHabits} remaining` : stats.totalHabits > 0 ? 'All done!' : 'No habits yet',
+            trend: `${habitsDelta >= 0 ? 'Up' : 'Down'} ${Math.abs(habitsDelta)} vs yesterday`,
             progress: stats.totalHabits ? Math.round((stats.habitsCompleted / stats.totalHabits) * 100) : 0,
             icon: CheckCircle2,
             color: '#10b981',
             glow: 'from-emerald-500/8 to-transparent',
           },
           {
-            label: 'Focus Minutes',
+            title: 'Focus',
+            subtitle: 'Minutes',
             value: `${stats.focusMinutes}m`,
-            desc: remainingFocusMinutes > 0 ? `${remainingFocusMinutes}m to goal` : 'Goal reached!',
+            trend: remainingFocusMinutes > 0 ? `${focusDelta >= 0 ? 'Up' : 'Down'} ${Math.abs(focusDelta)} min vs yesterday` : 'Daily goal reached',
             progress: stats.dailyGoal ? Math.min(Math.round((stats.focusMinutes / stats.dailyGoal) * 100), 100) : 0,
             icon: Clock,
             color: '#3b82f6',
             glow: 'from-blue-500/8 to-transparent',
           },
           {
-            label: 'Active Projects',
+            title: 'Active',
+            subtitle: 'Projects',
             value: `${stats.activeProjects}`,
-            desc: stats.activeProjects > 0 ? `${stats.projectProgress}% avg progress` : 'No active projects',
+            trend: stats.activeProjects > 0 ? `${stats.projectProgress}% avg progress` : 'No active projects',
             progress: stats.projectProgress,
             icon: Briefcase,
             color: '#f59e0b',
             glow: 'from-amber-500/8 to-transparent',
           },
           {
-            label: 'Tasks Completed',
+            title: 'Tasks',
+            subtitle: 'Completed',
             value: `${stats.completedProjectTasks}/${stats.totalProjectTasks}`,
-            desc: remainingProjectTasks > 0 ? `${remainingProjectTasks} remaining` : stats.totalProjectTasks > 0 ? 'All done!' : 'No tasks yet',
+            trend: `${taskDelta >= 0 ? 'Up' : 'Down'} ${Math.abs(taskDelta)} vs yesterday`,
             progress: stats.totalProjectTasks ? Math.round((stats.completedProjectTasks / stats.totalProjectTasks) * 100) : 0,
             icon: Target,
             color: '#8b5cf6',
             glow: 'from-violet-500/8 to-transparent',
           },
         ].map((card) => (
-          <div key={card.label} className="luxury-card rounded-[1.55rem] p-4 transition-all hover:-translate-y-0.5 active:scale-[0.98]">
+          <div key={card.title} className="luxury-card min-h-[154px] rounded-[1.55rem] p-4 transition-all hover:-translate-y-0.5 active:scale-[0.98] sm:min-h-[168px]">
             <div className={cn('pointer-events-none absolute inset-0 bg-gradient-to-br', card.glow)} />
-            <div className="relative">
-              <div className="mb-4 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 shadow-[0_0_22px_rgba(139,92,246,0.1)]" style={{ background: `${card.color}18` }}>
+            <div className="relative flex h-full min-h-[122px] flex-col">
+              <div className="absolute right-0 top-0 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 shadow-[0_0_22px_rgba(139,92,246,0.12)]" style={{ background: `${card.color}18` }}>
                 <card.icon className="h-4 w-4" style={{ color: card.color }} />
               </div>
-              <p className="font-mono text-3xl font-bold leading-none text-white">{card.value}</p>
-              <p className="mt-2 text-[10px] font-semibold leading-tight text-zinc-300">{card.label}</p>
-              <p className="mt-1 text-xs text-zinc-400">{card.desc}</p>
-              <div className="mt-3 h-[3px] w-full overflow-hidden rounded-full bg-white/8">
+              <p className="pr-14 text-base font-bold leading-tight text-white">{card.title}</p>
+              <p className="mt-1 pr-14 text-sm text-zinc-400">{card.subtitle}</p>
+              <p className="mt-7 font-mono text-4xl font-bold leading-none text-white">{card.value}</p>
+              <p className="mt-3 text-xs font-medium text-zinc-400">{card.trend}</p>
+              <div className="mt-auto h-[3px] w-full overflow-hidden rounded-full bg-white/8">
                 <div className="h-full rounded-full transition-all duration-700" style={{ width: `${card.progress}%`, background: card.color }} />
               </div>
             </div>
@@ -937,21 +967,75 @@ export const Dashboard = memo(function Dashboard() {
           <h2 className="text-sm font-bold text-white">Habit Streaks</h2>
           <button onClick={() => navigate('/habits')} className="text-[10px] font-bold text-accent">View all</button>
         </div>
-        <div className="space-y-2.5">
-          {stats.habitStreaks.length ? stats.habitStreaks.map((habit) => (
-            <div key={habit.id} className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3">
-              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl" style={{ background: `${habit.color}15` }}>
-                <Target className="h-4 w-4" style={{ color: habit.color }} />
+        <div className="space-y-3">
+          {stats.habitStreaks.length ? stats.habitStreaks.map((habit) => {
+            const weeklyDone = [...Array(7)].filter((_, index) => {
+              const day = new Date();
+              day.setDate(day.getDate() - (6 - index));
+              return habit.completedDates.includes(dateKey(day));
+            }).length;
+            const completionPercent = Math.round((weeklyDone / 7) * 100);
+            const isCompletedToday = habit.completedDates.includes(dateKey(new Date()));
+            const HabitIcon = HABIT_ICONS[habit.icon as keyof typeof HABIT_ICONS] || Target;
+
+            return (
+              <div key={habit.id} className="group relative overflow-hidden rounded-[1.7rem] border border-white/10 bg-white/[0.025] p-4 transition-all hover:border-accent/30">
+                <div className="absolute right-0 top-0 h-36 w-36 -translate-y-1/2 translate-x-1/2 rounded-full blur-[80px] opacity-20" style={{ backgroundColor: habit.color }} />
+                <div className="relative z-10 grid grid-cols-[auto_minmax(0,1fr)_3.75rem] items-center gap-3 sm:grid-cols-[auto_minmax(0,1fr)_auto_auto_4rem] sm:gap-5">
+                  <div
+                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] shadow-2xl sm:h-16 sm:w-16"
+                    style={{ color: habit.color, boxShadow: `0 0 24px ${habit.color}22` }}
+                  >
+                    <HabitIcon className="h-6 w-6 sm:h-7 sm:w-7" />
+                  </div>
+
+                  <div className="min-w-0">
+                    <div className="flex min-w-0 items-center gap-2">
+                      <h3 className="truncate font-display text-base font-bold text-white sm:text-lg">{habit.title}</h3>
+                      <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.7)]" />
+                    </div>
+                    <p className="mt-0.5 text-sm text-zinc-400">{habit.frequency}</p>
+                    <div className="mt-3 flex items-center gap-4 sm:hidden">
+                      <span className="inline-flex items-center gap-1 font-mono text-sm font-bold text-white">
+                        <Flame className="h-3.5 w-3.5 text-orange-400" />
+                        {habit.streak}<span className="font-sans text-[10px] font-medium text-zinc-500">streak</span>
+                      </span>
+                      <span className="font-mono text-sm font-bold text-white">{completionPercent}%</span>
+                    </div>
+                  </div>
+
+                  <div className="hidden shrink-0 items-center gap-2 text-center sm:flex">
+                    <Flame className="h-4 w-4 text-orange-400" />
+                    <div>
+                      <p className="font-mono text-xl font-bold leading-none text-white">{habit.streak}</p>
+                      <p className="text-[10px] text-zinc-500">streak</p>
+                    </div>
+                  </div>
+
+                  <div className="hidden shrink-0 text-center sm:block">
+                    <p className="font-mono text-2xl font-bold leading-none text-white">{completionPercent}%</p>
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => navigate('/habits')}
+                    className={cn(
+                      'flex h-14 w-14 shrink-0 items-center justify-center justify-self-end rounded-full border transition-all active:scale-95 sm:h-16 sm:w-16',
+                      isCompletedToday
+                        ? 'border-emerald-400/30 bg-emerald-500 text-white shadow-[0_0_26px_rgba(16,185,129,0.45)]'
+                        : 'border-white/12 bg-white/[0.055] text-zinc-400 shadow-[0_0_18px_rgba(139,92,246,0.08)] hover:border-emerald-400/30 hover:text-emerald-300'
+                    )}
+                    aria-label="Open habits"
+                  >
+                    <CheckCircle2 className="h-6 w-6" />
+                  </button>
+                </div>
+                <div className="relative z-10 ml-[4.25rem] mr-[4.25rem] mt-4 h-1.5 overflow-hidden rounded-full bg-white/8 sm:ml-[5.25rem] sm:mr-[5.25rem]">
+                  <div className="h-full rounded-full transition-all duration-700" style={{ width: `${completionPercent}%`, backgroundColor: habit.color, boxShadow: `0 0 18px ${habit.color}66` }} />
+                </div>
               </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-sm font-semibold text-white">{habit.title}</p>
-                <p className="text-xs text-zinc-500">Best: {habit.bestStreak}d</p>
-              </div>
-              <div className="flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-bold" style={{ background: `${habit.color}15`, color: habit.color }}>
-                <Flame className="h-3 w-3" />{habit.streak}d
-              </div>
-            </div>
-          )) : (
+            );
+          }) : (
             <div className="flex flex-col items-center gap-2 py-6">
               <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.03]">
                 <Flame className="h-4 w-4 text-zinc-600" />

@@ -343,7 +343,6 @@ export function Notes() {
                             placeholder="Note title..." 
                             className="h-auto border-none bg-transparent p-0 font-display text-2xl font-bold text-white placeholder:text-zinc-800 focus:ring-0 sm:text-3xl"
                             required
-                            autoFocus
                         />
                         <p className="text-xs text-zinc-700">A title is required before saving.</p>
                     </div>
