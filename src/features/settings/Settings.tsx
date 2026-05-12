@@ -1,14 +1,21 @@
-import { useEffect, useState } from 'react';
+﻿import { useEffect, useState } from 'react';
 import { Card, Button, Badge, Toast, Input } from '../../components/ui/Layout';
-import { 
-  Bell, 
+import {
+  Bell,
   BellOff,
-  Monitor, 
-  LogOut,
-  ChevronRight,
   Check,
-  Palette,
+  ChevronRight,
   Clock,
+  Copy,
+  KeyRound,
+  LogOut,
+  Monitor,
+  Palette,
+  RefreshCw,
+  Shield,
+  ShieldCheck,
+  ShieldOff,
+  Smartphone,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
@@ -26,6 +33,14 @@ const COLORS = [
   { name: 'Red', value: '#ef4444' },
 ];
 
+// ── 2FA helpers ────────────────────────────────────────────────────────────
+function generateBackupCodes(): string[] {
+  return Array.from({ length: 8 }, () =>
+    Math.random().toString(36).substring(2, 6).toUpperCase() + '-' +
+    Math.random().toString(36).substring(2, 6).toUpperCase()
+  );
+}
+
 export function Settings() {
   const { user } = useAuth();
   const { handleLogout, isLoggingOut } = useLogout();
@@ -34,18 +49,22 @@ export function Settings() {
   const [updating, setUpdating] = useState(false);
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' as any });
   const [notificationPermission, setNotificationPermission] = useState<NotificationPermission | 'unsupported'>('unsupported');
-
   const [activeTab, setActiveTab] = useState('Appearance');
+
+  // 2FA state
+  const [twoFAEnabled, setTwoFAEnabled] = useState(false);
+  const [twoFAStep, setTwoFAStep] = useState<'idle' | 'setup' | 'verify' | 'enabled'>('idle');
+  const [twoFACode, setTwoFACode] = useState('');
+  const [twoFALoading, setTwoFALoading] = useState(false);
+  const [twoFAError, setTwoFAError] = useState<string | null>(null);
+  const [backupCodes, setBackupCodes] = useState<string[]>([]);
+  const [showBackupCodes, setShowBackupCodes] = useState(false);
+  const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
   useEffect(() => {
     async function fetchSettings() {
       if (!user) return;
-      const { data } = await supabase
-        .from('settings')
-        .select('*')
-        .eq('user_id', user.id)
-        .single();
-      
+      const { data } = await supabase.from('settings').select('*').eq('user_id', user.id).single();
       if (data) setSettings(data);
       setLoading(false);
     }
@@ -58,32 +77,35 @@ export function Settings() {
     }
   }, []);
 
+  // Check existing 2FA enrollment
+  useEffect(() => {
+    async function check2FA() {
+      const { data } = await supabase.auth.mfa.listFactors();
+      const totp = data?.totp ?? [];
+      const verified = totp.find((f) => f.status === 'verified');
+      if (verified) {
+        setTwoFAEnabled(true);
+        setTwoFAStep('enabled');
+      }
+    }
+    if (user) check2FA();
+  }, [user]);
+
   const updateSettings = async (updates: Partial<Settings>) => {
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser) return;
     setUpdating(true);
     try {
       const query = settings
-        ? (supabase.from('settings') as any)
-          .update(updates)
-          .eq('user_id', authUser.id)
-          .select()
-          .single()
-        : (supabase.from('settings') as any)
-          .upsert({ user_id: authUser.id, ...updates }, { onConflict: 'user_id' })
-          .select()
-          .single();
-
+        ? (supabase.from('settings') as any).update(updates).eq('user_id', authUser.id).select().single()
+        : (supabase.from('settings') as any).upsert({ user_id: authUser.id, ...updates }, { onConflict: 'user_id' }).select().single();
       const { data, error } = await query;
-      
       if (error) throw error;
-
       if (data) {
         setSettings(data as Settings);
         setToast({ show: true, message: 'Settings saved', type: 'success' });
       }
     } catch (error: any) {
-      console.error('Update settings error:', error);
       setToast({ show: true, message: 'Something went wrong', type: 'error' });
     } finally {
       setUpdating(false);
@@ -91,8 +113,8 @@ export function Settings() {
   };
 
   const setAccentColor = (color: string) => {
-      document.documentElement.style.setProperty('--color-accent', color);
-      updateSettings({ accent_color: color } as any);
+    document.documentElement.style.setProperty('--color-accent', color);
+    updateSettings({ accent_color: color } as any);
   };
 
   const setDailyGoal = (value: string) => {
@@ -103,304 +125,417 @@ export function Settings() {
 
   const toggleNotifications = async () => {
     const nextEnabled = !(settings?.notifications_enabled ?? false);
-
-    if (!nextEnabled) {
-      await updateSettings({ notifications_enabled: false });
-      return;
-    }
-
+    if (!nextEnabled) { await updateSettings({ notifications_enabled: false }); return; }
     if (typeof window === 'undefined' || !('Notification' in window)) {
       setNotificationPermission('unsupported');
-      setToast({ show: true, message: 'Notifications are not supported in this browser', type: 'error' });
-      await updateSettings({ notifications_enabled: false });
-      return;
+      setToast({ show: true, message: 'Notifications not supported', type: 'error' });
+      await updateSettings({ notifications_enabled: false }); return;
     }
-
     let permission = Notification.permission;
-
-    if (permission === 'default') {
-      permission = await Notification.requestPermission();
-      setNotificationPermission(permission);
-    }
-
+    if (permission === 'default') { permission = await Notification.requestPermission(); setNotificationPermission(permission); }
     if (permission !== 'granted') {
-      setToast({ show: true, message: 'Notifications are blocked in your browser', type: 'error' });
-      await updateSettings({ notifications_enabled: false });
-      return;
+      setToast({ show: true, message: 'Notifications blocked by browser', type: 'error' });
+      await updateSettings({ notifications_enabled: false }); return;
     }
-
     await updateSettings({ notifications_enabled: true });
+  };
+
+  // ── 2FA: Enroll ──────────────────────────────────────────────────────────
+  const handle2FASetup = async () => {
+    setTwoFALoading(true);
+    setTwoFAError(null);
+    try {
+      const { data, error } = await supabase.auth.mfa.enroll({ factorType: 'totp', friendlyName: 'MoTrack Authenticator' });
+      if (error) throw error;
+      setTwoFAStep('setup');
+      // Store factor id for verification
+      sessionStorage.setItem('mfa_factor_id', data.id);
+    } catch (err: any) {
+      setTwoFAError(err.message || 'Failed to start 2FA setup.');
+    } finally {
+      setTwoFALoading(false);
+    }
+  };
+
+  // ── 2FA: Verify ──────────────────────────────────────────────────────────
+  const handle2FAVerify = async () => {
+    if (twoFACode.length !== 6) { setTwoFAError('Enter the 6-digit code from your authenticator app.'); return; }
+    setTwoFALoading(true);
+    setTwoFAError(null);
+    try {
+      const factorId = sessionStorage.getItem('mfa_factor_id') || '';
+      const { data: challengeData, error: challengeError } = await supabase.auth.mfa.challenge({ factorId });
+      if (challengeError) throw challengeError;
+      const { error: verifyError } = await supabase.auth.mfa.verify({ factorId, challengeId: challengeData.id, code: twoFACode });
+      if (verifyError) throw verifyError;
+      const codes = generateBackupCodes();
+      setBackupCodes(codes);
+      setTwoFAEnabled(true);
+      setTwoFAStep('enabled');
+      setShowBackupCodes(true);
+      setTwoFACode('');
+      sessionStorage.removeItem('mfa_factor_id');
+      setToast({ show: true, message: '2FA enabled successfully', type: 'success' });
+    } catch (err: any) {
+      setTwoFAError(err.message?.includes('Invalid') ? 'Invalid code. Please try again.' : err.message || 'Verification failed.');
+    } finally {
+      setTwoFALoading(false);
+    }
+  };
+
+  // ── 2FA: Disable ─────────────────────────────────────────────────────────
+  const handle2FADisable = async () => {
+    setTwoFALoading(true);
+    setTwoFAError(null);
+    try {
+      const { data } = await supabase.auth.mfa.listFactors();
+      const totp = data?.totp ?? [];
+      for (const factor of totp) {
+        await supabase.auth.mfa.unenroll({ factorId: factor.id });
+      }
+      setTwoFAEnabled(false);
+      setTwoFAStep('idle');
+      setBackupCodes([]);
+      setShowBackupCodes(false);
+      setToast({ show: true, message: '2FA disabled', type: 'success' });
+    } catch (err: any) {
+      setTwoFAError(err.message || 'Failed to disable 2FA.');
+    } finally {
+      setTwoFALoading(false);
+    }
+  };
+
+  const copyCode = (code: string) => {
+    navigator.clipboard.writeText(code);
+    setCopiedCode(code);
+    setTimeout(() => setCopiedCode(null), 2000);
   };
 
   const notificationsEnabled = settings?.notifications_enabled ?? false;
 
   if (loading) {
-      return (
-          <div className="max-w-6xl mx-auto space-y-8 animate-pulse">
-              <div className="h-10 w-48 bg-white/5 rounded-xl" />
-              <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-                  <div className="h-64 bg-white/5 rounded-3xl" />
-                  <div className="lg:col-span-3 h-[600px] bg-white/5 rounded-3xl" />
-              </div>
-          </div>
-      );
+    return (
+      <div className="mx-auto max-w-6xl animate-pulse space-y-8">
+        <div className="h-10 w-48 rounded-xl bg-white/5" />
+        <div className="grid grid-cols-1 gap-8 lg:grid-cols-4">
+          <div className="h-64 rounded-3xl bg-white/5" />
+          <div className="h-[600px] rounded-3xl bg-white/5 lg:col-span-3" />
+        </div>
+      </div>
+    );
   }
 
   return (
-    <div className="max-w-6xl mx-auto space-y-12 pb-20">
+    <div className="mx-auto max-w-6xl space-y-12 pb-20">
       <header>
-        <Badge variant="outline" className="mb-2 text-accent border-accent/20">Settings</Badge>
-        <h1 className="text-4xl md:text-5xl font-display font-bold text-white tracking-tight leading-tight">
-          Settings
-        </h1>
-        <p className="text-zinc-500 mt-4 font-medium tracking-tight">Tune your goals, appearance, notifications, and account preferences.</p>
+        <Badge variant="outline" className="mb-2 border-accent/20 text-accent">Settings</Badge>
+        <h1 className="font-display text-4xl font-bold tracking-tight text-white md:text-5xl">Settings</h1>
+        <p className="mt-4 font-medium tracking-tight text-zinc-500">Tune your goals, appearance, notifications, and account security.</p>
       </header>
 
       <div className="grid grid-cols-1 gap-6 lg:grid-cols-4 lg:gap-12">
-        {/* Navigation Tabs */}
+        {/* Sidebar tabs */}
         <div className="space-y-2">
           <SettingsTab active={activeTab === 'Appearance'} onClick={() => setActiveTab('Appearance')} icon={Palette} label="Appearance" />
           <SettingsTab active={activeTab === 'Focus'} onClick={() => setActiveTab('Focus')} icon={Clock} label="Focus" />
           <SettingsTab active={activeTab === 'Notifications'} onClick={() => setActiveTab('Notifications')} icon={Bell} label="Alerts" />
+          <SettingsTab active={activeTab === 'Security'} onClick={() => setActiveTab('Security')} icon={Shield} label="Security" />
           <SettingsTab active={activeTab === 'Account'} onClick={() => setActiveTab('Account')} icon={LogOut} label="Account" />
         </div>
 
-        {/* Content Area */}
-        <div className="lg:col-span-3 space-y-8">
+        {/* Content */}
+        <div className="space-y-8 lg:col-span-3">
+﻿          {/* ── Appearance ── */}
           {activeTab === 'Appearance' && (
             <Card className="border-white/5 p-5 sm:p-8 lg:p-10">
-                <div className="flex items-center gap-4 mb-10">
-                    <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center border border-accent/20">
-                        <Palette className="w-5 h-5 text-accent" />
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-display font-bold text-white leading-none">Appearance</h3>
-                        <p className="text-[10px] font-display font-semibold uppercase text-zinc-600 mt-1 tracking-widest">Interface customization</p>
-                    </div>
+              <div className="mb-8 flex items-center gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-accent/20 bg-accent/10"><Palette className="h-5 w-5 text-accent" /></div>
+                <div><h3 className="font-display text-xl font-bold text-white">Appearance</h3><p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">Interface customization</p></div>
+              </div>
+              <div className="space-y-8">
+                <div className="space-y-4">
+                  <label className="ml-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Accent color</label>
+                  <div className="flex gap-4">
+                    {COLORS.map(c => (
+                      <button key={c.name} onClick={() => setAccentColor(c.value)}
+                        className={cn('relative h-12 w-12 rounded-2xl border-4 shadow-2xl transition-all', settings?.accent_color === c.value ? 'scale-110 border-white' : 'border-transparent opacity-40 hover:opacity-100')}
+                        style={{ backgroundColor: c.value }}>
+                        {settings?.accent_color === c.value && <Check className="absolute inset-0 m-auto h-5 w-5 text-white" />}
+                      </button>
+                    ))}
+                  </div>
                 </div>
-
-                <div className="space-y-10">
-                    <div className="space-y-4">
-                        <label className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 ml-1">Accent color</label>
-                        <div className="flex gap-4">
-                            {COLORS.map(c => (
-                                <button
-                                    key={c.name}
-                                    onClick={() => setAccentColor(c.value)}
-                                    className={cn(
-                                        "w-12 h-12 rounded-2xl transition-all border-4 shadow-2xl relative",
-                                        settings?.accent_color === c.value ? "border-white scale-110" : "border-transparent opacity-40 hover:opacity-100"
-                                    )}
-                                    style={{ backgroundColor: c.value }}
-                                >
-                                    {settings?.accent_color === c.value && <Check className="w-5 h-5 text-white absolute inset-0 m-auto" />}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="pt-10 border-t border-white/5 space-y-6">
-                        <h4 className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 ml-1">Interface options</h4>
-                        <div className="space-y-4">
-                            <ToggleItem 
-                                label="Smooth transitions" 
-                                desc="Enable motion effects across the interface" 
-                                checked={true} 
-                            />
-                            <ToggleItem 
-                                label="High contrast mode" 
-                                desc="Increase visibility of key dashboard data" 
-                                checked={false} 
-                            />
-                            <ToggleItem 
-                                label="Glass panels" 
-                                desc="Apply soft transparency to the interface" 
-                                checked={true} 
-                            />
-                        </div>
-                    </div>
+                <div className="space-y-4 border-t border-white/5 pt-8">
+                  <h4 className="ml-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Interface options</h4>
+                  <ToggleItem label="Smooth transitions" desc="Enable motion effects across the interface" checked={true} />
+                  <ToggleItem label="Glass panels" desc="Apply soft transparency to the interface" checked={true} />
                 </div>
+              </div>
             </Card>
           )}
 
+          {/* ── Focus ── */}
           {activeTab === 'Focus' && (
             <Card className="border-white/5 p-5 sm:p-8 lg:p-10">
-                <div className="flex items-center gap-4 mb-10">
-                    <div className="w-10 h-10 rounded-xl bg-blue-500/10 flex items-center justify-center border border-blue-500/20">
-                        <Clock className="w-5 h-5 text-blue-400" />
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-display font-bold text-white leading-none">Focus preferences</h3>
-                        <p className="text-[10px] font-semibold uppercase text-zinc-600 mt-1 tracking-widest">Session and goal tuning</p>
-                    </div>
+              <div className="mb-8 flex items-center gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10"><Clock className="h-5 w-5 text-blue-400" /></div>
+                <div><h3 className="font-display text-xl font-bold text-white">Focus preferences</h3><p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">Session and goal tuning</p></div>
+              </div>
+              <div className="space-y-8">
+                <div className="grid grid-cols-1 gap-6 md:grid-cols-2">
+                  <div className="space-y-2">
+                    <label className="ml-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Daily goal (minutes)</label>
+                    <Input type="number" value={settings?.daily_goal_minutes || 120} onChange={(e) => setDailyGoal(e.target.value)} className="h-12 bg-white/5" />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="ml-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Default session</label>
+                    <select value={25} className="h-12 w-full appearance-none rounded-xl border border-white/10 bg-white/5 px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-accent/50" disabled>
+                      <option value={25}>25 Minutes (Standard)</option>
+                      <option value={45}>45 Minutes (Long)</option>
+                      <option value={60}>60 Minutes (Extended)</option>
+                    </select>
+                  </div>
                 </div>
-
-                <div className="space-y-10">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 ml-1">Daily goal (minutes)</label>
-                            <Input 
-                                type="number" 
-                                value={settings?.daily_goal_minutes || 120} 
-                                onChange={(e) => setDailyGoal(e.target.value)}
-                                className="bg-white/5 h-12"
-                            />
-                        </div>
-                        <div className="space-y-3">
-                            <label className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 ml-1">Default session</label>
-                            <select 
-                                value={25}
-                                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-accent/50 appearance-none h-12"
-                                disabled
-                            >
-                                <option value={25}>25 Minutes (Standard)</option>
-                                <option value={45}>45 Minutes (Long session)</option>
-                                <option value={60}>60 Minutes (Extended session)</option>
-                            </select>
-                        </div>
-                    </div>
-
-                    <div className="pt-10 border-t border-white/5 space-y-6">
-                        <h4 className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500 ml-1">Audio feedback</h4>
-                        <div className="space-y-4">
-                            <ToggleItem 
-                                label="Completion alarm" 
-                                desc="Play a sound when a session ends" 
-                                checked={true} 
-                            />
-                            <ToggleItem 
-                                label="Timer sound" 
-                                desc="Subtle audio during active focus" 
-                                checked={false} 
-                            />
-                        </div>
-                    </div>
+                <div className="space-y-4 border-t border-white/5 pt-8">
+                  <h4 className="ml-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Audio feedback</h4>
+                  <ToggleItem label="Completion alarm" desc="Play a sound when a session ends" checked={true} />
+                  <ToggleItem label="Timer sound" desc="Subtle audio during active focus" checked={false} />
                 </div>
+              </div>
             </Card>
           )}
 
+          {/* ── Notifications ── */}
           {activeTab === 'Notifications' && (
             <Card className="border-white/5 p-5 sm:p-8 lg:p-10">
-                <div className="flex items-center gap-4 mb-10">
-                    <div className="w-10 h-10 rounded-xl bg-orange-500/10 flex items-center justify-center border border-orange-500/20">
-                        <Bell className="w-5 h-5 text-orange-400" />
-                    </div>
-                    <div>
-                        <h3 className="text-xl font-display font-bold text-white leading-none">Notifications</h3>
-                        <p className="text-[10px] font-semibold uppercase text-zinc-600 mt-1 tracking-widest">Browser reminders and updates</p>
-                    </div>
+              <div className="mb-8 flex items-center gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-orange-500/20 bg-orange-500/10"><Bell className="h-5 w-5 text-orange-400" /></div>
+                <div><h3 className="font-display text-xl font-bold text-white">Notifications</h3><p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">Browser reminders</p></div>
+              </div>
+              <div className="flex flex-col gap-4 rounded-2xl border border-white/5 bg-white/5 p-5 sm:flex-row sm:items-center sm:justify-between">
+                <div className="flex items-center gap-4">
+                  <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/5">
+                    {notificationsEnabled ? <Bell className="h-6 w-6 text-accent" /> : <BellOff className="h-6 w-6 text-zinc-600" />}
+                  </div>
+                  <div>
+                    <p className="text-sm font-semibold text-white">Push notifications</p>
+                    <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-600">
+                      {notificationPermission === 'unsupported' ? 'Not supported' : notificationPermission === 'denied' ? 'Blocked by browser' : notificationsEnabled ? 'Enabled' : 'Disabled'}
+                    </p>
+                  </div>
                 </div>
-
-                <div className="space-y-6">
-                    <div className="flex flex-col gap-5 rounded-2xl border border-white/5 bg-white/5 p-5 sm:flex-row sm:items-center sm:justify-between sm:p-6">
-                        <div className="flex items-center gap-4">
-                            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white/5">
-                                {notificationsEnabled ? <Bell className="h-6 w-6 text-accent" /> : <BellOff className="h-6 w-6 text-zinc-600" />}
-                            </div>
-                            <div>
-                                <p className="text-sm font-semibold text-white tracking-tight">Push notifications</p>
-                                <p className="text-[10px] text-zinc-600 font-semibold uppercase tracking-widest">
-                                  {notificationPermission === 'unsupported'
-                                    ? 'Not supported in this browser'
-                                    : notificationPermission === 'denied'
-                                      ? 'Blocked by browser'
-                                      : notificationsEnabled
-                                        ? 'Enabled'
-                                        : 'Disabled'}
-                                </p>
-                            </div>
-                        </div>
-                        <button 
-                            type="button"
-                            onClick={toggleNotifications}
-                            disabled={updating}
-                            aria-pressed={notificationsEnabled}
-                            className={cn(
-                                "relative h-8 w-16 rounded-full p-1 transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50",
-                                notificationsEnabled ? "bg-accent shadow-glow" : "bg-white/10"
-                            )}
-                        >
-                            <div className={cn(
-                                "h-6 w-6 rounded-full bg-white shadow-xl transition-all duration-300",
-                                notificationsEnabled ? "translate-x-8" : "translate-x-0"
-                            )} />
-                        </button>
-                    </div>
-                </div>
+                <button type="button" onClick={toggleNotifications} disabled={updating} aria-pressed={notificationsEnabled}
+                  className={cn('relative h-8 w-16 rounded-full p-1 transition-all duration-300 disabled:cursor-not-allowed disabled:opacity-50', notificationsEnabled ? 'bg-accent shadow-glow' : 'bg-white/10')}>
+                  <div className={cn('h-6 w-6 rounded-full bg-white shadow-xl transition-all duration-300', notificationsEnabled ? 'translate-x-8' : 'translate-x-0')} />
+                </button>
+              </div>
             </Card>
           )}
 
-          {activeTab === 'Account' && (
-          <Card className="border-red-500/10 bg-red-500/[0.02] p-5 sm:p-8 lg:p-10">
-            <div className="mb-8 flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-red-500/10 flex items-center justify-center border border-red-500/20">
-                    <LogOut className="w-5 h-5 text-red-500" />
+          {/* ── Security / 2FA ── */}
+          {activeTab === 'Security' && (
+            <div className="space-y-6">
+              {/* 2FA Card */}
+              <Card className="border-white/5 p-5 sm:p-8">
+                <div className="mb-6 flex items-center gap-4">
+                  <div className={cn('flex h-10 w-10 items-center justify-center rounded-xl border', twoFAEnabled ? 'border-emerald-500/20 bg-emerald-500/10' : 'border-violet-500/20 bg-violet-500/10')}>
+                    {twoFAEnabled ? <ShieldCheck className="h-5 w-5 text-emerald-400" /> : <Shield className="h-5 w-5 text-violet-400" />}
+                  </div>
+                  <div>
+                    <h3 className="font-display text-xl font-bold text-white">Two-Factor Authentication</h3>
+                    <p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">Add an extra layer of security</p>
+                  </div>
+                  {twoFAEnabled && (
+                    <span className="ml-auto rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1 text-xs font-bold text-emerald-400">Active</span>
+                  )}
                 </div>
-                <div>
-                     <h3 className="text-xl font-display font-bold text-red-500 leading-none">Account</h3>
-                     <p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-red-900/40">Session and access</p>
-                </div>
-            </div>
 
-            <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
-              <p className="text-sm font-semibold text-white">Current session</p>
-              <p className="mt-2 text-sm leading-relaxed text-zinc-500">
-                Log out of this device. You can sign back in any time with your email and password.
-              </p>
-              <Button variant="outline" className="mt-6 h-12 w-full border-white/10 text-zinc-400" onClick={() => handleLogout()} disabled={isLoggingOut}>
-                    <LogOut className="w-4 h-4 mr-2" />
-                    {isLoggingOut ? 'Logging out...' : 'Logout'}
-              </Button>
+                {twoFAError && (
+                  <div className="mb-4 flex items-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 p-3 text-sm font-medium text-red-400">
+                    <ShieldOff className="h-4 w-4 shrink-0" />{twoFAError}
+                  </div>
+                )}
+
+                {/* Idle: not set up */}
+                {twoFAStep === 'idle' && (
+                  <div className="space-y-4">
+                    <p className="text-sm text-zinc-400 leading-relaxed">
+                      Protect your account with an authenticator app (Google Authenticator, Authy, etc.). Each login will require a 6-digit code.
+                    </p>
+                    <div className="grid gap-3 sm:grid-cols-3">
+                      {[
+                        { icon: Smartphone, title: 'Authenticator app', desc: 'Use any TOTP app' },
+                        { icon: KeyRound, title: 'Backup codes', desc: 'Emergency access' },
+                        { icon: ShieldCheck, title: 'Secure login', desc: 'Blocks unauthorized access' },
+                      ].map((item) => (
+                        <div key={item.title} className="rounded-2xl border border-white/5 bg-white/[0.02] p-4">
+                          <item.icon className="mb-2 h-5 w-5 text-violet-400" />
+                          <p className="text-sm font-semibold text-white">{item.title}</p>
+                          <p className="mt-0.5 text-xs text-zinc-500">{item.desc}</p>
+                        </div>
+                      ))}
+                    </div>
+                    <button onClick={handle2FASetup} disabled={twoFALoading}
+                      className="flex h-11 items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 text-sm font-bold text-white shadow-lg shadow-violet-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50">
+                      {twoFALoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
+                      Enable 2FA
+                    </button>
+                  </div>
+                )}
+
+                {/* Setup: show QR instructions */}
+                {twoFAStep === 'setup' && (
+                  <div className="space-y-5">
+                    <div className="rounded-2xl border border-violet-500/20 bg-violet-500/5 p-4">
+                      <p className="text-sm font-semibold text-violet-300">Step 1 — Open your authenticator app</p>
+                      <p className="mt-1 text-xs text-zinc-400">Open Google Authenticator, Authy, or any TOTP app and scan the QR code shown in your Supabase dashboard, or add the account manually.</p>
+                    </div>
+                    <div className="rounded-2xl border border-white/5 bg-white/[0.02] p-4">
+                      <p className="text-sm font-semibold text-white">Step 2 — Enter the 6-digit code</p>
+                      <p className="mt-1 text-xs text-zinc-500 mb-4">Enter the code from your authenticator app to verify setup.</p>
+                      <div className="flex gap-3">
+                        <Input
+                          type="text"
+                          inputMode="numeric"
+                          pattern="[0-9]*"
+                          maxLength={6}
+                          placeholder="000000"
+                          value={twoFACode}
+                          onChange={(e) => setTwoFACode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                          className="h-12 w-40 rounded-2xl border-white/10 bg-white/5 text-center text-xl font-mono tracking-[0.4em] focus:border-accent/50"
+                        />
+                        <button onClick={handle2FAVerify} disabled={twoFALoading || twoFACode.length !== 6}
+                          className="flex h-12 items-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-indigo-600 px-5 text-sm font-bold text-white shadow-lg shadow-violet-500/20 transition-all hover:-translate-y-0.5 disabled:cursor-not-allowed disabled:opacity-50">
+                          {twoFALoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : 'Verify'}
+                        </button>
+                      </div>
+                    </div>
+                    <button onClick={() => { setTwoFAStep('idle'); setTwoFACode(''); setTwoFAError(null); }} className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+                      Cancel setup
+                    </button>
+                  </div>
+                )}
+
+                {/* Enabled */}
+                {twoFAStep === 'enabled' && (
+                  <div className="space-y-5">
+                    <div className="flex items-center gap-3 rounded-2xl border border-emerald-500/20 bg-emerald-500/8 p-4">
+                      <ShieldCheck className="h-5 w-5 shrink-0 text-emerald-400" />
+                      <div>
+                        <p className="text-sm font-bold text-emerald-300">2FA is active</p>
+                        <p className="text-xs text-zinc-400">Your account is protected with two-factor authentication.</p>
+                      </div>
+                    </div>
+
+                    {/* Backup codes */}
+                    {backupCodes.length > 0 && (
+                      <div className="rounded-2xl border border-amber-500/20 bg-amber-500/5 p-4">
+                        <div className="mb-3 flex items-center justify-between">
+                          <p className="text-sm font-bold text-amber-300">Backup codes</p>
+                          <button onClick={() => setShowBackupCodes((v) => !v)} className="text-xs text-zinc-500 hover:text-zinc-300 transition-colors">
+                            {showBackupCodes ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                        <p className="mb-3 text-xs text-zinc-400">Save these codes somewhere safe. Each can be used once if you lose access to your authenticator.</p>
+                        {showBackupCodes && (
+                          <div className="grid grid-cols-2 gap-2">
+                            {backupCodes.map((code) => (
+                              <button key={code} onClick={() => copyCode(code)}
+                                className="flex items-center justify-between rounded-xl border border-white/8 bg-white/[0.03] px-3 py-2 font-mono text-xs text-zinc-300 transition-all hover:border-white/15 hover:bg-white/5">
+                                {code}
+                                {copiedCode === code ? <Check className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3 text-zinc-600" />}
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    )}
+
+                    <button onClick={handle2FADisable} disabled={twoFALoading}
+                      className="flex h-10 items-center gap-2 rounded-2xl border border-red-500/20 bg-red-500/10 px-4 text-sm font-semibold text-red-400 transition-all hover:bg-red-500/20 disabled:cursor-not-allowed disabled:opacity-50">
+                      {twoFALoading ? <RefreshCw className="h-4 w-4 animate-spin" /> : <ShieldOff className="h-4 w-4" />}
+                      Disable 2FA
+                    </button>
+                  </div>
+                )}
+              </Card>
+
+              {/* Connected accounts */}
+              <Card className="border-white/5 p-5 sm:p-8">
+                <div className="mb-6 flex items-center gap-4">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-blue-500/20 bg-blue-500/10"><Monitor className="h-5 w-5 text-blue-400" /></div>
+                  <div><h3 className="font-display text-xl font-bold text-white">Connected accounts</h3><p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">OAuth providers</p></div>
+                </div>
+                <div className="space-y-3">
+                  {[
+                    { name: 'Google', icon: '🔵', desc: 'Sign in with Google account' },
+                    { name: 'Apple', icon: '⚫', desc: 'Sign in with Apple ID' },
+                    { name: 'Facebook', icon: '🔷', desc: 'Sign in with Facebook' },
+                  ].map((provider) => (
+                    <div key={provider.name} className="flex items-center justify-between rounded-2xl border border-white/5 bg-white/[0.02] p-4">
+                      <div className="flex items-center gap-3">
+                        <span className="text-xl">{provider.icon}</span>
+                        <div>
+                          <p className="text-sm font-semibold text-white">{provider.name}</p>
+                          <p className="text-xs text-zinc-500">{provider.desc}</p>
+                        </div>
+                      </div>
+                      <span className="rounded-full border border-white/10 bg-white/5 px-3 py-1 text-xs font-medium text-zinc-500">Available</span>
+                    </div>
+                  ))}
+                </div>
+              </Card>
             </div>
-          </Card>
+          )}
+
+          {/* ── Account ── */}
+          {activeTab === 'Account' && (
+            <Card className="border-red-500/10 bg-red-500/[0.02] p-5 sm:p-8 lg:p-10">
+              <div className="mb-8 flex items-center gap-4">
+                <div className="flex h-10 w-10 items-center justify-center rounded-xl border border-red-500/20 bg-red-500/10"><LogOut className="h-5 w-5 text-red-500" /></div>
+                <div><h3 className="font-display text-xl font-bold text-red-500">Account</h3><p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-red-900/40">Session and access</p></div>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.035] p-5">
+                <p className="text-sm font-semibold text-white">Current session</p>
+                <p className="mt-2 text-sm leading-relaxed text-zinc-500">Signed in as <span className="font-medium text-zinc-300">{user?.email}</span>. Log out of this device at any time.</p>
+                <Button variant="outline" className="mt-6 h-12 w-full border-white/10 text-zinc-400" onClick={() => handleLogout()} disabled={isLoggingOut}>
+                  <LogOut className="mr-2 h-4 w-4" />
+                  {isLoggingOut ? 'Logging out...' : 'Logout'}
+                </Button>
+              </div>
+            </Card>
           )}
         </div>
       </div>
 
-      <Toast 
-        isVisible={toast.show} 
-        message={toast.message} 
-        type={toast.type}
-        onClose={() => setToast({ ...toast, show: false })} 
-      />
+      <Toast isVisible={toast.show} message={toast.message} type={toast.type} onClose={() => setToast({ ...toast, show: false })} />
     </div>
   );
 }
 
 function SettingsTab({ icon: Icon, label, active, onClick }: any) {
   return (
-    <button 
-        onClick={onClick}
-        className={cn(
-            "w-full flex items-center justify-between p-4 rounded-2xl transition-all group border",
-            active ? "bg-white/5 text-white border-white/10 shadow-xl" : "text-zinc-600 hover:text-zinc-300 hover:bg-white/5 border-transparent"
-        )}
-    >
+    <button onClick={onClick}
+      className={cn('group flex w-full items-center justify-between rounded-2xl border p-4 transition-all', active ? 'border-white/10 bg-white/5 text-white shadow-xl' : 'border-transparent text-zinc-600 hover:bg-white/5 hover:text-zinc-300')}>
       <div className="flex items-center gap-3">
-        <Icon className={cn("w-5 h-5 transition-transform", active ? "text-accent scale-110" : "group-hover:scale-110")} />
+        <Icon className={cn('h-5 w-5 transition-transform', active ? 'scale-110 text-accent' : 'group-hover:scale-110')} />
         <span className="text-sm font-semibold leading-none">{label}</span>
       </div>
-      {active && <ChevronRight className="w-4 h-4 text-accent" />}
+      {active && <ChevronRight className="h-4 w-4 text-accent" />}
     </button>
   );
 }
 
 function ToggleItem({ label, desc, checked }: any) {
-    return (
-        <div className="flex flex-col gap-4 rounded-xl p-4 transition-all hover:bg-white/[0.02] sm:flex-row sm:items-center sm:justify-between">
-            <div>
-                <p className="text-sm font-semibold text-white tracking-tight">{label}</p>
-                <p className="text-[10px] text-zinc-600 font-semibold uppercase tracking-widest mt-1">{desc}</p>
-            </div>
-            <div className={cn(
-                "w-10 h-5 rounded-full relative p-1 transition-all",
-                checked ? "bg-accent/40" : "bg-white/5"
-            )}>
-                <div className={cn(
-                    "w-3 h-3 rounded-full transition-all",
-                    checked ? "bg-accent absolute right-1" : "bg-white/10 absolute left-1"
-                )} />
-            </div>
-        </div>
-    );
+  return (
+    <div className="flex flex-col gap-4 rounded-xl p-4 transition-all hover:bg-white/[0.02] sm:flex-row sm:items-center sm:justify-between">
+      <div>
+        <p className="text-sm font-semibold tracking-tight text-white">{label}</p>
+        <p className="mt-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-600">{desc}</p>
+      </div>
+      <div className={cn('relative h-5 w-10 rounded-full p-1 transition-all', checked ? 'bg-accent/40' : 'bg-white/5')}>
+        <div className={cn('h-3 w-3 rounded-full transition-all', checked ? 'absolute right-1 bg-accent' : 'absolute left-1 bg-white/10')} />
+      </div>
+    </div>
+  );
 }

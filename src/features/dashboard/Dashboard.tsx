@@ -743,6 +743,15 @@ export const Dashboard = memo(function Dashboard() {
           </div>
           <span className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] text-zinc-400">This Week</span>
         </div>
+      {/* ── PRODUCTIVITY PULSE ── */}
+      <div className="glass-card border-white/8 p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-white">Productivity Pulse</h2>
+            <p className="text-[10px] text-zinc-500">This week's overview</p>
+          </div>
+          <span className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] text-zinc-400">This Week</span>
+        </div>
         <div className="mb-3 flex flex-wrap items-center gap-3 text-[10px] text-zinc-500">
           <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-blue-500" />Focus</span>
           <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500" />Habits</span>
