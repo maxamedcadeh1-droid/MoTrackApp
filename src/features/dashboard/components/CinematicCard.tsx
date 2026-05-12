@@ -12,29 +12,69 @@ interface CinematicCardProps {
 }
 
 export function CinematicCard({ title, subtitle, value, trend, progress, icon: Icon, color, glowColor }: CinematicCardProps) {
+  const clampedProgress = Math.min(Math.max(progress, 0), 100);
+  const trendUp = trend.startsWith('Up') || trend.startsWith('↑') || trend.includes('reached') || trend.includes('progress');
+
   return (
-    <div className="luxury-card relative overflow-hidden rounded-[1.7rem] p-4">
+    <div
+      className="relative flex flex-col overflow-hidden rounded-[1.5rem] p-4"
+      style={{
+        background: 'linear-gradient(145deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%), rgba(7,10,23,0.88)',
+        border: `1px solid rgba(148,163,184,0.12)`,
+        boxShadow: `0 8px 32px rgba(0,0,0,0.3), 0 0 0 0.5px rgba(255,255,255,0.04) inset`,
+      }}
+    >
+      {/* Corner ambient glow */}
       <div
-        className="pointer-events-none absolute right-0 top-0 h-24 w-24 -translate-y-1/2 translate-x-1/2 rounded-full blur-[60px] opacity-30"
-        style={{ backgroundColor: color }}
+        className="pointer-events-none absolute -right-4 -top-4 h-20 w-20 rounded-full blur-2xl"
+        style={{ backgroundColor: color, opacity: 0.18 }}
       />
-      <div className="relative">
+
+      {/* Top row: label + icon */}
+      <div className="relative mb-3 flex items-start justify-between">
+        <div>
+          <p className="text-[10px] font-bold uppercase tracking-[0.18em] text-zinc-500">{title}</p>
+          <p className="text-[10px] text-zinc-600">{subtitle}</p>
+        </div>
         <div
-          className="mb-3 flex h-9 w-9 items-center justify-center rounded-2xl"
-          style={{ backgroundColor: `${color}20`, color, boxShadow: `0 0 18px ${glowColor}` }}
+          className="flex h-8 w-8 shrink-0 items-center justify-center rounded-xl"
+          style={{
+            backgroundColor: `${color}18`,
+            color,
+            boxShadow: `0 0 14px ${glowColor}, 0 0 0 1px ${color}22`,
+          }}
         >
-          <Icon className="h-4 w-4" />
+          <Icon className="h-3.5 w-3.5" />
         </div>
-        <p className="text-[10px] font-semibold uppercase tracking-widest text-zinc-500">{title}</p>
-        <p className="font-display text-2xl font-bold leading-tight text-white">{value}</p>
-        <p className="mt-0.5 text-[10px] text-zinc-500">{subtitle}</p>
-        <p className="mt-1 truncate text-[10px] text-zinc-600">{trend}</p>
-        <div className="mt-3 h-1 overflow-hidden rounded-full bg-white/8">
-          <div
-            className="h-full rounded-full transition-all duration-700"
-            style={{ width: `${Math.min(progress, 100)}%`, backgroundColor: color, boxShadow: `0 0 10px ${glowColor}` }}
-          />
-        </div>
+      </div>
+
+      {/* Large metric value */}
+      <p
+        className="relative font-display text-[1.75rem] font-bold leading-none tracking-tight text-white"
+        style={{ textShadow: `0 0 24px ${glowColor}` }}
+      >
+        {value}
+      </p>
+
+      {/* Trend text */}
+      <p
+        className="mt-1.5 truncate text-[10px] font-semibold"
+        style={{ color: trendUp ? '#34d399' : '#a1a1aa' }}
+      >
+        {trendUp && <span className="mr-0.5">↑</span>}
+        {trend}
+      </p>
+
+      {/* Progress bar */}
+      <div className="mt-3 h-[3px] w-full overflow-hidden rounded-full bg-white/[0.06]">
+        <div
+          className="h-full rounded-full transition-all duration-700"
+          style={{
+            width: `${clampedProgress}%`,
+            background: `linear-gradient(90deg, ${color}cc, ${color})`,
+            boxShadow: `0 0 8px ${glowColor}`,
+          }}
+        />
       </div>
     </div>
   );

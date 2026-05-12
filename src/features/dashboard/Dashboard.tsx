@@ -1,8 +1,6 @@
 import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
-  ArrowRight,
-  BarChart3,
   Briefcase,
   CheckCircle2,
   Clock,
@@ -11,7 +9,6 @@ import {
   FileText,
   Flame,
   Moon,
-  Sparkles,
   Sun,
   Target,
   Timer,
@@ -22,11 +19,15 @@ import { supabase } from '../../lib/supabase';
 import { cn } from '../../lib/utils';
 import { DashboardHero } from './components/DashboardHero';
 import { CinematicCard } from './components/CinematicCard';
+import { TodayMission } from './components/TodayMission';
+import { ProductivityPulse } from './components/ProductivityPulse';
+import { SmartSuggestion } from './components/SmartSuggestion';
+import { RecentActivity } from './components/RecentActivity';
 import { getTrendIndicator } from '../../lib/insights';
 import { useAuth } from '../auth/AuthContext';
 
-const DashboardChart = lazy(() => import('./DashboardChart').then((mod) => ({ default: mod.DashboardChart })));
 const DashboardChecklist = lazy(() => import('./DashboardChecklist').then((mod) => ({ default: mod.DashboardChecklist })));
+
 const HABIT_ICONS = {
   target: Target,
   zap: Zap,
@@ -502,6 +503,7 @@ export const Dashboard = memo(function Dashboard() {
       tasksCompleted: starterTasks[index] || 1,
     }));
   }, [hasPulseData, stats.weeklyData]);
+
   const hasNoData = stats.totalHabits === 0 && stats.activeProjects === 0 && stats.focusMinutes === 0;
   const incompleteHabits = Math.max(stats.totalHabits - stats.habitsCompleted, 0);
   const remainingFocusMinutes = Math.max(stats.dailyGoal - stats.focusMinutes, 0);
@@ -515,33 +517,75 @@ export const Dashboard = memo(function Dashboard() {
   const syncLabel = lastSyncedAt ? 'Live sync on' : 'Syncing...';
   const openCommandCenter = useCallback(() => window.dispatchEvent(new Event('motrack:open-command-center')), []);
 
+  // ── LOADING SKELETON ──────────────────────────────────────────────────────
   if (loading) {
     return (
       <div className="space-y-3 pb-36">
-        <div className="flex items-center justify-between">
-          <div className="space-y-2">
-            <Skeleton className="h-6 w-48 rounded-xl" />
-            <Skeleton className="h-4 w-32 rounded-lg" />
-          </div>
-          <Skeleton className="h-[72px] w-[72px] rounded-full" />
-        </div>
+        <Skeleton className="h-[200px] rounded-[1.75rem]" />
         <div className="grid grid-cols-2 gap-3">
-          {[1,2,3,4].map((item) => (
-            <Skeleton key={item} className="h-28 rounded-3xl" />
+          {[1, 2, 3, 4].map((i) => (
+            <Skeleton key={i} className="h-28 rounded-[1.5rem]" />
           ))}
         </div>
-        <Skeleton className="h-48 rounded-2xl" />
-        <Skeleton className="h-40 rounded-2xl" />
-        <Skeleton className="h-52 rounded-2xl" />
-        <Skeleton className="h-40 rounded-2xl" />
+        <Skeleton className="h-48 rounded-[1.75rem]" />
+        <Skeleton className="h-44 rounded-[1.75rem]" />
+        <Skeleton className="h-32 rounded-[1.75rem]" />
+        <Skeleton className="h-40 rounded-[1.75rem]" />
       </div>
     );
   }
 
+  // ── STAT CARDS DATA ───────────────────────────────────────────────────────
+  const statCards = [
+    {
+      title: 'Habits',
+      subtitle: 'Completed',
+      value: `${stats.habitsCompleted}/${stats.totalHabits}`,
+      trend: `${habitsDelta >= 0 ? 'Up' : 'Down'} ${Math.abs(habitsDelta)} vs yesterday`,
+      progress: stats.totalHabits ? Math.round((stats.habitsCompleted / stats.totalHabits) * 100) : 0,
+      icon: CheckCircle2,
+      color: '#10b981',
+      glowColor: 'rgba(16,185,129,0.25)',
+    },
+    {
+      title: 'Focus',
+      subtitle: 'Minutes',
+      value: `${stats.focusMinutes}m`,
+      trend: remainingFocusMinutes > 0
+        ? `${focusDelta >= 0 ? 'Up' : 'Down'} ${Math.abs(focusDelta)} min vs yesterday`
+        : 'Daily goal reached',
+      progress: stats.dailyGoal ? Math.min(Math.round((stats.focusMinutes / stats.dailyGoal) * 100), 100) : 0,
+      icon: Clock,
+      color: '#3b82f6',
+      glowColor: 'rgba(59,130,246,0.25)',
+    },
+    {
+      title: 'Active',
+      subtitle: 'Projects',
+      value: `${stats.activeProjects}`,
+      trend: stats.activeProjects > 0 ? `${stats.projectProgress}% avg progress` : 'No active projects',
+      progress: stats.projectProgress,
+      icon: Briefcase,
+      color: '#f59e0b',
+      glowColor: 'rgba(245,158,11,0.25)',
+    },
+    {
+      title: 'Tasks',
+      subtitle: 'Completed',
+      value: `${stats.completedProjectTasks}/${stats.totalProjectTasks}`,
+      trend: `${taskDelta >= 0 ? 'Up' : 'Down'} ${Math.abs(taskDelta)} vs yesterday`,
+      progress: stats.totalProjectTasks ? Math.round((stats.completedProjectTasks / stats.totalProjectTasks) * 100) : 0,
+      icon: Target,
+      color: '#8b5cf6',
+      glowColor: 'rgba(139,92,246,0.25)',
+    },
+  ];
+
+  // ── RENDER ────────────────────────────────────────────────────────────────
   return (
     <div className="space-y-4 pb-36">
 
-      {/* ── REDESIGNED HERO ── */}
+      {/* 1. Hero */}
       <DashboardHero
         greeting={heroCopy.greeting}
         firstName={firstName}
@@ -558,65 +602,16 @@ export const Dashboard = memo(function Dashboard() {
         navigate={navigate}
       />
 
-      {/* ── ONBOARDING ── */}
+      {/* Onboarding checklist — only when user has no data */}
       {hasNoData && (
-        <Suspense fallback={<Skeleton className="h-40 rounded-2xl" />}>
+        <Suspense fallback={<Skeleton className="h-40 rounded-[1.75rem]" />}>
           <DashboardChecklist stats={stats} navigate={navigate} />
         </Suspense>
       )}
 
-      {/* ── REDESIGNED METRIC CARDS 2x2 ── */}
+      {/* 2. Stat cards — 2 cols mobile, 4 cols desktop */}
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
-        {[
-          {
-            title: 'Habits',
-            subtitle: 'Completed',
-            value: `${stats.habitsCompleted}/${stats.totalHabits}`,
-            trend: `${habitsDelta >= 0 ? 'Up' : 'Down'} ${Math.abs(habitsDelta)} vs yesterday`,
-            progress: stats.totalHabits ? Math.round((stats.habitsCompleted / stats.totalHabits) * 100) : 0,
-            icon: CheckCircle2,
-            color: '#10b981',
-            colorName: 'emerald',
-            glowColor: 'rgba(16, 185, 129, 0.25)',
-            shadowColor: 'rgba(16, 185, 129, 0.15)',
-          },
-          {
-            title: 'Focus',
-            subtitle: 'Minutes',
-            value: `${stats.focusMinutes}m`,
-            trend: remainingFocusMinutes > 0 ? `${focusDelta >= 0 ? 'Up' : 'Down'} ${Math.abs(focusDelta)} min vs yesterday` : 'Daily goal reached',
-            progress: stats.dailyGoal ? Math.min(Math.round((stats.focusMinutes / stats.dailyGoal) * 100), 100) : 0,
-            icon: Clock,
-            color: '#3b82f6',
-            colorName: 'blue',
-            glowColor: 'rgba(59, 130, 246, 0.25)',
-            shadowColor: 'rgba(59, 130, 246, 0.15)',
-          },
-          {
-            title: 'Active',
-            subtitle: 'Projects',
-            value: `${stats.activeProjects}`,
-            trend: stats.activeProjects > 0 ? `${stats.projectProgress}% avg progress` : 'No active projects',
-            progress: stats.projectProgress,
-            icon: Briefcase,
-            color: '#f59e0b',
-            colorName: 'amber',
-            glowColor: 'rgba(245, 158, 11, 0.25)',
-            shadowColor: 'rgba(245, 158, 11, 0.15)',
-          },
-          {
-            title: 'Tasks',
-            subtitle: 'Completed',
-            value: `${stats.completedProjectTasks}/${stats.totalProjectTasks}`,
-            trend: `${taskDelta >= 0 ? 'Up' : 'Down'} ${Math.abs(taskDelta)} vs yesterday`,
-            progress: stats.totalProjectTasks ? Math.round((stats.completedProjectTasks / stats.totalProjectTasks) * 100) : 0,
-            icon: Target,
-            color: '#8b5cf6',
-            colorName: 'violet',
-            glowColor: 'rgba(139, 92, 246, 0.25)',
-            shadowColor: 'rgba(139, 92, 246, 0.15)',
-          },
-        ].map((card) => (
+        {statCards.map((card) => (
           <CinematicCard
             key={card.title}
             title={card.title}
@@ -631,371 +626,32 @@ export const Dashboard = memo(function Dashboard() {
         ))}
       </div>
 
-      {/* ── TODAY'S MISSION ── */}
-      <div className="luxury-card rounded-[1.7rem] p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <div className="flex items-center gap-2.5">
-            <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-violet-500/15 text-violet-300 shadow-[0_0_18px_rgba(139,92,246,0.28)]">
-              <Target className="h-4 w-4" />
-            </div>
-            <div>
-              <h2 className="text-sm font-bold text-white">Today's Mission</h2>
-              <p className="text-[10px] text-zinc-500">Your roadmap to a productive day</p>
-            </div>
-          </div>
-          <span className="rounded-full border border-white/8 bg-white/[0.03] px-2.5 py-1 text-[10px] font-semibold text-zinc-500">3 steps</span>
-        </div>
-        <div className="space-y-0">
-          {[
-            {
-              num: 1,
-              title: 'Complete your habits',
-              desc: stats.totalHabits > 0 ? `${stats.habitsCompleted} of ${stats.totalHabits} done` : 'Add a habit to start',
-              action: 'View Habits',
-              path: '/habits',
-              done: incompleteHabits === 0 && stats.totalHabits > 0,
-              dot: 'bg-emerald-500',
-              line: 'bg-emerald-500/20',
-            },
-            {
-              num: 2,
-              title: 'Start a focus session',
-              desc: remainingFocusMinutes > 0 ? `${remainingFocusMinutes} min left to hit goal` : 'Focus goal complete!',
-              action: 'Start Focus',
-              path: '/focus?start=true',
-              done: remainingFocusMinutes === 0,
-              dot: 'bg-blue-500',
-              line: 'bg-blue-500/20',
-            },
-            {
-              num: 3,
-              title: 'Review your projects',
-              desc: stats.activeProjects > 0 ? `${stats.activeProjects} active project${stats.activeProjects === 1 ? '' : 's'}` : 'Create a project',
-              action: 'View Projects',
-              path: '/projects',
-              done: false,
-              dot: 'bg-amber-500',
-              line: 'bg-amber-500/20',
-            },
-          ].map((item, idx, arr) => (
-            <div key={item.num} className="flex gap-3">
-              <div className="flex flex-col items-center">
-                <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white shadow-[0_0_18px_rgba(139,92,246,0.18)]', item.done ? 'bg-emerald-500' : item.dot)}>
-                  {item.done ? <CheckCircle2 className="h-3.5 w-3.5" /> : item.num}
-                </div>
-                {idx < arr.length - 1 && <div className={cn('mt-1 w-px flex-1', item.line)} style={{ minHeight: 18 }} />}
-              </div>
-              <div className="min-w-0 flex-1 pb-4">
-                <div className="flex items-start justify-between gap-2">
-                  <div className="min-w-0">
-                    <p className={cn('text-sm font-semibold', item.done ? 'text-zinc-500 line-through' : 'text-white')}>{item.title}</p>
-                    <p className="mt-0.5 text-xs text-zinc-500">{item.desc}</p>
-                  </div>
-                  <button onClick={() => navigate(item.path)}
-                    className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.045] text-zinc-300 transition-all hover:border-accent/30 hover:text-white active:scale-95">
-                    <ArrowRight className="h-5 w-5" />
-                  </button>
-                </div>
-              </div>
-            </div>
-          ))}
-        </div>
-        <div className="flex items-center gap-2 rounded-2xl border border-white/8 bg-white/[0.03] px-3 py-2">
-          <Sparkles className="h-4 w-4 text-violet-300" />
-          <p className="text-xs text-zinc-500">Keep going! Small steps, big results.</p>
-        </div>
-      </div>
+      {/* 3. Today's Mission */}
+      <TodayMission
+        incompleteHabits={incompleteHabits}
+        totalHabits={stats.totalHabits}
+        habitsCompleted={stats.habitsCompleted}
+        remainingFocusMinutes={remainingFocusMinutes}
+        activeProjects={stats.activeProjects}
+        navigate={navigate}
+      />
 
-      {/* ── PRODUCTIVITY PULSE ── */}
-      <div className="luxury-card rounded-[1.7rem] p-5">
-        <div className="mb-2 flex items-center justify-between">
-          <div>
-            <h2 className="text-sm font-bold text-white">Productivity Pulse</h2>
-            <p className="text-[10px] text-zinc-500">This week's overview</p>
-          </div>
-          <span className="rounded-xl border border-white/8 bg-white/[0.03] px-2.5 py-1 text-[10px] font-semibold text-zinc-500">This Week</span>
-        </div>
-        {true && (
-          <div className="mb-2 flex items-center gap-4 text-[10px] text-zinc-500">
-            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-blue-500" />Focus</span>
-            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500" />Habits</span>
-            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-400" />Tasks</span>
-          </div>
-        )}
-        {true ? (
-          <div className="h-[150px] w-full min-w-0">
-            <Suspense fallback={<Skeleton className="h-full w-full rounded-xl" />}>
-              <DashboardChart data={pulseChartData} />
-            </Suspense>
-          </div>
-        ) : (
-          <div className="flex h-[96px] flex-col items-center justify-center gap-1.5 rounded-xl border border-dashed border-white/8 bg-white/[0.015] px-4 text-center sm:h-[116px]">
-            <BarChart3 className="h-5 w-5 text-zinc-600" />
-            <p className="text-xs font-semibold text-white">No productivity data yet</p>
-            <p className="max-w-[280px] text-[11px] leading-snug text-zinc-500">
-              Complete habits, tasks, or focus sessions to see your weekly pulse.
-            </p>
-          </div>
-        )}
-      </div>
+      {/* 4. Productivity Pulse */}
+      <ProductivityPulse data={pulseChartData} />
 
-      {/* ── SMART SUGGESTION ── */}
-      <div className="luxury-card rounded-[1.7rem] border-violet-500/25 p-4">
-        <div className="pointer-events-none absolute inset-0 rounded-2xl bg-gradient-to-br from-violet-500/8 via-transparent to-cyan-500/5" />
-        <div className="relative grid grid-cols-[minmax(0,1fr)_4.5rem] items-center gap-5 sm:grid-cols-[minmax(0,1fr)_5.5rem] sm:gap-8">
-          {/* Left: content */}
-          <div className="min-w-0 pr-1 sm:pr-2">
-            <div className="mb-2 flex items-center gap-2">
-              <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-violet-500/15 text-violet-300">
-                <Sparkles className="h-3.5 w-3.5" />
-              </span>
-              <p className="text-xs font-bold text-violet-300">Smart Suggestion</p>
-            </div>
-            <p className="text-sm font-bold leading-snug text-white">
-              {remainingFocusMinutes > 0
-                ? 'You focus 32% better in the morning.'
-                : stats.totalHabits === 0
-                  ? 'Create your first habit'
-                  : 'Complete one more habit to increase momentum.'}
-            </p>
-            <p className="mt-1 text-xs text-zinc-400">
-              {remainingFocusMinutes > 0 ? 'Try scheduling deep work between 7AM - 11AM.' : stats.totalHabits === 0 ? 'Build a daily routine.' : 'You are close to your daily goal.'}
-            </p>
-            <button
-              onClick={() => navigate(remainingFocusMinutes > 0 ? '/focus?start=true' : stats.totalHabits === 0 ? '/habits?add=true' : '/projects')}
-              className="mt-3 inline-flex min-h-10 items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-violet-500/20 transition-all active:scale-95"
-            >
-              Start Now <ArrowRight className="h-3 w-3" />
-            </button>
-          </div>
-          {/* Right: clean ring only */}
-          <div className="relative flex h-[72px] w-[72px] shrink-0 items-center justify-center justify-self-end">
-            <svg viewBox="0 0 72 72" className="absolute inset-0 h-full w-full -rotate-90">
-              <circle cx="36" cy="36" r="30" stroke="rgba(255,255,255,0.06)" strokeWidth="5" fill="none" />
-              <circle cx="36" cy="36" r="30" strokeWidth="5" strokeLinecap="round" fill="none"
-                stroke="url(#suggGrad)"
-                strokeDasharray="188.5"
-                strokeDashoffset={`${188.5 - (188.5 * 30) / 100}`}
-              />
-              <defs>
-                <linearGradient id="suggGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-                  <stop offset="0%" stopColor="#8b5cf6" />
-                  <stop offset="100%" stopColor="#06b6d4" />
-                </linearGradient>
-              </defs>
-            </svg>
-            <div className="relative text-center">
-              <p className="text-base font-bold leading-none text-white">30%</p>
-              <p className="mt-0.5 text-[8px] font-semibold uppercase tracking-widest text-zinc-500">ready</p>
-            </div>
-          </div>
-        </div>
-      </div>
+      {/* 5. Smart Suggestion */}
+      <SmartSuggestion
+        remainingFocusMinutes={remainingFocusMinutes}
+        totalHabits={stats.totalHabits}
+        navigate={navigate}
+      />
 
-      {/* ── RECENT ACTIVITY ── */}
-      <div className="luxury-card rounded-[1.7rem] p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-white">Recent Activity</h2>
-          <button onClick={() => navigate('/notes')} className="text-[10px] font-bold text-accent">View all</button>
-        </div>
-        <div className="space-y-2">
-          {stats.recentActivity.length ? stats.recentActivity.slice(0, 5).map((item) => (
-            <div key={item.id} className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3">
-              <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
-                item.type === 'habit' ? 'bg-emerald-500/15 text-emerald-400' :
-                item.type === 'note' ? 'bg-amber-500/15 text-amber-400' :
-                item.type === 'focus' ? 'bg-blue-500/15 text-blue-400' :
-                'bg-violet-500/15 text-violet-400'
-              )}>
-                <item.icon className="h-4 w-4" />
-              </div>
-              <div className="min-w-0 flex-1">
-                <p className="truncate text-xs font-semibold text-white">{item.detail}</p>
-                <p className="text-[10px] text-zinc-600">{item.title}</p>
-              </div>
-              <span className="shrink-0 text-[10px] text-zinc-600">{formatActivityTime(item.date)}</span>
-            </div>
-          )) : (
-            <div className="flex flex-col items-center gap-2 py-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.03]">
-                <Sparkles className="h-4 w-4 text-zinc-600" />
-              </div>
-              <p className="text-xs text-zinc-600">No activity yet</p>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── HABIT STREAKS ── */}
-      <div className="luxury-card rounded-[1.7rem] p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-white">Habit Streaks</h2>
-          <button onClick={() => navigate('/habits')} className="text-[10px] font-bold text-accent">View all</button>
-        </div>
-        <div className="space-y-3">
-          {stats.habitStreaks.length ? stats.habitStreaks.map((habit) => {
-            const weeklyDone = [...Array(7)].filter((_, index) => {
-              const day = new Date();
-              day.setDate(day.getDate() - (6 - index));
-              return habit.completedDates.includes(dateKey(day));
-            }).length;
-            const completionPercent = Math.round((weeklyDone / 7) * 100);
-            const isCompletedToday = habit.completedDates.includes(dateKey(new Date()));
-            const HabitIcon = HABIT_ICONS[habit.icon as keyof typeof HABIT_ICONS] || Target;
-
-            return (
-              <div key={habit.id} className="group relative overflow-hidden rounded-[1.7rem] border border-white/10 bg-white/[0.025] p-4 transition-all hover:border-accent/30">
-                <div className="absolute right-0 top-0 h-36 w-36 -translate-y-1/2 translate-x-1/2 rounded-full blur-[80px] opacity-20" style={{ backgroundColor: habit.color }} />
-                <div className="relative z-10 grid grid-cols-[auto_minmax(0,1fr)_3.75rem] items-center gap-3 sm:grid-cols-[auto_minmax(0,1fr)_auto_auto_4rem] sm:gap-5">
-                  <div
-                    className="flex h-14 w-14 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] shadow-2xl sm:h-16 sm:w-16"
-                    style={{ color: habit.color, boxShadow: `0 0 24px ${habit.color}22` }}
-                  >
-                    <HabitIcon className="h-6 w-6 sm:h-7 sm:w-7" />
-                  </div>
-
-                  <div className="min-w-0">
-                    <div className="flex min-w-0 items-center gap-2">
-                      <h3 className="truncate font-display text-base font-bold text-white sm:text-lg">{habit.title}</h3>
-                      <span className="h-2 w-2 shrink-0 rounded-full bg-emerald-400 shadow-[0_0_10px_rgba(52,211,153,0.7)]" />
-                    </div>
-                    <p className="mt-0.5 text-sm text-zinc-400">{habit.frequency}</p>
-                    <div className="mt-3 flex items-center gap-4 sm:hidden">
-                      <span className="inline-flex items-center gap-1 font-mono text-sm font-bold text-white">
-                        <Flame className="h-3.5 w-3.5 text-orange-400" />
-                        {habit.streak}<span className="font-sans text-[10px] font-medium text-zinc-500">streak</span>
-                      </span>
-                      <span className="font-mono text-sm font-bold text-white">{completionPercent}%</span>
-                    </div>
-                  </div>
-
-                  <div className="hidden shrink-0 items-center gap-2 text-center sm:flex">
-                    <Flame className="h-4 w-4 text-orange-400" />
-                    <div>
-                      <p className="font-mono text-xl font-bold leading-none text-white">{habit.streak}</p>
-                      <p className="text-[10px] text-zinc-500">streak</p>
-                    </div>
-                  </div>
-
-                  <div className="hidden shrink-0 text-center sm:block">
-                    <p className="font-mono text-2xl font-bold leading-none text-white">{completionPercent}%</p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => navigate('/habits')}
-                    className={cn(
-                      'flex h-14 w-14 shrink-0 items-center justify-center justify-self-end rounded-full border transition-all active:scale-95 sm:h-16 sm:w-16',
-                      isCompletedToday
-                        ? 'border-emerald-400/30 bg-emerald-500 text-white shadow-[0_0_26px_rgba(16,185,129,0.45)]'
-                        : 'border-white/12 bg-white/[0.055] text-zinc-400 shadow-[0_0_18px_rgba(139,92,246,0.08)] hover:border-emerald-400/30 hover:text-emerald-300'
-                    )}
-                    aria-label="Open habits"
-                  >
-                    <CheckCircle2 className="h-6 w-6" />
-                  </button>
-                </div>
-                <div className="relative z-10 ml-[4.25rem] mr-[4.25rem] mt-4 h-1.5 overflow-hidden rounded-full bg-white/8 sm:ml-[5.25rem] sm:mr-[5.25rem]">
-                  <div className="h-full rounded-full transition-all duration-700" style={{ width: `${completionPercent}%`, backgroundColor: habit.color, boxShadow: `0 0 18px ${habit.color}66` }} />
-                </div>
-              </div>
-            );
-          }) : (
-            <div className="flex flex-col items-center gap-2 py-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.03]">
-                <Flame className="h-4 w-4 text-zinc-600" />
-              </div>
-              <p className="text-xs text-zinc-600">No streaks yet</p>
-              <button onClick={() => navigate('/habits?add=true')} className="text-xs font-bold text-accent">Add a habit</button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── PROJECT RADAR ── */}
-      <div className="luxury-card rounded-[1.7rem] p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-white">Project Radar</h2>
-          <button onClick={() => navigate('/projects')} className="text-[10px] font-bold text-accent">View all</button>
-        </div>
-        <div className="space-y-3">
-          {stats.projectRadar.length ? stats.projectRadar.map((project) => (
-            <div key={project.id} className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
-              <div className="mb-2 flex items-center justify-between gap-2">
-                <p className="truncate text-sm font-semibold text-white">{project.title}</p>
-                <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold',
-                  project.priority === 'high' ? 'bg-red-500/15 text-red-400' :
-                  project.priority === 'medium' ? 'bg-amber-500/15 text-amber-400' :
-                  'bg-emerald-500/15 text-emerald-400'
-                )}>
-                  {project.priority.charAt(0).toUpperCase() + project.priority.slice(1)}
-                </span>
-              </div>
-              <div className="flex items-center gap-2">
-                <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-white/8">
-                  <div className={cn('h-full rounded-full transition-all duration-700',
-                    project.priority === 'high' ? 'bg-gradient-to-r from-red-500 to-orange-400' :
-                    project.priority === 'medium' ? 'bg-gradient-to-r from-amber-500 to-yellow-400' :
-                    'bg-gradient-to-r from-emerald-500 to-teal-400'
-                  )} style={{ width: `${project.progress}%` }} />
-                </div>
-                <span className="shrink-0 text-[10px] font-semibold text-zinc-500">{project.progress}%</span>
-              </div>
-            </div>
-          )) : (
-            <div className="flex flex-col items-center gap-2 py-6">
-              <div className="flex h-10 w-10 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.03]">
-                <Target className="h-4 w-4 text-zinc-600" />
-              </div>
-              <p className="text-xs text-zinc-600">No active projects</p>
-              <button onClick={() => navigate('/projects?add=true')} className="text-xs font-bold text-accent">Create one</button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* ── FOCUS ZONE ── */}
-      <div className="luxury-card rounded-[1.7rem] p-5">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-sm font-bold text-white">Focus Zone</h2>
-          <button onClick={() => navigate('/focus')} className="text-[10px] font-bold text-accent">View all</button>
-        </div>
-        <div className="grid grid-cols-3 gap-2">
-          {[
-            { mins: 25, label: 'Focus', icon: Zap, color: 'from-violet-500 to-violet-600' },
-            { mins: 45, label: 'Deep Work', icon: Flame, color: 'from-blue-500 to-cyan-500' },
-            { mins: 60, label: 'Flow State', icon: Sparkles, color: 'from-emerald-500 to-teal-500' },
-          ].map((zone) => (
-            <button key={zone.label} onClick={() => navigate('/focus?start=true')}
-              className="flex flex-col items-center gap-2 rounded-2xl border border-white/8 bg-white/[0.02] p-3 transition-all active:scale-95">
-              <div className={cn('flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br text-white', zone.color)}>
-                <zone.icon className="h-4 w-4" />
-              </div>
-              <p className="text-lg font-bold text-white leading-none">{zone.mins}</p>
-              <p className="text-[9px] text-zinc-500">min</p>
-              <p className="text-[10px] font-semibold text-zinc-400">{zone.label}</p>
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {/* ── QUOTE ── */}
-      <div className="relative overflow-hidden rounded-2xl border border-white/8 p-5"
-        style={{ background: 'radial-gradient(circle at 20% 50%, rgba(139,92,246,0.12) 0%, transparent 55%), radial-gradient(circle at 80% 20%, rgba(59,130,246,0.08) 0%, transparent 50%), #0a0c15' }}>
-        <div className="pointer-events-none absolute bottom-0 right-0 h-20 w-20 opacity-10">
-          <svg viewBox="0 0 80 80" fill="none">
-            <path d="M40 80 L80 40 L80 80 Z" fill="url(#qg1)" />
-            <path d="M20 80 L60 20 L80 80 Z" fill="url(#qg2)" opacity="0.6" />
-            <defs>
-              <linearGradient id="qg1" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#8b5cf6"/><stop offset="1" stopColor="#4f46e5"/></linearGradient>
-              <linearGradient id="qg2" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#6d28d9"/><stop offset="1" stopColor="#312e81"/></linearGradient>
-            </defs>
-          </svg>
-        </div>
-        <span className="text-xl font-bold text-violet-400/25 leading-none">"</span>
-        <p className="mt-1 text-sm font-bold text-white leading-relaxed">Discipline is the bridge between goals and accomplishment.</p>
-        <p className="mt-2 text-xs text-zinc-600">- Jim Rohn</p>
-      </div>
+      {/* 6. Recent Activity */}
+      <RecentActivity
+        items={stats.recentActivity}
+        formatTime={formatActivityTime}
+        navigate={navigate}
+      />
 
     </div>
   );
