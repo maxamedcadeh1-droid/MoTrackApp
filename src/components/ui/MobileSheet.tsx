@@ -97,53 +97,116 @@ export function MobileSheet({ open, onClose, title, badge, children, footer }: M
   if (!open) return null;
 
   return (
-    // Full-screen modal container - z-[9999] to be above everything including bottom nav
-    // Uses 100dvh for proper keyboard handling on iOS Safari
-    <div
-      className="fixed inset-0 z-[9999] h-[100dvh] overflow-hidden bg-[#07070c]"
-      aria-modal="true"
-      role="dialog"
-      aria-label={title}
-    >
-      <div className="flex h-full flex-col">
-        {/* Header - sticky at top */}
-        <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/[0.07] bg-[#07070c]/95 px-5 py-4 backdrop-blur-xl">
-          <div className="space-y-0.5">
-            {badge && (
-              <span className="inline-block rounded-full border border-violet-500/25 bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-violet-400">
-                {badge}
-              </span>
-            )}
-            <h3 className="font-display text-lg font-bold text-white">{title}</h3>
+    <>
+      {/* MOBILE: Full-screen modal container - z-[9999] to be above everything including bottom nav */}
+      {/* Uses 100dvh for proper keyboard handling on iOS Safari */}
+      <div
+        className={cn(
+          'fixed inset-0 z-[9999] bg-[#07070c]',
+          'flex flex-col',
+          'md:hidden'
+        )}
+        aria-modal="true"
+        role="dialog"
+        aria-label={title}
+      >
+        <div className="flex h-full flex-col">
+          {/* Header - sticky at top */}
+          <div className="sticky top-0 z-20 flex items-center justify-between border-b border-white/[0.07] bg-[#07070c]/95 px-5 py-4 backdrop-blur-xl">
+            <div className="space-y-0.5">
+              {badge && (
+                <span className="inline-block rounded-full border border-violet-500/25 bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-violet-400">
+                  {badge}
+                </span>
+              )}
+              <h3 className="font-display text-lg font-bold text-white">{title}</h3>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-zinc-400 transition-all hover:text-white active:scale-95"
+              aria-label="Close"
+            >
+              <X className="h-5 w-5" />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-zinc-400 transition-all hover:text-white active:scale-95"
-            aria-label="Close"
+
+          {/* Scrollable body - flex-1 with overflow-y-auto for proper scrolling */}
+          <div
+            ref={bodyRef}
+            className="flex-1 overflow-y-auto overscroll-contain px-5 py-5"
+            style={{ scrollPaddingBottom: '200px' }}
           >
-            <X className="h-5 w-5" />
-          </button>
-        </div>
+            {children}
+          </div>
 
-        {/* Scrollable body - flex-1 with overflow-y-auto for proper scrolling */}
-        <div
-          ref={bodyRef}
-          className="flex-1 overflow-y-auto overscroll-contain px-5 py-5"
-          style={{ scrollPaddingBottom: '200px' }}
-        >
-          {children}
-        </div>
-
-        {/* Footer - sticky at bottom with safe area padding */}
-        <div className="sticky bottom-0 z-30 border-t border-white/[0.07] bg-[#07070c]/95 px-5 pt-4 backdrop-blur-xl"
-          style={{
-            paddingBottom: 'max(env(safe-area-inset-bottom), 20px)',
-          }}
-        >
-          {footer}
+          {/* Footer - sticky at bottom with safe area padding */}
+          <div className="sticky bottom-0 z-30 border-t border-white/[0.07] bg-[#07070c]/95 px-5 pt-4 backdrop-blur-xl"
+            style={{
+              paddingBottom: 'max(env(safe-area-inset-bottom), 20px)',
+            }}
+          >
+            {footer}
+          </div>
         </div>
       </div>
-    </div>
+
+      {/* DESKTOP/TABLET: Centered modal card with backdrop */}
+      <div
+        className={cn(
+          'hidden md:flex',
+          'fixed inset-0 z-[9999]',
+          'items-center justify-center',
+          'bg-black/60 backdrop-blur-md',
+          'p-6'
+        )}
+        onClick={onClose}
+        aria-modal="true"
+        role="dialog"
+        aria-label={title}
+      >
+        <div
+          className={cn(
+            'w-full max-w-3xl',
+            'rounded-[32px]',
+            'border border-white/10',
+            'bg-[#0b1020]',
+            'shadow-2xl',
+            'overflow-hidden'
+          )}
+          onClick={(e) => e.stopPropagation()}
+        >
+          {/* Header */}
+          <div className="flex items-center justify-between border-b border-white/[0.07] px-8 py-5">
+            <div className="space-y-0.5">
+              {badge && (
+                <span className="inline-block rounded-full border border-violet-500/25 bg-violet-500/10 px-2 py-0.5 text-[10px] font-bold uppercase tracking-widest text-violet-400">
+                  {badge}
+                </span>
+              )}
+              <h3 className="font-display text-lg font-bold text-white">{title}</h3>
+            </div>
+            <button
+              type="button"
+              onClick={onClose}
+              className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-zinc-400 transition-all hover:text-white active:scale-95"
+              aria-label="Close"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+
+          {/* Content - natural height, no stretching */}
+          <div className="max-h-[60vh] overflow-y-auto px-8 py-6">
+            {children}
+          </div>
+
+          {/* Footer - natural positioning below content */}
+          <div className="flex items-center justify-end gap-3 border-t border-white/[0.07] px-8 py-5">
+            {footer}
+          </div>
+        </div>
+      </div>
+    </>
   );
 }
