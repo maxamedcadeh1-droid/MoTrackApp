@@ -16,7 +16,7 @@ import {
 } from 'lucide-react';
 import { Skeleton } from '../../components/ui/Layout';
 import { supabase } from '../../lib/supabase';
-import { cn } from '../../lib/utils';
+import { cn, dateKey, startOfDay } from '../../lib/utils';
 import { DashboardHero } from './components/DashboardHero';
 import { CinematicCard } from './components/CinematicCard';
 import { TodayMission } from './components/TodayMission';
