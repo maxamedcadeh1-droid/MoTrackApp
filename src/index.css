@@ -269,6 +269,29 @@
   box-shadow: 0 0 24px rgba(59, 130, 246, 0.35);
 }
 
+.hero-orb-wave {
+  filter: drop-shadow(0 0 8px rgba(59, 130, 246, 0.5));
+  stroke-dasharray: 120;
+  animation: hero-orb-wave 4s ease-in-out infinite;
+}
+
+@keyframes hero-orb-wave {
+  0%, 100% {
+    stroke-dashoffset: 18;
+    transform: translateY(0);
+  }
+  50% {
+    stroke-dashoffset: -18;
+    transform: translateY(-1px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-orb-wave {
+    animation: none;
+  }
+}
+
 .recharts-tooltip-wrapper {
   outline: none;
 }
@@ -325,6 +348,14 @@
     -webkit-overflow-scrolling: touch;
   }
 
+  .mobile-form-sheet {
+    inset: auto 0 0 0 !important;
+    width: 100% !important;
+    max-height: min(85dvh, calc(100dvh - var(--safe-area-top) - 0.75rem));
+    overflow: hidden;
+    border-radius: 32px 32px 0 0;
+  }
+
   .mobile-dialog-panel :is(input, textarea, select) {
     scroll-margin-block: 1rem;
   }
@@ -332,6 +363,10 @@
   @supports not (height: 100dvh) {
     .mobile-dialog-panel {
       max-height: calc(100svh - 1.5rem - var(--safe-area-bottom));
+    }
+
+    .mobile-form-sheet {
+      max-height: min(85svh, calc(100svh - var(--safe-area-top) - 0.75rem));
     }
   }
 
