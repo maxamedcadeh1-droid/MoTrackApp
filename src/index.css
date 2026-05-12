@@ -68,11 +68,11 @@
 
 @utility glass-card {
   background-color: rgba(11, 13, 20, 0.58);
-  backdrop-filter: blur(24px);
+  backdrop-filter: blur(12px); /* Reduced for mobile */
   border: 1px solid var(--color-glass-border);
   border-radius: 28px;
-  box-shadow: 0 24px 80px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.04);
-  transition: all 300ms ease;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28), inset 0 1px 0 rgba(255, 255, 255, 0.04);
+  transition: all 200ms ease; /* Faster transition */
 }
 
 @utility glass-accent {
@@ -198,4 +198,95 @@
 
 .recharts-tooltip-wrapper {
   outline: none;
+}
+
+.focus-progress-ring {
+  filter: blur(4px) drop-shadow(0 0 20px var(--focus-ring-glow));
+}
+
+/* Mobile performance optimizations */
+@media (max-width: 768px) {
+  .grid-bg {
+    background-size: 64px 64px;
+    mask-image: linear-gradient(180deg, rgba(0, 0, 0, 0.82), transparent 88%);
+  }
+
+  .premium-bg {
+    background:
+      radial-gradient(circle at 14% 10%, rgba(139, 92, 246, 0.1), transparent 32%),
+      radial-gradient(circle at 90% 18%, rgba(59, 130, 246, 0.08), transparent 30%),
+      linear-gradient(180deg, #05060a 0%, #070914 52%, #05060a 100%);
+  }
+
+  .glass-card {
+    backdrop-filter: blur(6px) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  .glass {
+    backdrop-filter: blur(6px) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15) !important;
+  }
+
+  .glass-accent {
+    backdrop-filter: blur(4px) !important;
+  }
+
+  [class*="backdrop-blur-2xl"],
+  [class*="backdrop-blur-xl"] {
+    -webkit-backdrop-filter: blur(8px) !important;
+    backdrop-filter: blur(8px) !important;
+  }
+
+  [class*="blur-["],
+  [class*="blur-3xl"] {
+    filter: blur(56px) !important;
+  }
+
+  .focus-progress-ring {
+    filter: drop-shadow(0 0 10px var(--focus-ring-glow)) !important;
+  }
+
+  /* Keep motion present, but avoid ultra-fast infinite repaints on mobile. */
+  *,
+  ::before,
+  ::after {
+    transition-duration: 0.15s !important;
+  }
+
+  .animate-pulse {
+    animation-duration: 2.4s !important;
+  }
+
+  .animate-spin {
+    animation-duration: 0.85s !important;
+  }
+
+  .skeleton-shimmer::after {
+    animation-duration: 1.2s !important;
+  }
+
+  /* Reduce shadows on mobile */
+  [class*="shadow"] {
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  .animate-float {
+    animation-duration: 8s !important;
+    animation-name: float-mobile !important;
+  }
+
+  /* Reduce glow effects */
+  .neon-glow-purple {
+    box-shadow: 0 0 8px rgba(139, 92, 246, 0.08) !important;
+  }
+
+  .shadow-glow {
+    box-shadow: 0 0 12px rgba(139, 92, 246, 0.12) !important;
+  }
+
+  @keyframes float-mobile {
+    0%, 100% { transform: translateY(0); }
+    50% { transform: translateY(-4px); }
+  }
 }

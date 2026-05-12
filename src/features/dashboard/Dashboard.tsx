@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useState, useCallback, memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   ArrowDownRight,
@@ -66,7 +66,7 @@ function startOfDay(date: Date) {
   return copy;
 }
 
-export function Dashboard() {
+export const Dashboard = memo(function Dashboard() {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -206,7 +206,13 @@ export function Dashboard() {
         : 'Strong day. Pick one project task to keep your momentum moving.';
   const remainingFocusMinutes = Math.max(stats.dailyGoal - stats.focusMinutes, 0);
   const remainingProjectTasks = Math.max(stats.totalProjectTasks - stats.completedProjectTasks, 0);
-  const topPriorities = [
+
+  const navigateToHabits = useCallback(() => navigate(stats.totalHabits === 0 ? '/habits?add=true' : '/habits'), [navigate, stats.totalHabits]);
+  const navigateToFocus = useCallback(() => navigate(remainingFocusMinutes > 0 ? '/focus?start=true' : '/focus'), [navigate, remainingFocusMinutes]);
+  const navigateToProjects = useCallback(() => navigate(stats.activeProjects === 0 ? '/projects?add=true' : '/projects'), [navigate, stats.activeProjects]);
+  const navigateToNotes = useCallback(() => navigate('/notes?add=true'), [navigate]);
+
+  const topPriorities = useMemo(() => [
     {
       icon: CheckCircle2,
       label: 'Habit',
@@ -217,7 +223,7 @@ export function Dashboard() {
           ? `${incompleteHabits} habit${incompleteHabits === 1 ? '' : 's'} left today.`
           : 'You completed every habit for today.',
       action: stats.totalHabits === 0 ? 'Create Habit' : 'Open Habits',
-      onClick: () => navigate(stats.totalHabits === 0 ? '/habits?add=true' : '/habits'),
+      onClick: navigateToHabits,
       accent: 'text-emerald-300 bg-emerald-500/10',
     },
     {
@@ -228,7 +234,7 @@ export function Dashboard() {
         ? `${remainingFocusMinutes} minutes left to reach your daily goal.`
         : `${stats.focusMinutes} minutes logged today.`,
       action: remainingFocusMinutes > 0 ? 'Start Focus' : 'Review Focus',
-      onClick: () => navigate(remainingFocusMinutes > 0 ? '/focus?start=true' : '/focus'),
+      onClick: navigateToFocus,
       accent: 'text-blue-300 bg-blue-500/10',
     },
     {
@@ -241,10 +247,10 @@ export function Dashboard() {
           ? `${remainingProjectTasks} task${remainingProjectTasks === 1 ? '' : 's'} still open.`
           : `${stats.activeProjects} active project${stats.activeProjects === 1 ? '' : 's'} ready for review.`,
       action: stats.activeProjects === 0 ? 'Create Project' : 'Open Projects',
-      onClick: () => navigate(stats.activeProjects === 0 ? '/projects?add=true' : '/projects'),
+      onClick: navigateToProjects,
       accent: 'text-purple-300 bg-purple-500/10',
     },
-  ];
+  ], [stats.totalHabits, stats.activeProjects, stats.focusMinutes, stats.dailyGoal, incompleteHabits, remainingFocusMinutes, remainingProjectTasks, navigateToHabits, navigateToFocus, navigateToProjects]);
 
   if (loading) {
     return (
@@ -414,16 +420,16 @@ export function Dashboard() {
             <Sparkles className="h-5 w-5 text-accent" />
           </div>
           <div className="space-y-3">
-            <ActionRow icon={CheckCircle2} title="Complete one habit" detail={`${incompleteHabits} remaining today`} onClick={() => navigate('/habits')} />
-            <ActionRow icon={Timer} title="Run a focus session" detail={`${Math.max(stats.dailyGoal - stats.focusMinutes, 0)} minutes to goal`} onClick={() => navigate('/focus?start=true')} />
-            <ActionRow icon={Briefcase} title="Close one project task" detail={`${stats.completedProjectTasks}/${stats.totalProjectTasks} tasks complete`} onClick={() => navigate('/projects')} />
-            <ActionRow icon={FileText} title="Write a note" detail="Keep ideas easy to find" onClick={() => navigate('/notes?add=true')} />
+            <ActionRow icon={CheckCircle2} title="Complete one habit" detail={`${incompleteHabits} remaining today`} onClick={navigateToHabits} />
+            <ActionRow icon={Timer} title="Run a focus session" detail={`${Math.max(stats.dailyGoal - stats.focusMinutes, 0)} minutes to goal`} onClick={navigateToFocus} />
+            <ActionRow icon={Briefcase} title="Close one project task" detail={`${stats.completedProjectTasks}/${stats.totalProjectTasks} tasks complete`} onClick={navigateToProjects} />
+            <ActionRow icon={FileText} title="Write a note" detail="Keep ideas easy to find" onClick={navigateToNotes} />
           </div>
         </Card>
       </div>
     </div>
   );
-}
+});
 
 function MomentumRing({ score }: { score: number }) {
   const strokeDasharray = `${score} 100`;

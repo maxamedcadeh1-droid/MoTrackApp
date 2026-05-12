@@ -5,23 +5,52 @@ import { Sidebar, MobileNav } from './Navigation';
 import { CommandCenter } from './CommandCenter';
 import { QuickAdd } from './QuickAdd';
 
+function getLayoutMotionState() {
+  if (typeof window === 'undefined') {
+    return { isMobile: false, reduceMotion: true };
+  }
+
+  const isMobile = window.matchMedia('(max-width: 767px)').matches;
+  const prefersReducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  return {
+    isMobile,
+    reduceMotion: isMobile || prefersReducedMotion,
+  };
+}
+
 export function DashboardLayout() {
   const location = useLocation();
-  const [reduceMotion, setReduceMotion] = useState(true);
+  const [{ isMobile, reduceMotion }, setLayoutMotion] = useState(getLayoutMotionState);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const query = window.matchMedia('(prefers-reduced-motion: reduce), (max-width: 768px)');
-    const update = () => setReduceMotion(query.matches);
-    update();
-    query.addEventListener('change', update);
-    return () => query.removeEventListener('change', update);
+
+    const mobileQuery = window.matchMedia('(max-width: 767px)');
+    const motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    const updateMotion = () => {
+      setLayoutMotion({
+        isMobile: mobileQuery.matches,
+        reduceMotion: mobileQuery.matches || motionQuery.matches,
+      });
+    };
+
+    updateMotion();
+    mobileQuery.addEventListener('change', updateMotion);
+    motionQuery.addEventListener('change', updateMotion);
+
+    return () => {
+      mobileQuery.removeEventListener('change', updateMotion);
+      motionQuery.removeEventListener('change', updateMotion);
+    };
   }, []);
 
   return (
     <div className="premium-bg flex min-h-screen overflow-x-hidden text-zinc-100 selection:bg-accent/40">
       <div className="pointer-events-none fixed inset-0 z-0 grid-bg opacity-70" />
-      <div className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),transparent_18%,transparent_82%,rgba(0,0,0,0.35))]" />
+      {!isMobile && (
+        <div className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),transparent_18%,transparent_82%,rgba(0,0,0,0.35))]" />
+      )}
 
       <Sidebar />
       <CommandCenter />
@@ -29,18 +58,24 @@ export function DashboardLayout() {
       
       <main className="relative z-10 min-w-0 flex-1 pb-32 md:pb-0">
         <div className="mx-auto w-full max-w-7xl px-3 py-5 sm:px-5 md:p-8 lg:p-12">
-          <AnimatePresence mode="wait">
-            <motion.div
-              key={location.pathname}
-              initial={reduceMotion ? false : { opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={reduceMotion ? undefined : { opacity: 0, y: -10 }}
-              transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
-              className="min-h-[calc(100vh-120px)]"
-            >
+          {reduceMotion ? (
+            <div key={location.pathname} className="min-h-[calc(100vh-120px)]">
               <Outlet />
-            </motion.div>
-          </AnimatePresence>
+            </div>
+          ) : (
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={location.pathname}
+                initial={{ opacity: 0, y: 8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                className="min-h-[calc(100vh-120px)]"
+              >
+                <Outlet />
+              </motion.div>
+            </AnimatePresence>
+          )}
         </div>
       </main>
       

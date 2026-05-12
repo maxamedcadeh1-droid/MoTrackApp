@@ -176,7 +176,7 @@ export function MobileNav() {
             onClick={() => setAccountOpen(false)}
             className="fixed inset-0 z-[65] bg-black/40 backdrop-blur-sm md:hidden"
           />
-          <div className="fixed bottom-24 left-3 right-3 z-[70] max-h-[70vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#080b13]/95 p-2 shadow-xl shadow-black/40 backdrop-blur-xl md:hidden">
+          <div className="fixed bottom-24 left-3 right-3 z-[70] max-h-[70vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#080b13]/95 p-2 shadow-lg md:hidden">
               <div className="mb-1 rounded-xl border border-white/10 bg-white/[0.035] p-4">
                 <div className="flex items-start justify-between gap-4">
                   <div className="min-w-0">
@@ -216,7 +216,7 @@ export function MobileNav() {
           </>
         )}
 
-      <nav className="fixed bottom-3 left-3 right-3 z-50 flex h-[4.75rem] items-center justify-between gap-1 rounded-2xl border border-white/10 bg-[#080b13]/88 px-2 shadow-xl shadow-black/40 backdrop-blur-xl md:hidden">
+      <nav className="fixed bottom-3 left-3 right-3 z-50 flex h-[4.75rem] items-center justify-between gap-1 rounded-2xl border border-white/10 bg-[#080b13]/88 px-2 shadow-lg md:hidden">
         {mobileItems.map((item) => (
           <NavLink
             key={item.path}

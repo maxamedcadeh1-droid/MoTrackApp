@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import type { CSSProperties } from 'react';
 import { Card, Button, Badge, Toast } from '../../components/ui/Layout';
 import { 
   Play, 
@@ -64,19 +65,30 @@ export function Focus() {
   }, [searchParams, isActive, mode]);
 
   useEffect(() => {
-    if (isActive && timeLeft > 0) {
-      timerRef.current = setInterval(() => {
-        setTimeLeft((prev) => prev - 1);
-      }, 1000);
-    } else if (timeLeft === 0) {
-      handleComplete();
-    } else {
-      if (timerRef.current) clearInterval(timerRef.current);
+    if (!isActive) {
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
+      return;
     }
 
+    timerRef.current = setInterval(() => {
+      setTimeLeft((prev) => Math.max(prev - 1, 0));
+    }, 1000);
+
     return () => {
-      if (timerRef.current) clearInterval(timerRef.current);
+      if (timerRef.current) {
+        clearInterval(timerRef.current);
+        timerRef.current = null;
+      }
     };
+  }, [isActive]);
+
+  useEffect(() => {
+    if (isActive && timeLeft === 0) {
+      handleComplete();
+    }
   }, [isActive, timeLeft]);
 
   const fetchHistory = async () => {
@@ -232,8 +244,8 @@ export function Focus() {
                         fill="none"
                         strokeDasharray="100 100"
                         strokeDashoffset={100 - progress}
-                        className="transition-all duration-1000"
-                        style={{ filter: `blur(4px) drop-shadow(0 0 20px ${MODES[mode].color}40)` }}
+                        className="focus-progress-ring transition-all duration-1000"
+                        style={{ '--focus-ring-glow': `${MODES[mode].color}40` } as CSSProperties}
                     />
                 </svg>
 
@@ -256,10 +268,7 @@ export function Focus() {
                         ))}
                     </div>
                     
-                    <div
-                        key={timeLeft}
-                        className="font-mono text-[4.5rem] font-bold leading-none tracking-tight text-white tabular-nums sm:text-[7rem] md:text-[10rem] lg:text-[11.25rem]"
-                    >
+                    <div className="font-mono text-[4.5rem] font-bold leading-none tracking-tight text-white tabular-nums sm:text-[7rem] md:text-[10rem] lg:text-[11.25rem]">
                         {formatTime(timeLeft)}
                     </div>
                 </div>
