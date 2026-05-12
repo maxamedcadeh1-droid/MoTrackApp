@@ -189,6 +189,23 @@
   100% { transform: translateX(100%); }
 }
 
+/* animate-in utilities for FAB actions */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+@keyframes slide-in-from-bottom-2 {
+  from { transform: translateY(8px); }
+  to { transform: translateY(0); }
+}
+.animate-in {
+  animation-fill-mode: both;
+  animation-duration: 200ms;
+  animation-timing-function: cubic-bezier(0.16, 1, 0.3, 1);
+}
+.fade-in { animation-name: fade-in; }
+.slide-in-from-bottom-2 { animation-name: slide-in-from-bottom-2; }
+
 .grid-bg {
   background-image: 
     linear-gradient(to right, rgba(255,255,255,0.026) 1px, transparent 1px),

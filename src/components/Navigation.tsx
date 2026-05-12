@@ -8,7 +8,6 @@ import {
   FileText,
   LayoutDashboard,
   LogOut,
-  MoreHorizontal,
   Moon,
   Search,
   Settings,
@@ -158,96 +157,153 @@ export function Sidebar() {
 }
 
 export function MobileNav() {
-  const [accountOpen, setAccountOpen] = useState(false);
+  const [profileOpen, setProfileOpen] = useState(false);
   const navigate = useNavigate();
   const { user, profile } = useAuth();
   const { handleLogout, isLoggingOut } = useLogout();
-  const mobileItems = [navItems[0], navItems[1], navItems[3], navItems[4]];
-  const moreItems = [navItems[2], navItems[5], ...secondaryNavItems];
+
+  // 5 dock tabs: Dashboard, Habits, Projects, Focus, Profile
+  const dockItems = [
+    { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
+    { icon: CheckCircle2, label: 'Habits', path: '/habits' },
+    { icon: Briefcase, label: 'Projects', path: '/projects' },
+    { icon: Timer, label: 'Focus', path: '/focus' },
+  ];
+
+  const moreItems = [
+    { icon: FileText, label: 'Notes', path: '/notes' },
+    { icon: BarChart3, label: 'Analytics', path: '/analytics' },
+    { icon: Settings, label: 'Settings', path: '/settings' },
+  ];
+
   const displayName = profile?.full_name || user?.email?.split('@')[0] || 'Account';
+  const avatarUrl = profile?.avatar_url;
 
   return (
     <>
-      {accountOpen && (
-        <>
-          <button
-            type="button"
-            aria-label="Close account menu"
-            onClick={() => setAccountOpen(false)}
-            className="fixed inset-0 z-[65] bg-black/40 backdrop-blur-sm md:hidden"
-          />
-          <div className="mobile-account-sheet fixed bottom-24 left-3 right-3 z-[70] max-h-[70vh] overflow-y-auto rounded-2xl border border-white/10 bg-[#080b13]/95 p-2 shadow-lg md:hidden">
-              <div className="mb-1 rounded-xl border border-white/10 bg-white/[0.035] p-4">
-                <div className="flex items-start justify-between gap-4">
-                  <div className="min-w-0">
-                    <p className="truncate text-sm font-semibold text-white">{displayName}</p>
-                    <p className="mt-1 truncate text-xs text-zinc-500">{user?.email || 'Account'}</p>
-                  </div>
-                  <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-500/10 bg-emerald-500/5 px-2 py-1 text-[10px] font-semibold text-emerald-400">
-                    <Wifi className="h-3 w-3" />
-                    Synced
-                  </span>
-                </div>
-              </div>
-              {moreItems.map((item) => (
-                <button
-                  key={item.path}
-                  type="button"
-                  onClick={() => {
-                    navigate(item.path);
-                    setAccountOpen(false);
-                  }}
-                  className="flex min-h-12 w-full touch-manipulation items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-zinc-300 transition-colors hover:bg-white/5 hover:text-white"
-                >
-                  <item.icon className="h-4 w-4 text-accent" />
-                  {item.label}
-                </button>
-              ))}
-              <button
-                type="button"
-                disabled={isLoggingOut}
-                onClick={() => handleLogout(() => setAccountOpen(false))}
-                className="flex min-h-12 w-full touch-manipulation items-center gap-3 rounded-xl px-4 py-3 text-sm font-semibold text-red-300 transition-colors hover:bg-red-500/10 disabled:opacity-60"
-              >
-                <LogOut className="h-4 w-4" />
-                {isLoggingOut ? 'Logging out...' : 'Logout'}
-              </button>
-            </div>
-          </>
-        )}
+      {/* Profile sheet backdrop */}
+      {profileOpen && (
+        <button
+          type="button"
+          aria-label="Close profile menu"
+          onClick={() => setProfileOpen(false)}
+          className="fixed inset-0 z-[65] bg-black/50 backdrop-blur-sm md:hidden"
+        />
+      )}
 
-      <nav className="mobile-bottom-nav fixed bottom-3 left-3 right-3 z-50 flex h-[4.75rem] items-center justify-between gap-1 rounded-2xl border border-white/10 bg-[#080b13]/88 px-2 shadow-lg md:hidden">
-        {mobileItems.map((item) => (
+      {/* Profile sheet */}
+      {profileOpen && (
+        <div className="mobile-account-sheet fixed bottom-24 left-3 right-3 z-[70] overflow-hidden rounded-3xl border border-white/10 bg-[#080b13]/96 shadow-2xl shadow-black/50 backdrop-blur-2xl md:hidden">
+          {/* User info header */}
+          <div className="border-b border-white/8 p-4">
+            <div className="flex items-center gap-3">
+              <div className="flex h-12 w-12 items-center justify-center overflow-hidden rounded-2xl border border-white/10 bg-zinc-900">
+                {avatarUrl ? (
+                  <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+                ) : (
+                  <User className="h-5 w-5 text-accent" />
+                )}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-bold text-white">{displayName}</p>
+                <p className="truncate text-xs text-zinc-500">{user?.email || 'Account'}</p>
+              </div>
+              <span className="inline-flex shrink-0 items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-[10px] font-semibold text-emerald-400">
+                <Wifi className="h-3 w-3" />
+                Synced
+              </span>
+            </div>
+          </div>
+
+          {/* Nav items */}
+          <div className="p-2">
+            <button
+              type="button"
+              onClick={() => { navigate('/profile'); setProfileOpen(false); }}
+              className="flex min-h-11 w-full touch-manipulation items-center gap-3 rounded-2xl px-4 py-2.5 text-sm font-semibold text-zinc-300 transition-colors hover:bg-white/5 hover:text-white"
+            >
+              <User className="h-4 w-4 text-accent" />
+              Profile
+            </button>
+            {moreItems.map((item) => (
+              <button
+                key={item.path}
+                type="button"
+                onClick={() => { navigate(item.path); setProfileOpen(false); }}
+                className="flex min-h-11 w-full touch-manipulation items-center gap-3 rounded-2xl px-4 py-2.5 text-sm font-semibold text-zinc-300 transition-colors hover:bg-white/5 hover:text-white"
+              >
+                <item.icon className="h-4 w-4 text-accent" />
+                {item.label}
+              </button>
+            ))}
+            <div className="my-1 h-px bg-white/8" />
+            <button
+              type="button"
+              disabled={isLoggingOut}
+              onClick={() => handleLogout(() => setProfileOpen(false))}
+              className="flex min-h-11 w-full touch-manipulation items-center gap-3 rounded-2xl px-4 py-2.5 text-sm font-semibold text-red-400 transition-colors hover:bg-red-500/10 disabled:opacity-60"
+            >
+              <LogOut className="h-4 w-4" />
+              {isLoggingOut ? 'Logging out...' : 'Logout'}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ── FLOATING GLASS DOCK ── */}
+      <nav className="mobile-bottom-nav fixed bottom-3 left-3 right-3 z-50 flex h-[4.5rem] items-center justify-between gap-1 overflow-hidden rounded-3xl border border-white/10 bg-[#080b13]/90 px-2 shadow-2xl shadow-black/40 backdrop-blur-2xl md:hidden">
+        {/* Subtle top highlight */}
+        <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
+
+        {dockItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
             className={({ isActive }) =>
               cn(
-                'relative flex min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-1 rounded-xl px-1 py-2 transition-all',
-                isActive ? 'text-white' : 'text-zinc-500'
-              )}
+                'relative flex min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 transition-all duration-200',
+                isActive ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
+              )
+            }
           >
             {({ isActive }) => (
               <>
                 {isActive && (
-                  <span className="absolute inset-0 rounded-xl bg-accent/10" />
+                  <>
+                    <span className="absolute inset-0 rounded-2xl bg-accent/12" />
+                    <span className="absolute bottom-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full bg-accent shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
+                  </>
                 )}
-                <item.icon className={cn('relative z-10 h-5 w-5', isActive && 'text-accent')} />
-                <span className="relative z-10 text-[10px] font-semibold leading-none">{item.label}</span>
+                <item.icon className={cn('relative z-10 h-5 w-5 transition-all duration-200', isActive ? 'text-accent scale-110' : '')} />
+                <span className={cn('relative z-10 text-[10px] font-semibold leading-none transition-all', isActive ? 'text-white' : '')}>{item.label}</span>
               </>
             )}
           </NavLink>
         ))}
+
+        {/* Profile tab */}
         <button
           type="button"
-          onClick={() => setAccountOpen((value) => !value)}
+          onClick={() => setProfileOpen((v) => !v)}
           className={cn(
-            'relative flex min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-1 rounded-xl px-1.5 py-2 text-zinc-500 transition-all',
-            accountOpen && 'bg-accent/10 text-white'
+            'relative flex min-w-0 flex-1 touch-manipulation flex-col items-center justify-center gap-1 rounded-2xl px-1 py-2 transition-all duration-200',
+            profileOpen ? 'text-white' : 'text-zinc-500 hover:text-zinc-300'
           )}
         >
-          <MoreHorizontal className={cn('relative z-10 h-5 w-5', accountOpen && 'text-accent')} />
-          <span className="relative z-10 text-[10px] font-semibold leading-none">More</span>
+          {profileOpen && (
+            <>
+              <span className="absolute inset-0 rounded-2xl bg-accent/12" />
+              <span className="absolute bottom-0 left-1/2 h-0.5 w-6 -translate-x-1/2 rounded-full bg-accent shadow-[0_0_8px_rgba(139,92,246,0.8)]" />
+            </>
+          )}
+          <div className={cn('relative z-10 flex h-6 w-6 items-center justify-center overflow-hidden rounded-full border transition-all duration-200', profileOpen ? 'border-accent scale-110' : 'border-white/20')}>
+            {avatarUrl ? (
+              <img src={avatarUrl} alt={displayName} className="h-full w-full object-cover" referrerPolicy="no-referrer" />
+            ) : (
+              <User className="h-3.5 w-3.5 text-zinc-400" />
+            )}
+          </div>
+          <span className={cn('relative z-10 text-[10px] font-semibold leading-none transition-all', profileOpen ? 'text-white' : '')}>Profile</span>
         </button>
       </nav>
     </>

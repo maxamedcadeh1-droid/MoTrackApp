@@ -518,24 +518,66 @@ export const Dashboard = memo(function Dashboard() {
 ﻿  return (
     <div className="space-y-4 pb-12">
 
-      {/* ── TOP BAR ── */}
-      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-white sm:text-3xl">{greeting} 👋</h1>
-          <p className="mt-0.5 text-sm text-zinc-400">Here's what's happening with your productivity today.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-3 py-1.5 text-xs font-medium text-emerald-400">
-            <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
-            Live sync on
-          </span>
-          <button
-            onClick={openCommandCenter}
-            className="inline-flex h-9 items-center gap-1.5 rounded-xl bg-accent px-4 text-sm font-semibold text-white shadow-lg shadow-accent/20 transition hover:-translate-y-0.5 hover:shadow-accent/30"
-          >
-            <Plus className="h-4 w-4" />
-            Quick Add
-          </button>
+      {/* ── MOBILE HERO SECTION ── */}
+      <div className="relative overflow-hidden rounded-3xl border border-white/8 bg-gradient-to-br from-[#0a0c15] via-[#080b13] to-[#0a0c15] p-5 shadow-2xl">
+        {/* Ambient glow */}
+        <div className="pointer-events-none absolute -left-16 -top-16 h-48 w-48 rounded-full bg-violet-600/20 blur-3xl" />
+        <div className="pointer-events-none absolute -bottom-12 -right-12 h-40 w-40 rounded-full bg-cyan-500/15 blur-3xl" />
+        
+        <div className="relative flex items-start justify-between gap-4">
+          {/* Left: Greeting */}
+          <div className="min-w-0 flex-1">
+            <h1 className="text-2xl font-bold leading-tight text-white sm:text-3xl">
+              {greeting.split(',')[0]},{' '}
+              <span className="bg-gradient-to-r from-violet-400 via-fuchsia-400 to-cyan-400 bg-clip-text text-transparent">
+                {firstName}
+              </span>
+              .
+            </h1>
+            <p className="mt-1.5 text-sm text-zinc-400">Let's build your best day.</p>
+            
+            {/* Badges */}
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <span className="inline-flex items-center gap-1.5 rounded-full border border-emerald-500/20 bg-emerald-500/10 px-2.5 py-1 text-xs font-medium text-emerald-400">
+                <span className="h-1.5 w-1.5 animate-pulse rounded-full bg-emerald-400" />
+                Live sync on
+              </span>
+              {trend.trend !== 'stable' && (
+                <span className={cn('inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold',
+                  trend.trend === 'up' ? 'border-emerald-500/20 bg-emerald-500/10 text-emerald-400' : 'border-red-500/20 bg-red-500/10 text-red-400'
+                )}>
+                  {trend.trend === 'up' ? '↑' : '↓'} {trend.percentage}%
+                </span>
+              )}
+            </div>
+          </div>
+
+          {/* Right: Momentum Orb */}
+          <div className="relative flex h-20 w-20 shrink-0 items-center justify-center sm:h-24 sm:w-24">
+            {/* Glow effect */}
+            <div className="absolute inset-0 animate-pulse rounded-full bg-gradient-to-br from-violet-500/30 to-cyan-500/30 blur-xl" />
+            {/* Ring */}
+            <svg viewBox="0 0 96 96" className="absolute inset-0 h-full w-full -rotate-90">
+              <circle cx="48" cy="48" r="42" stroke="rgba(255,255,255,0.06)" strokeWidth="6" fill="none" />
+              <circle cx="48" cy="48" r="42" strokeWidth="6" strokeLinecap="round" fill="none"
+                stroke="url(#heroMomentumGrad)"
+                strokeDasharray="263.9"
+                strokeDashoffset={`${263.9 - (263.9 * stats.momentum) / 100}`}
+              />
+              <defs>
+                <linearGradient id="heroMomentumGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#8b5cf6" />
+                  <stop offset="50%" stopColor="#d946ef" />
+                  <stop offset="100%" stopColor="#06b6d4" />
+                </linearGradient>
+              </defs>
+            </svg>
+            {/* Score */}
+            <div className="relative text-center">
+              <p className="text-2xl font-bold text-white leading-none sm:text-3xl">{stats.momentum}</p>
+              <p className="text-[9px] font-medium uppercase tracking-widest text-zinc-500 mt-0.5">score</p>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -546,389 +588,372 @@ export const Dashboard = memo(function Dashboard() {
         </Suspense>
       )}
 
-      {/* ── METRIC CARDS ── */}
-      <div className="grid grid-cols-2 gap-3 xl:grid-cols-4">
+      {/* ── METRIC CARDS (2x2 grid) ── */}
+      <div className="grid grid-cols-2 gap-3">
         {[
           {
-            label: 'Momentum Score',
-            value: stats.momentum,
-            unit: '/100',
-            sub: trend.trend === 'up' ? `↑ ${trend.percentage}% vs yesterday` : trend.trend === 'down' ? `↓ ${trend.percentage}% vs yesterday` : 'No change',
-            subColor: trend.trend === 'up' ? 'text-emerald-400' : trend.trend === 'down' ? 'text-red-400' : 'text-zinc-500',
-            ring: stats.momentum,
-            ringColor: '#8b5cf6',
-            Icon: Zap,
-            iconBg: 'bg-violet-500/20 text-violet-400',
+            label: 'Habits',
+            value: `${stats.habitsCompleted}/${stats.totalHabits}`,
+            desc: incompleteHabits > 0 ? `${incompleteHabits} left` : 'All done!',
+            progress: stats.totalHabits ? Math.round((stats.habitsCompleted / stats.totalHabits) * 100) : 0,
+            icon: CheckCircle2,
+            color: '#10b981',
+            bgGlow: 'from-emerald-500/10 to-emerald-500/5',
           },
           {
-            label: 'Habits Completed',
-            value: stats.habitsCompleted,
-            unit: `/${stats.totalHabits}`,
-            sub: incompleteHabits > 0 ? `↑ ${incompleteHabits > 1 ? incompleteHabits + ' left' : '1 left'}` : '↑ All done!',
-            subColor: incompleteHabits === 0 && stats.totalHabits > 0 ? 'text-emerald-400' : 'text-zinc-500',
-            ring: stats.totalHabits ? Math.round((stats.habitsCompleted / stats.totalHabits) * 100) : 0,
-            ringColor: '#10b981',
-            Icon: CheckCircle2,
-            iconBg: 'bg-emerald-500/20 text-emerald-400',
+            label: 'Focus',
+            value: `${stats.focusMinutes}m`,
+            desc: remainingFocusMinutes > 0 ? `${remainingFocusMinutes}m left` : 'Goal hit!',
+            progress: stats.dailyGoal ? Math.min(Math.round((stats.focusMinutes / stats.dailyGoal) * 100), 100) : 0,
+            icon: Clock,
+            color: '#3b82f6',
+            bgGlow: 'from-blue-500/10 to-blue-500/5',
           },
           {
-            label: 'Focus Minutes',
-            value: stats.focusMinutes,
-            unit: ' min',
-            sub: remainingFocusMinutes > 0 ? `↑ ${remainingFocusMinutes} min vs goal` : '↑ Goal reached!',
-            subColor: remainingFocusMinutes === 0 ? 'text-emerald-400' : 'text-zinc-500',
-            ring: stats.dailyGoal ? Math.min(Math.round((stats.focusMinutes / stats.dailyGoal) * 100), 100) : 0,
-            ringColor: '#3b82f6',
-            Icon: Clock,
-            iconBg: 'bg-blue-500/20 text-blue-400',
+            label: 'Projects',
+            value: `${stats.activeProjects}`,
+            desc: `${stats.projectProgress}% avg`,
+            progress: stats.projectProgress,
+            icon: Briefcase,
+            color: '#f59e0b',
+            bgGlow: 'from-amber-500/10 to-amber-500/5',
           },
           {
-            label: 'Active Projects',
-            value: stats.activeProjects,
-            unit: '',
-            sub: stats.projectProgress > 0 ? `${stats.projectProgress}% avg progress` : 'No change',
-            subColor: 'text-zinc-500',
-            ring: stats.projectProgress,
-            ringColor: '#f59e0b',
-            Icon: Briefcase,
-            iconBg: 'bg-amber-500/20 text-amber-400',
+            label: 'Tasks',
+            value: `${stats.completedProjectTasks}/${stats.totalProjectTasks}`,
+            desc: remainingProjectTasks > 0 ? `${remainingProjectTasks} left` : 'All done!',
+            progress: stats.totalProjectTasks ? Math.round((stats.completedProjectTasks / stats.totalProjectTasks) * 100) : 0,
+            icon: Target,
+            color: '#8b5cf6',
+            bgGlow: 'from-violet-500/10 to-violet-500/5',
           },
         ].map((card) => (
-          <div key={card.label} className="glass-card border-white/8 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-white/15">
-            <div className="flex items-start justify-between gap-2">
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-medium text-zinc-500">{card.label}</p>
-                <div className="mt-2 flex items-baseline gap-0.5">
-                  <span className="text-3xl font-bold text-white">{card.value}</span>
-                  <span className="text-sm font-medium text-zinc-400">{card.unit}</span>
-                </div>
-                <p className={cn('mt-1 text-xs font-medium', card.subColor)}>{card.sub}</p>
+          <div key={card.label} className={cn('glass-card relative overflow-hidden border-white/8 p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-white/15')}>
+            {/* Glow background */}
+            <div className={cn('pointer-events-none absolute inset-0 bg-gradient-to-br opacity-40', card.bgGlow)} />
+            
+            <div className="relative">
+              {/* Icon */}
+              <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: `${card.color}18` }}>
+                <card.icon className="h-5 w-5" style={{ color: card.color }} />
               </div>
-              <div className="relative flex h-12 w-12 shrink-0 items-center justify-center">
-                <svg viewBox="0 0 48 48" className="absolute inset-0 h-full w-full -rotate-90">
-                  <circle cx="24" cy="24" r="20" stroke="rgba(255,255,255,0.06)" strokeWidth="4" fill="none" />
-                  <circle cx="24" cy="24" r="20" strokeWidth="4" strokeLinecap="round" fill="none"
-                    stroke={card.ringColor}
-                    strokeDasharray="125.7"
-                    strokeDashoffset={`${125.7 - (125.7 * Math.min(card.ring, 100)) / 100}`}
-                  />
-                </svg>
-                <div className={cn('relative flex h-7 w-7 items-center justify-center rounded-full', card.iconBg)}>
-                  <card.Icon className="h-3.5 w-3.5" />
-                </div>
+              
+              {/* Value */}
+              <p className="text-2xl font-bold text-white leading-none">{card.value}</p>
+              <p className="mt-1 text-xs font-medium text-zinc-500">{card.label}</p>
+              <p className="mt-1.5 text-xs font-medium text-zinc-400">{card.desc}</p>
+              
+              {/* Progress line */}
+              <div className="mt-3 h-1 w-full rounded-full bg-white/8">
+                <div className="h-1 rounded-full transition-all duration-500" style={{ width: `${card.progress}%`, background: card.color }} />
               </div>
             </div>
           </div>
         ))}
       </div>
 ﻿
-      {/* ── ROW 2: Mission | Pulse | Smart Suggestion + Activity ── */}
-      <div className="grid gap-4 xl:grid-cols-[1fr_1.1fr_300px]">
-
-        {/* TODAY'S MISSION */}
-        <div className="glass-card border-white/8 p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-white">Today's Mission</h2>
+      {/* ── TODAY'S MISSION ── */}
+      <div className="glass-card border-white/8 p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-violet-500/15">
+              <Sparkles className="h-4 w-4 text-violet-400" />
+            </div>
+            <div>
+              <h2 className="text-sm font-bold text-white">Today's Mission</h2>
+              <p className="text-[10px] text-zinc-500">Your roadmap to a productive day</p>
+            </div>
           </div>
-          <div className="space-y-3">
-            {[
-              {
-                num: 1,
-                title: 'Complete your habits',
-                desc: stats.totalHabits > 0 ? `You've completed ${stats.habitsCompleted} of ${stats.totalHabits} habits` : "You haven't started yet",
-                action: 'View Habits',
-                path: '/habits',
-                done: incompleteHabits === 0 && stats.totalHabits > 0,
-                color: 'bg-emerald-500',
-                lineColor: 'bg-emerald-500/30',
-              },
-              {
-                num: 2,
-                title: 'Start a focus session',
-                desc: remainingFocusMinutes > 0 ? `${remainingFocusMinutes} min left to hit goal` : "Focus goal complete!",
-                action: 'Start Focus',
-                path: '/focus?start=true',
-                done: remainingFocusMinutes === 0,
-                color: 'bg-blue-500',
-                lineColor: 'bg-blue-500/30',
-              },
-              {
-                num: 3,
-                title: 'Review your projects',
-                desc: stats.activeProjects > 0 ? `${stats.activeProjects} active project${stats.activeProjects === 1 ? '' : 's'}` : 'No active projects',
-                action: 'View Projects',
-                path: '/projects',
-                done: false,
-                color: 'bg-amber-500',
-                lineColor: 'bg-amber-500/30',
-              },
-            ].map((item, idx, arr) => (
-              <div key={item.num} className="flex gap-3">
-                <div className="flex flex-col items-center">
-                  <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white', item.done ? 'bg-emerald-500' : item.color)}>
-                    {item.done ? <CheckCircle2 className="h-4 w-4" /> : item.num}
-                  </div>
-                  {idx < arr.length - 1 && <div className={cn('mt-1 w-0.5 flex-1', item.lineColor)} style={{minHeight:'16px'}} />}
+          <span className="rounded-full border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] font-semibold text-zinc-400">3 steps</span>
+        </div>
+
+        <div className="space-y-0">
+          {[
+            {
+              num: 1,
+              title: 'Complete your habits',
+              desc: stats.totalHabits > 0 ? `${stats.habitsCompleted} of ${stats.totalHabits} done` : "Add a habit to start",
+              action: 'View Habits',
+              path: '/habits',
+              done: incompleteHabits === 0 && stats.totalHabits > 0,
+              dotColor: 'bg-emerald-500',
+              lineColor: 'bg-emerald-500/20',
+            },
+            {
+              num: 2,
+              title: 'Start a focus session',
+              desc: remainingFocusMinutes > 0 ? `${remainingFocusMinutes} min left to hit goal` : 'Focus goal complete!',
+              action: 'Start Focus',
+              path: '/focus?start=true',
+              done: remainingFocusMinutes === 0,
+              dotColor: 'bg-blue-500',
+              lineColor: 'bg-blue-500/20',
+            },
+            {
+              num: 3,
+              title: 'Review your projects',
+              desc: stats.activeProjects > 0 ? `${stats.activeProjects} active project${stats.activeProjects === 1 ? '' : 's'}` : 'Create a project',
+              action: 'View Projects',
+              path: '/projects',
+              done: false,
+              dotColor: 'bg-amber-500',
+              lineColor: 'bg-amber-500/20',
+            },
+          ].map((item, idx, arr) => (
+            <div key={item.num} className="flex gap-3">
+              {/* Timeline */}
+              <div className="flex flex-col items-center">
+                <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white transition-all', item.done ? 'bg-emerald-500 shadow-lg shadow-emerald-500/30' : item.dotColor)}>
+                  {item.done ? <CheckCircle2 className="h-4 w-4" /> : item.num}
                 </div>
-                <div className="min-w-0 flex-1 pb-3">
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <p className={cn('text-sm font-semibold', item.done ? 'text-zinc-400 line-through' : 'text-white')}>{item.title}</p>
-                      <p className="mt-0.5 text-xs text-zinc-500">{item.desc}</p>
-                    </div>
-                    <button onClick={() => navigate(item.path)}
-                      className="shrink-0 rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs font-medium text-zinc-300 transition hover:border-accent/30 hover:text-white">
-                      {item.action}
-                    </button>
+                {idx < arr.length - 1 && (
+                  <div className={cn('mt-1 w-0.5 flex-1', item.lineColor)} style={{ minHeight: '20px' }} />
+                )}
+              </div>
+              {/* Content */}
+              <div className="min-w-0 flex-1 pb-4">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className={cn('text-sm font-semibold leading-tight', item.done ? 'text-zinc-500 line-through' : 'text-white')}>{item.title}</p>
+                    <p className="mt-0.5 text-xs text-zinc-500">{item.desc}</p>
                   </div>
+                  <button onClick={() => navigate(item.path)}
+                    className="shrink-0 flex items-center gap-1 rounded-xl border border-white/10 bg-white/5 px-2.5 py-1.5 text-xs font-semibold text-zinc-300 transition-all hover:border-accent/30 hover:bg-accent/10 hover:text-white active:scale-95">
+                    {item.action}
+                    <ArrowRight className="h-3 w-3" />
+                  </button>
                 </div>
               </div>
-            ))}
-          </div>
-          <div className="mt-3 flex items-center gap-2 rounded-xl border border-white/5 bg-white/[0.02] px-3 py-2.5">
-            <span className="text-base">🚀</span>
-            <p className="text-xs text-zinc-400">Keep going! Small steps, big results.</p>
-          </div>
-        </div>
-
-        {/* PRODUCTIVITY PULSE */}
-        <div className="glass-card border-white/8 p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <div>
-              <h2 className="text-sm font-semibold text-white">Productivity Pulse</h2>
-              <p className="text-xs text-zinc-500">This Week</p>
             </div>
-            <span className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-xs text-zinc-400">This Week</span>
-          </div>
-          <div className="mb-3 flex items-center gap-4 text-xs text-zinc-500">
-            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-blue-500" />Focus Minutes</span>
-            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500" />Habits Completed</span>
-            <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-400" />Tasks Completed</span>
-          </div>
-          <div className="h-[200px] w-full min-w-0">
-            <Suspense fallback={<Skeleton className="h-[200px] w-full rounded-xl" />}>
-              <DashboardChart data={stats.weeklyData} />
-            </Suspense>
-          </div>
+          ))}
         </div>
 
-        {/* SMART SUGGESTION + RECENT ACTIVITY */}
-        <div className="flex flex-col gap-4">
-          {/* Smart Suggestion */}
-          <div className="glass-card border-white/8 p-4">
-            <div className="mb-3 flex items-center gap-2">
+        <div className="mt-1 flex items-center gap-2 rounded-2xl border border-white/5 bg-white/[0.02] px-3 py-2.5">
+          <span className="text-base">🚀</span>
+          <p className="text-xs text-zinc-400">Keep going! Small steps, big results.</p>
+        </div>
+      </div>
+
+      {/* ── PRODUCTIVITY PULSE ── */}
+      <div className="glass-card border-white/8 p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <div>
+            <h2 className="text-sm font-bold text-white">Productivity Pulse</h2>
+            <p className="text-[10px] text-zinc-500">This week's overview</p>
+          </div>
+          <span className="rounded-lg border border-white/10 bg-white/5 px-2.5 py-1 text-[10px] text-zinc-400">This Week</span>
+        </div>
+        <div className="mb-3 flex flex-wrap items-center gap-3 text-[10px] text-zinc-500">
+          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-blue-500" />Focus</span>
+          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-emerald-500" />Habits</span>
+          <span className="flex items-center gap-1.5"><span className="h-2 w-2 rounded-full bg-amber-400" />Tasks</span>
+        </div>
+        <div className="h-[180px] w-full min-w-0">
+          <Suspense fallback={<Skeleton className="h-[180px] w-full rounded-xl" />}>
+            <DashboardChart data={stats.weeklyData} />
+          </Suspense>
+        </div>
+      </div>
+
+      {/* ── SMART SUGGESTION ── */}
+      <div className="relative overflow-hidden rounded-2xl border border-violet-500/20 bg-gradient-to-br from-violet-500/10 via-[#0a0c15] to-cyan-500/8 p-5">
+        <div className="pointer-events-none absolute -right-8 -top-8 h-32 w-32 rounded-full bg-violet-500/15 blur-2xl" />
+        <div className="relative flex items-start justify-between gap-4">
+          <div className="min-w-0 flex-1">
+            <div className="mb-2 flex items-center gap-2">
               <span className="flex h-6 w-6 items-center justify-center rounded-lg bg-violet-500/20 text-violet-400">✨</span>
-              <p className="text-xs font-semibold text-zinc-300">Smart Suggestion</p>
+              <p className="text-xs font-bold text-violet-300">Smart Suggestion</p>
             </div>
-            <p className="text-sm font-semibold text-white leading-snug">
+            <p className="text-sm font-bold text-white leading-snug">
               {remainingFocusMinutes > 0 ? `Start a ${Math.min(remainingFocusMinutes, 25)}-minute focus session` : stats.totalHabits === 0 ? 'Create your first habit' : 'Review your active projects'}
             </p>
-            <p className="mt-1 text-xs text-zinc-500">
-              {remainingFocusMinutes > 0 ? "You'll boost your momentum" : stats.totalHabits === 0 ? 'Build a daily routine' : 'Stay on top of your goals'}
+            <p className="mt-1 text-xs text-zinc-400">
+              {remainingFocusMinutes > 0 ? "You'll boost your momentum score" : stats.totalHabits === 0 ? 'Build a daily routine' : 'Stay on top of your goals'}
             </p>
-            <div className="mt-3 flex items-center justify-between gap-3">
-              <button
-                onClick={() => navigate(remainingFocusMinutes > 0 ? '/focus?start=true' : stats.totalHabits === 0 ? '/habits?add=true' : '/projects')}
-                className="rounded-lg bg-accent px-3 py-1.5 text-xs font-semibold text-white transition hover:bg-accent/80"
-              >
-                Start Now
-              </button>
-              <div className="relative flex h-10 w-10 items-center justify-center">
-                <svg viewBox="0 0 40 40" className="absolute inset-0 h-full w-full -rotate-90">
-                  <circle cx="20" cy="20" r="16" stroke="rgba(255,255,255,0.06)" strokeWidth="3.5" fill="none" />
-                  <circle cx="20" cy="20" r="16" strokeWidth="3.5" strokeLinecap="round" fill="none"
-                    stroke="#8b5cf6"
-                    strokeDasharray="100.5"
-                    strokeDashoffset={`${100.5 - (100.5 * stats.momentum) / 100}`}
-                  />
-                </svg>
-                <span className="relative text-[10px] font-bold text-white">{stats.momentum}%</span>
-              </div>
-            </div>
+            <button
+              onClick={() => navigate(remainingFocusMinutes > 0 ? '/focus?start=true' : stats.totalHabits === 0 ? '/habits?add=true' : '/projects')}
+              className="mt-3 inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-r from-violet-500 to-fuchsia-500 px-4 py-2 text-xs font-bold text-white shadow-lg shadow-violet-500/25 transition-all hover:-translate-y-0.5 active:scale-95"
+            >
+              Start Now
+              <ArrowRight className="h-3 w-3" />
+            </button>
           </div>
-
-          {/* Recent Activity */}
-          <div className="glass-card flex-1 border-white/8 p-4">
-            <div className="mb-3 flex items-center justify-between">
-              <p className="text-xs font-semibold text-zinc-300">Recent Activity</p>
-              <button onClick={() => navigate('/notes')} className="text-xs text-accent hover:underline">View all</button>
-            </div>
-            <div className="space-y-2.5">
-              {stats.recentActivity.length ? stats.recentActivity.slice(0, 5).map((item) => (
-                <div key={item.id} className="flex items-center gap-2.5">
-                  <div className={cn('flex h-7 w-7 shrink-0 items-center justify-center rounded-lg text-xs',
-                    item.type === 'habit' ? 'bg-emerald-500/15 text-emerald-400' :
-                    item.type === 'note' ? 'bg-amber-500/15 text-amber-400' :
-                    item.type === 'focus' ? 'bg-blue-500/15 text-blue-400' :
-                    'bg-violet-500/15 text-violet-400'
-                  )}>
-                    <item.icon className="h-3.5 w-3.5" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-xs font-medium text-white">{item.detail}</p>
-                    <p className="text-[10px] text-zinc-600">{item.title}</p>
-                  </div>
-                  <span className="shrink-0 text-[10px] text-zinc-600">{formatActivityTime(item.date)}</span>
-                </div>
-              )) : (
-                <p className="py-4 text-center text-xs text-zinc-600">No activity yet</p>
-              )}
+          {/* Mini momentum ring */}
+          <div className="relative flex h-16 w-16 shrink-0 items-center justify-center">
+            <svg viewBox="0 0 64 64" className="absolute inset-0 h-full w-full -rotate-90">
+              <circle cx="32" cy="32" r="28" stroke="rgba(255,255,255,0.06)" strokeWidth="5" fill="none" />
+              <circle cx="32" cy="32" r="28" strokeWidth="5" strokeLinecap="round" fill="none"
+                stroke="url(#suggRing)"
+                strokeDasharray="175.9"
+                strokeDashoffset={`${175.9 - (175.9 * stats.momentum) / 100}`}
+              />
+              <defs>
+                <linearGradient id="suggRing" x1="0%" y1="0%" x2="100%" y2="100%">
+                  <stop offset="0%" stopColor="#8b5cf6" />
+                  <stop offset="100%" stopColor="#06b6d4" />
+                </linearGradient>
+              </defs>
+            </svg>
+            <div className="relative text-center">
+              <p className="text-sm font-bold text-white leading-none">{stats.momentum}%</p>
             </div>
           </div>
         </div>
       </div>
 ﻿
-      {/* ── ROW 3: Focus Zone | Project Radar | Habit Streaks ── */}
-      <div className="grid gap-4 xl:grid-cols-3">
-
-        {/* FOCUS ZONE */}
-        <div className="glass-card border-white/8 p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-white">Focus Zone</h2>
-            <button onClick={() => navigate('/focus')} className="text-xs text-accent hover:underline">View all</button>
-          </div>
-          <div className="grid grid-cols-3 gap-2">
-            {[
-              { mins: 25, label: 'Focus', icon: Zap, color: 'from-violet-500 to-violet-600', glow: 'shadow-violet-500/20' },
-              { mins: 45, label: 'Deep Work', icon: Flame, color: 'from-blue-500 to-cyan-500', glow: 'shadow-blue-500/20' },
-              { mins: 60, label: 'Flow State', icon: Sparkles, color: 'from-emerald-500 to-teal-500', glow: 'shadow-emerald-500/20' },
-            ].map((zone) => (
-              <button key={zone.label} onClick={() => navigate('/focus?start=true')}
-                className={cn('group flex flex-col items-center gap-2 rounded-2xl border border-white/8 bg-white/[0.03] p-4 transition-all duration-200 hover:-translate-y-0.5 hover:border-white/15')}>
-                <div className={cn('flex h-11 w-11 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg', zone.color, zone.glow)}>
-                  <zone.icon className="h-5 w-5" />
-                </div>
-                <p className="text-xl font-bold text-white">{zone.mins}</p>
-                <p className="text-[10px] text-zinc-500">min</p>
-                <p className="text-xs font-medium text-zinc-400">{zone.label}</p>
-              </button>
-            ))}
-          </div>
+      {/* ── RECENT ACTIVITY ── */}
+      <div className="glass-card border-white/8 p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-bold text-white">Recent Activity</h2>
+          <button onClick={() => navigate('/notes')} className="text-xs font-semibold text-accent hover:underline">View all</button>
         </div>
-
-        {/* PROJECT RADAR */}
-        <div className="glass-card border-white/8 p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-white">Project Radar</h2>
-            <button onClick={() => navigate('/projects')} className="text-xs text-accent hover:underline">View all</button>
-          </div>
-          <div className="space-y-3">
-            {stats.projectRadar.length ? stats.projectRadar.map((project) => (
-              <div key={project.id}>
-                <div className="mb-1.5 flex items-center justify-between gap-2">
-                  <p className="truncate text-sm font-medium text-white">{project.title}</p>
-                  <div className="flex shrink-0 items-center gap-1.5">
-                    <span className={cn('rounded-full px-2 py-0.5 text-[10px] font-semibold',
-                      project.priority === 'high' ? 'bg-red-500/15 text-red-400' :
-                      project.priority === 'medium' ? 'bg-amber-500/15 text-amber-400' :
-                      'bg-emerald-500/15 text-emerald-400'
-                    )}>
-                      {project.priority.charAt(0).toUpperCase() + project.priority.slice(1)}
-                    </span>
-                    {project.deadline && (
-                      <span className="text-[10px] text-zinc-600">{new Date(project.deadline).toLocaleDateString('en-US',{month:'short',day:'numeric'})}</span>
-                    )}
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="flex-1 h-1.5 rounded-full bg-white/8">
-                    <div className={cn('h-1.5 rounded-full transition-all duration-500',
-                      project.priority === 'high' ? 'bg-gradient-to-r from-red-500 to-orange-400' :
-                      project.priority === 'medium' ? 'bg-gradient-to-r from-amber-500 to-yellow-400' :
-                      'bg-gradient-to-r from-emerald-500 to-teal-400'
-                    )} style={{ width: `${project.progress}%` }} />
-                  </div>
-                  <span className="shrink-0 text-[10px] font-medium text-zinc-500">{project.progress}%</span>
-                </div>
+        <div className="space-y-2.5">
+          {stats.recentActivity.length ? stats.recentActivity.slice(0, 5).map((item) => (
+            <div key={item.id} className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3 transition-all hover:border-white/10 hover:bg-white/5">
+              <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg',
+                item.type === 'habit' ? 'bg-emerald-500/15 text-emerald-400' :
+                item.type === 'note' ? 'bg-amber-500/15 text-amber-400' :
+                item.type === 'focus' ? 'bg-blue-500/15 text-blue-400' :
+                'bg-violet-500/15 text-violet-400'
+              )}>
+                <item.icon className="h-4 w-4" />
               </div>
-            )) : (
-              <div className="py-6 text-center">
-                <Target className="mx-auto mb-2 h-8 w-8 text-zinc-700" />
-                <p className="text-xs text-zinc-600">No active projects</p>
-                <button onClick={() => navigate('/projects?add=true')} className="mt-2 text-xs text-accent hover:underline">Create one</button>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-xs font-semibold text-white">{item.detail}</p>
+                <p className="text-[10px] text-zinc-600">{item.title}</p>
               </div>
-            )}
-          </div>
-        </div>
-
-        {/* HABIT STREAKS */}
-        <div className="glass-card border-white/8 p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h2 className="text-sm font-semibold text-white">Habit Streaks</h2>
-            <button onClick={() => navigate('/habits')} className="text-xs text-accent hover:underline">View all</button>
-          </div>
-          <div className="space-y-3">
-            {stats.habitStreaks.length ? stats.habitStreaks.map((habit) => (
-              <div key={habit.id} className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3">
-                <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl"
-                  style={{ background: `${habit.color}18` }}>
-                  <Target className="h-4 w-4" style={{ color: habit.color }} />
-                </div>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-white">{habit.title}</p>
-                  <p className="text-xs text-zinc-500">{habit.streak} day streak</p>
-                </div>
-                <div className="flex items-center gap-1 rounded-full px-2.5 py-1 text-sm font-bold"
-                  style={{ background: `${habit.color}18`, color: habit.color }}>
-                  <Flame className="h-3.5 w-3.5" />
-                  {habit.streak}
-                </div>
+              <span className="shrink-0 text-[10px] text-zinc-600">{formatActivityTime(item.date)}</span>
+            </div>
+          )) : (
+            <div className="py-8 text-center">
+              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+                <Sparkles className="h-5 w-5 text-zinc-600" />
               </div>
-            )) : (
-              <div className="py-6 text-center">
-                <Flame className="mx-auto mb-2 h-8 w-8 text-zinc-700" />
-                <p className="text-xs text-zinc-600">No streaks yet</p>
-                <button onClick={() => navigate('/habits?add=true')} className="mt-2 text-xs text-accent hover:underline">Add a habit</button>
-              </div>
-            )}
-          </div>
+              <p className="text-xs text-zinc-600">No activity yet</p>
+            </div>
+          )}
         </div>
       </div>
 
-      {/* ── ROW 4: Quick Actions | Quote ── */}
-      <div className="grid gap-4 xl:grid-cols-[1fr_340px]">
-
-        {/* QUICK ACTIONS */}
-        <div className="glass-card border-white/8 p-5">
-          <h2 className="mb-4 text-sm font-semibold text-white">Quick Actions</h2>
-          <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-            {[
-              { title: 'New Habit', icon: CheckCircle2, path: '/habits?add=true', color: 'from-emerald-500 to-teal-500', iconBg: 'bg-emerald-500/15 text-emerald-400' },
-              { title: 'Start Focus', icon: Zap, path: '/focus?start=true', color: 'from-violet-500 to-fuchsia-500', iconBg: 'bg-violet-500/15 text-violet-400' },
-              { title: 'New Project', icon: Briefcase, path: '/projects?add=true', color: 'from-blue-500 to-cyan-500', iconBg: 'bg-blue-500/15 text-blue-400' },
-              { title: 'New Note', icon: FileText, path: '/notes?add=true', color: 'from-amber-400 to-orange-500', iconBg: 'bg-amber-500/15 text-amber-400' },
-            ].map((action) => (
-              <button key={action.title} onClick={() => navigate(action.path)}
-                className="group flex items-center gap-3 rounded-xl border border-white/8 bg-white/[0.02] px-4 py-3 transition-all duration-200 hover:border-white/15 hover:bg-white/5">
-                <div className={cn('flex h-8 w-8 shrink-0 items-center justify-center rounded-lg', action.iconBg)}>
-                  <action.icon className="h-4 w-4" />
-                </div>
-                <span className="text-sm font-semibold text-white">{action.title}</span>
-              </button>
-            ))}
-          </div>
+      {/* ── HABIT STREAKS ── */}
+      <div className="glass-card border-white/8 p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-bold text-white">Habit Streaks</h2>
+          <button onClick={() => navigate('/habits')} className="text-xs font-semibold text-accent hover:underline">View all</button>
         </div>
+        <div className="space-y-3">
+          {stats.habitStreaks.length ? stats.habitStreaks.map((habit) => (
+            <div key={habit.id} className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3">
+              <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-xl" style={{ background: `${habit.color}18` }}>
+                <Target className="h-4 w-4" style={{ color: habit.color }} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="truncate text-sm font-semibold text-white">{habit.title}</p>
+                <p className="text-xs text-zinc-500">{habit.streak} day streak</p>
+              </div>
+              <div className="flex items-center gap-1 rounded-full px-2.5 py-1 text-sm font-bold" style={{ background: `${habit.color}18`, color: habit.color }}>
+                <Flame className="h-3.5 w-3.5" />
+                {habit.streak}
+              </div>
+            </div>
+          )) : (
+            <div className="py-8 text-center">
+              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+                <Flame className="h-5 w-5 text-zinc-600" />
+              </div>
+              <p className="text-xs text-zinc-600">No streaks yet</p>
+              <button onClick={() => navigate('/habits?add=true')} className="mt-2 text-xs font-semibold text-accent hover:underline">Add a habit</button>
+            </div>
+          )}
+        </div>
+      </div>
 
-        {/* QUOTE */}
-        <div className="relative overflow-hidden rounded-2xl border border-white/8 p-5"
-          style={{background:'radial-gradient(circle at 20% 50%, rgba(139,92,246,0.18) 0%, transparent 60%), radial-gradient(circle at 80% 20%, rgba(59,130,246,0.12) 0%, transparent 50%), #0a0c15'}}>
-          <div className="pointer-events-none absolute bottom-0 right-0 h-32 w-32 opacity-20">
-            <svg viewBox="0 0 128 128" fill="none">
-              <path d="M64 128 L128 64 L128 128 Z" fill="url(#mtnGrad)" />
-              <path d="M32 128 L96 32 L128 128 Z" fill="url(#mtnGrad2)" opacity="0.6" />
-              <defs>
-                <linearGradient id="mtnGrad" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#8b5cf6"/><stop offset="1" stopColor="#4f46e5"/></linearGradient>
-                <linearGradient id="mtnGrad2" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#6d28d9"/><stop offset="1" stopColor="#312e81"/></linearGradient>
-              </defs>
-            </svg>
-          </div>
-          <div className="relative">
-            <span className="text-3xl font-bold text-violet-400/40 leading-none">"</span>
-            <p className="mt-1 text-sm font-semibold text-white leading-relaxed">
-              Discipline is the bridge between goals and accomplishment.
-            </p>
-            <p className="mt-2 text-xs text-zinc-500">– Jim Rohn</p>
-          </div>
+      {/* ── PROJECT RADAR ── */}
+      <div className="glass-card border-white/8 p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-bold text-white">Project Radar</h2>
+          <button onClick={() => navigate('/projects')} className="text-xs font-semibold text-accent hover:underline">View all</button>
+        </div>
+        <div className="space-y-3">
+          {stats.projectRadar.length ? stats.projectRadar.map((project) => (
+            <div key={project.id} className="rounded-xl border border-white/5 bg-white/[0.02] p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="truncate text-sm font-semibold text-white">{project.title}</p>
+                <span className={cn('shrink-0 rounded-full px-2 py-0.5 text-[10px] font-bold',
+                  project.priority === 'high' ? 'bg-red-500/15 text-red-400' :
+                  project.priority === 'medium' ? 'bg-amber-500/15 text-amber-400' :
+                  'bg-emerald-500/15 text-emerald-400'
+                )}>
+                  {project.priority.charAt(0).toUpperCase() + project.priority.slice(1)}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                <div className="flex-1 h-1.5 rounded-full bg-white/8">
+                  <div className={cn('h-1.5 rounded-full transition-all duration-500',
+                    project.priority === 'high' ? 'bg-gradient-to-r from-red-500 to-orange-400' :
+                    project.priority === 'medium' ? 'bg-gradient-to-r from-amber-500 to-yellow-400' :
+                    'bg-gradient-to-r from-emerald-500 to-teal-400'
+                  )} style={{ width: `${project.progress}%` }} />
+                </div>
+                <span className="shrink-0 text-[10px] font-semibold text-zinc-500">{project.progress}%</span>
+              </div>
+            </div>
+          )) : (
+            <div className="py-8 text-center">
+              <div className="mx-auto mb-2 flex h-12 w-12 items-center justify-center rounded-2xl border border-white/10 bg-white/5">
+                <Target className="h-5 w-5 text-zinc-600" />
+              </div>
+              <p className="text-xs text-zinc-600">No active projects</p>
+              <button onClick={() => navigate('/projects?add=true')} className="mt-2 text-xs font-semibold text-accent hover:underline">Create one</button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* ── FOCUS ZONE ── */}
+      <div className="glass-card border-white/8 p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <h2 className="text-sm font-bold text-white">Focus Zone</h2>
+          <button onClick={() => navigate('/focus')} className="text-xs font-semibold text-accent hover:underline">View all</button>
+        </div>
+        <div className="grid grid-cols-3 gap-2.5">
+          {[
+            { mins: 25, label: 'Focus', icon: Zap, color: 'from-violet-500 to-violet-600' },
+            { mins: 45, label: 'Deep Work', icon: Flame, color: 'from-blue-500 to-cyan-500' },
+            { mins: 60, label: 'Flow State', icon: Sparkles, color: 'from-emerald-500 to-teal-500' },
+          ].map((zone) => (
+            <button key={zone.label} onClick={() => navigate('/focus?start=true')}
+              className="group flex flex-col items-center gap-2 rounded-2xl border border-white/8 bg-white/[0.03] p-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-white/15 active:scale-95">
+              <div className={cn('flex h-10 w-10 items-center justify-center rounded-2xl bg-gradient-to-br text-white shadow-lg', zone.color)}>
+                <zone.icon className="h-4 w-4" />
+              </div>
+              <p className="text-lg font-bold text-white leading-none">{zone.mins}</p>
+              <p className="text-[9px] text-zinc-500">min</p>
+              <p className="text-[10px] font-semibold text-zinc-400">{zone.label}</p>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      {/* ── QUOTE ── */}
+      <div className="relative overflow-hidden rounded-2xl border border-white/8 p-5"
+        style={{background:'radial-gradient(circle at 20% 50%, rgba(139,92,246,0.15) 0%, transparent 60%), radial-gradient(circle at 80% 20%, rgba(59,130,246,0.1) 0%, transparent 50%), #0a0c15'}}>
+        <div className="pointer-events-none absolute bottom-0 right-0 h-24 w-24 opacity-15">
+          <svg viewBox="0 0 96 96" fill="none">
+            <path d="M48 96 L96 48 L96 96 Z" fill="url(#qMtn1)" />
+            <path d="M24 96 L72 24 L96 96 Z" fill="url(#qMtn2)" opacity="0.6" />
+            <defs>
+              <linearGradient id="qMtn1" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#8b5cf6"/><stop offset="1" stopColor="#4f46e5"/></linearGradient>
+              <linearGradient id="qMtn2" x1="0" y1="0" x2="0" y2="1"><stop stopColor="#6d28d9"/><stop offset="1" stopColor="#312e81"/></linearGradient>
+            </defs>
+          </svg>
+        </div>
+        <div className="relative">
+          <span className="text-2xl font-bold text-violet-400/30 leading-none">"</span>
+          <p className="mt-1 text-sm font-bold text-white leading-relaxed">
+            Discipline is the bridge between goals and accomplishment.
+          </p>
+          <p className="mt-2 text-xs text-zinc-500">– Jim Rohn</p>
         </div>
       </div>
 
