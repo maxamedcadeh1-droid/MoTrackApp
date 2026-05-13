@@ -13,9 +13,12 @@ import {
   Timer,
   X,
   Plus,
+  Bell,
 } from 'lucide-react';
-import { motion } from 'motion/react';
-import { Card, Button, Skeleton, Toast, Badge } from '../../components/ui/Layout';
+import { motion, AnimatePresence } from 'motion/react';
+import { Card, Button, Skeleton, Toast, Badge, Input, TextArea } from '../../components/ui/Layout';
+import { MobileFormSheet } from '../../components/ui/MobileFormSheet';
+import { ReminderSettings, ReminderSettingsData } from '../../components/ReminderSettings';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 import { calculateDailyStreak, cn, dateKey, deriveProjectProgress } from '../../lib/utils';
@@ -83,6 +86,23 @@ export function DailyTimeline() {
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' as any });
   const today = useMemo(() => new Date(), []);
   const todayKey = dateKey(today);
+
+  // Add Reminder Form State
+  const [isAddingReminder, setIsAddingReminder] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [reminderForm, setReminderForm] = useState({
+    title: '',
+    description: '',
+    time: '',
+    days: [1, 2, 3, 4, 5, 6, 0],
+    sound: 'chime' as any,
+  });
+  const [reminderSettings, setReminderSettings] = useState<ReminderSettingsData>({
+    reminderEnabled: true,
+    reminderTime: '',
+    reminderDays: [1, 2, 3, 4, 5, 6, 0],
+    reminderSound: 'chime',
+  });
 
   const fetchTimeline = useCallback(async () => {
     if (!user) return;
@@ -335,16 +355,112 @@ export function DailyTimeline() {
                 <p className="font-mono text-lg font-bold text-white">{scheduledCount}</p>
               </div>
             </div>
-            <Button 
-              onClick={() => navigate('/habits?add=true')}
-              className="w-full sm:w-auto h-11 rounded-2xl gap-2 shadow-violet-500/20"
-            >
-              <Plus className="w-4 h-4" />
-              Add Ritual
-            </Button>
+            <div className="flex gap-2">
+              <Button 
+                onClick={() => {
+                  setReminderForm({ title: '', description: '', time: '', days: [1, 2, 3, 4, 5, 6, 0], sound: 'chime' });
+                  setReminderSettings({
+                    reminderEnabled: true,
+                    reminderTime: '',
+                    reminderDays: [1, 2, 3, 4, 5, 6, 0],
+                    reminderSound: 'chime',
+                  });
+                  setIsAddingReminder(true);
+                }}
+                variant="secondary"
+                className="w-full sm:w-auto h-11 rounded-2xl gap-2 border-white/5 bg-white/5"
+              >
+                <Bell className="w-4 h-4" />
+                Add Reminder
+              </Button>
+              <Button 
+                onClick={() => navigate('/habits?add=true')}
+                className="w-full sm:w-auto h-11 rounded-2xl gap-2 shadow-violet-500/20"
+              >
+                <Plus className="w-4 h-4" />
+                Add Ritual
+              </Button>
+            </div>
           </div>
         </div>
       </header>
+
+      {/* Add Reminder Sheet */}
+      <MobileFormSheet
+        open={isAddingReminder}
+        onClose={() => setIsAddingReminder(false)}
+        title="Add Reminder"
+        badge="Quick setup"
+        formId="timeline-reminder-form"
+        submitLabel="Add Reminder"
+        submitting={submitting}
+        submitDisabled={!reminderForm.title.trim() || !reminderSettings.reminderTime}
+      >
+        <form 
+          id="timeline-reminder-form" 
+          onSubmit={async (e) => {
+            e.preventDefault();
+            if (submitting || !user) return;
+            setSubmitting(true);
+            try {
+              const { error } = await (supabase.from('habits') as any).insert({
+                user_id: user.id,
+                title: reminderForm.title.trim(),
+                description: reminderForm.description.trim(),
+                category: 'Reminder',
+                color: '#8b5cf6',
+                icon: 'zap',
+                frequency: 'daily',
+                reminder_enabled: true,
+                reminder_time: reminderSettings.reminderTime,
+                reminder_days: reminderSettings.reminderDays,
+                reminder_sound: reminderSettings.reminderSound,
+                completed_dates: [],
+                streak: 0,
+                best_streak: 0,
+                is_active: true
+              });
+
+              if (error) throw error;
+              
+              setToast({ show: true, message: 'Reminder added to timeline', type: 'success' });
+              window.dispatchEvent(new Event('motrack:habit-updated'));
+              window.dispatchEvent(new Event('motrack:reminders-updated'));
+              setIsAddingReminder(false);
+              void fetchTimeline();
+            } catch (err: any) {
+              console.error('Add timeline reminder error:', err);
+              setToast({ show: true, message: err.message || 'Could not add reminder', type: 'error' });
+            } finally {
+              setSubmitting(false);
+            }
+          }} 
+          className="space-y-6"
+        >
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Title</label>
+            <Input 
+              placeholder="e.g. Call the bank" 
+              value={reminderForm.title}
+              onChange={e => setReminderForm(f => ({ ...f, title: e.target.value }))}
+              required
+              autoFocus
+            />
+          </div>
+          <div className="space-y-2">
+            <label className="text-[10px] font-black uppercase tracking-widest text-zinc-500 ml-1">Notes (optional)</label>
+            <TextArea 
+              placeholder="Any details..." 
+              value={reminderForm.description}
+              onChange={e => setReminderForm(f => ({ ...f, description: e.target.value }))}
+            />
+          </div>
+          <ReminderSettings 
+            value={reminderSettings}
+            onChange={setReminderSettings}
+          />
+        </form>
+      </MobileFormSheet>
 
       <Card className="rounded-[1.7rem] border-white/10 p-5">
         <div className="mb-5 flex items-center justify-between gap-4">

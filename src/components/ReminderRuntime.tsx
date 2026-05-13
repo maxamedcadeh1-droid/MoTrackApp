@@ -300,10 +300,12 @@ export function ReminderRuntime() {
     window.addEventListener('motrack:habit-updated', refresh);
 
     const channel = supabase.channel(`ritual-reminders-${user.id}`);
-    (['habits', 'project_tasks', 'settings'] as const).forEach((table) => {
-      channel.on('postgres_changes', { event: '*', schema: 'public', table, filter: `user_id=eq.${user.id}` }, refresh);
-    });
-    void channel.subscribe();
+    
+    channel
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'habits', filter: `user_id=eq.${user.id}` }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'project_tasks', filter: `user_id=eq.${user.id}` }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings', filter: `user_id=eq.${user.id}` }, refresh)
+      .subscribe();
 
     return () => {
       if (snoozeTimerRef.current) window.clearTimeout(snoozeTimerRef.current);

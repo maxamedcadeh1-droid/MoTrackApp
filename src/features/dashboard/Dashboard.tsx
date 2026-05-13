@@ -481,19 +481,17 @@ export const Dashboard = memo(function Dashboard() {
       return;
     }
 
-    const dashboardChannel = supabase.channel(`dashboard-updates-${user.id}`);
-    // Tables with user_id column are filtered to this user only.
-    const userTables = ['habits', 'notes', 'projects', 'focus_sessions', 'settings'] as const;
-    userTables.forEach((table) => {
-      dashboardChannel.on('postgres_changes', { event: '*', schema: 'public', table, filter: `user_id=eq.${user.id}` }, () => {
-        refreshDashboard();
-      });
-    });
-    dashboardChannel.on('postgres_changes', { event: '*', schema: 'public', table: 'project_tasks', filter: `user_id=eq.${user.id}` }, () => {
-      refreshDashboard();
-    });
-
-    void dashboardChannel.subscribe();
+    const channel = supabase.channel(`dashboard-updates-${user.id}`);
+    
+    // Chain all listeners before subscribing
+    channel
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'habits', filter: `user_id=eq.${user.id}` }, refreshDashboard)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'notes', filter: `user_id=eq.${user.id}` }, refreshDashboard)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'projects', filter: `user_id=eq.${user.id}` }, refreshDashboard)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'focus_sessions', filter: `user_id=eq.${user.id}` }, refreshDashboard)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'settings', filter: `user_id=eq.${user.id}` }, refreshDashboard)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'project_tasks', filter: `user_id=eq.${user.id}` }, refreshDashboard)
+      .subscribe();
 
     const localEvents = [
       'motrack:habit-updated',
@@ -506,7 +504,7 @@ export const Dashboard = memo(function Dashboard() {
 
     return () => {
       localEvents.forEach((eventName) => window.removeEventListener(eventName, refreshDashboard));
-      void supabase.removeChannel(dashboardChannel);
+      void supabase.removeChannel(channel);
     };
   }, [user, refreshDashboard]);
 
