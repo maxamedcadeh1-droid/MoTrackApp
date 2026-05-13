@@ -60,7 +60,6 @@ const dashboardItemVariants: Variants = {
 
 const HABIT_ICONS = {
   target: Target,
-  zap: Zap,
   coffee: Coffee,
   book: Book,
   moon: Moon,
@@ -614,7 +613,7 @@ export const Dashboard = memo(function Dashboard() {
       variants={dashboardContainerVariants}
       initial="hidden"
       animate="visible"
-      className={cn("dashboard-reveal space-y-4 pb-36 transition-all duration-700", zenMode && "blur-md opacity-30 scale-95 pointer-events-none")}
+      className="dashboard-reveal space-y-4 pb-36 transition-all duration-700"
     >
 
       {/* 1. Hero */}
