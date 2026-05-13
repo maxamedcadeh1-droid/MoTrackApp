@@ -39,9 +39,9 @@ export function QuickAdd({ isHidden = false }: { isHidden?: boolean }) {
         />
       )}
 
-      {/* FAB Container - z-[80] */}
+      {/* FAB Container - z-[90] to be above backdrop z-[85] */}
       {!isHidden && (
-        <div className="fixed bottom-[max(6rem,calc(5.5rem+var(--safe-area-bottom)))] right-6 z-[80] md:bottom-10 md:right-10">
+        <div className="fixed bottom-[max(6rem,calc(5.5rem+var(--safe-area-bottom)))] right-6 z-[90] md:bottom-10 md:right-10">
           {/* Action buttons */}
           {isOpen && (
             <div className="absolute bottom-[5rem] right-0 flex flex-col gap-3 items-end">

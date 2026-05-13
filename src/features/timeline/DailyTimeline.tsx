@@ -180,6 +180,19 @@ export function DailyTimeline() {
 
   useEffect(() => {
     void fetchTimeline();
+
+    const refresh = () => void fetchTimeline();
+    window.addEventListener('motrack:habit-updated', refresh);
+    window.addEventListener('motrack:project-updated', refresh);
+    window.addEventListener('motrack:reminders-updated', refresh);
+    window.addEventListener('motrack:focus-updated', refresh);
+
+    return () => {
+      window.removeEventListener('motrack:habit-updated', refresh);
+      window.removeEventListener('motrack:project-updated', refresh);
+      window.removeEventListener('motrack:reminders-updated', refresh);
+      window.removeEventListener('motrack:focus-updated', refresh);
+    };
   }, [fetchTimeline]);
 
   const completeHabit = async (item: TimelineItem) => {

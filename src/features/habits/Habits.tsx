@@ -108,6 +108,15 @@ export function Habits() {
     fetchHabits();
     if (searchParams.get('add') === 'true') {
       openCreate();
+      // Pre-enable reminders if coming from "Add Reminder"
+      const now = new Date();
+      now.setMinutes(now.getMinutes() + 15);
+      setReminderSettings({
+        reminderEnabled: true,
+        reminderTime: `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`,
+        reminderDays: [1, 2, 3, 4, 5, 6, 0],
+        reminderSound: 'chime'
+      });
     }
   }, [user, searchParams]);
 
