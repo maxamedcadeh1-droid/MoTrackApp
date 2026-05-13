@@ -6,7 +6,7 @@ import { supabase } from '../lib/supabase';
 import { ReminderConfig, ReminderEngine } from '../lib/ReminderEngine';
 import { ReminderNotification } from '../lib/NotificationService';
 import { SoundService } from '../lib/SoundService';
-import { useAuth } from '../features/auth/AuthContext';
+import { useAuth } from '../features/auth/useAuth';
 import { dateKey } from '../lib/utils';
 import { WakeUpMode, WakeUpData } from './WakeUpMode';
 import { NightShutdownData, NightShutdownMode } from './NightShutdownMode';
@@ -135,7 +135,7 @@ export function ReminderRuntime() {
   const fetchReminders = useCallback(async () => {
     if (!user) return;
 
-    const [{ data: habits }, { data: tasks }, { data: settings }] = await Promise.all([
+    const [{ data: habits }, { data: tasks }, { data: settings }, { data: customReminders }] = await Promise.all([
       (supabase.from('habits') as any)
         .select('*')
         .eq('user_id', user.id)
@@ -148,6 +148,10 @@ export function ReminderRuntime() {
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle(),
+      (supabase.from('reminders') as any)
+        .select('*')
+        .eq('user_id', user.id)
+        .eq('is_enabled', true),
     ]);
 
     const habitReminders: RuntimeReminder[] = (habits || [])
@@ -215,7 +219,32 @@ export function ReminderRuntime() {
       }]
       : [];
 
-    const reminders = [...habitReminders, ...taskReminders, ...sleepReminder].filter((reminder) => todayUsesReminder(reminder.reminderDays));
+    const genericReminders: RuntimeReminder[] = (customReminders || [])
+      .filter((reminder: any) => reminder.reminder_time)
+      .map((reminder: any) => ({
+        id: `reminder:${reminder.id}`,
+        itemId: reminder.id,
+        type: 'reminder',
+        experience: isMorningReminder({
+          reminderTime: reminder.reminder_time,
+          reminderSound: reminder.sound || 'chime',
+          title: reminder.title,
+          category: 'Reminder',
+          reminderEnabled: true,
+          reminderDays: reminder.reminder_days || [],
+        }) ? 'wake' : 'standard',
+        title: reminder.title,
+        category: 'Reminder',
+        color: '#8b5cf6',
+        reminderEnabled: reminder.is_enabled,
+        reminderTime: reminder.reminder_time,
+        reminderDays: reminder.reminder_days || [],
+        reminderSound: reminder.sound || 'chime',
+        lastTriggeredAt: reminder.last_triggered_at,
+        route: '/timeline',
+      }));
+
+    const reminders = [...habitReminders, ...taskReminders, ...sleepReminder, ...genericReminders].filter((reminder) => todayUsesReminder(reminder.reminderDays));
     remindersRef.current = reminders;
     ReminderEngine.setReminders(reminders);
   }, [user]);
@@ -240,6 +269,13 @@ export function ReminderRuntime() {
     if (reminder.type === 'sleep') {
       await (supabase.from('settings') as any)
         .update({ sleep_last_triggered_at: triggeredAt })
+        .eq('user_id', user.id);
+    }
+
+    if (reminder.type === 'reminder' && reminder.itemId) {
+      await (supabase.from('reminders') as any)
+        .update({ last_triggered_at: triggeredAt })
+        .eq('id', reminder.itemId)
         .eq('user_id', user.id);
     }
   }, [user]);
@@ -270,7 +306,11 @@ export function ReminderRuntime() {
     void SoundService.play(reminder.reminderSound || 'chime');
     setToast({
       id: `${notification.type || 'reminder'}-${notification.itemId || Date.now()}`,
-      title: notification.type === 'task' ? 'Task reminder' : 'Habit reminder',
+      title: notification.type === 'task'
+        ? 'Task reminder'
+        : notification.type === 'reminder'
+          ? 'Reminder'
+          : 'Habit reminder',
       message: notification.message || `Time for: ${notification.title || notification.habitTitle || 'your ritual'}`,
       route: reminder.route || '/dashboard',
       color: reminder.color || reminder.habitColor,
@@ -305,6 +345,7 @@ export function ReminderRuntime() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'habits', filter: `user_id=eq.${user.id}` }, refresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'project_tasks', filter: `user_id=eq.${user.id}` }, refresh)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'settings', filter: `user_id=eq.${user.id}` }, refresh)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'reminders', filter: `user_id=eq.${user.id}` }, refresh)
       .subscribe();
 
     return () => {

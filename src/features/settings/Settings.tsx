@@ -19,10 +19,11 @@ import {
   Smartphone,
 } from 'lucide-react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../auth/useAuth';
 import { useLogout } from '../auth/useLogout';
 import { Database } from '../../types/database';
 import { cn } from '../../lib/utils';
+import { useRouteLifecycleDebug } from '../../lib/routeLifecycleDebug';
 
 type Settings = Database['public']['Tables']['settings']['Row'];
 
@@ -50,6 +51,7 @@ function generateBackupCodes(): string[] {
 }
 
 export function Settings() {
+  useRouteLifecycleDebug('Settings');
   const { user } = useAuth();
   const { handleLogout, isLoggingOut } = useLogout();
   const [settings, setSettings] = useState<Settings | null>(null);

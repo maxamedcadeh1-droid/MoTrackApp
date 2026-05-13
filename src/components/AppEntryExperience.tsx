@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Activity, Moon, Sparkles } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
-import { useAuth } from '../features/auth/AuthContext';
+import { useAuth } from '../features/auth/useAuth';
 import { cn } from '../lib/utils';
 
 const SPLASH_DURATION_MS = 1650;

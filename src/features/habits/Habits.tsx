@@ -27,8 +27,9 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useSearchParams } from 'react-router-dom';
+import { useRouteLifecycleDebug } from '../../lib/routeLifecycleDebug';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../auth/useAuth';
 import { Database } from '../../types/database';
 import { calculateDailyStreak, cn, dateKey } from '../../lib/utils';
 
@@ -53,6 +54,7 @@ const ICONS = [
 ];
 
 export function Habits() {
+  useRouteLifecycleDebug('Habits');
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const [habits, setHabits] = useState<Habit[]>([]);
@@ -232,16 +234,29 @@ export function Habits() {
     setHabits(prev => prev.map(h => h.id === habit.id ? optimisticHabit : h));
 
     try {
+      if (isCompleted) {
+        const { error } = await (supabase.from('habit_completions') as any)
+          .delete()
+          .eq('habit_id', habit.id)
+          .eq('user_id', user.id)
+          .eq('completed_on', today);
+
+        if (error) throw error;
+      } else {
+        const { error } = await (supabase.from('habit_completions') as any)
+          .upsert({
+            habit_id: habit.id,
+            user_id: user.id,
+            completed_on: today,
+          }, { onConflict: 'user_id,habit_id,completed_on' });
+
+        if (error) throw error;
+      }
+
       const { data, error } = await (supabase.from('habits') as any)
-        .update({
-          completed_dates: newCompletedDates,
-          streak: newStreak,
-          best_streak: newBestStreak,
-          updated_at: new Date().toISOString()
-        })
+        .select('*')
         .eq('id', habit.id)
         .eq('user_id', user.id)
-        .select()
         .single();
 
       if (error) throw error;

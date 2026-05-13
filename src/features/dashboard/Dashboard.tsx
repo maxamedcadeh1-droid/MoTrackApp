@@ -1,4 +1,4 @@
-import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence, type Variants } from 'motion/react';
 import {
@@ -19,16 +19,16 @@ import { Skeleton, Badge } from '../../components/ui/Layout';
 import { PremiumRouteLoader } from '../../components/AppEntryExperience';
 import { supabase } from '../../lib/supabase';
 import { cn, dateKey, deriveProjectProgress, startOfDay } from '../../lib/utils';
-import { SoundService } from '../../lib/SoundService';
 import { DashboardHero } from './components/DashboardHero';
 import { CinematicCard } from './components/CinematicCard';
 import { TodayMission } from './components/TodayMission';
 import { ProductivityPulse } from './components/ProductivityPulse';
 import { SmartSuggestion } from './components/SmartSuggestion';
 import { RecentActivity } from './components/RecentActivity';
+import { useRouteLifecycleDebug } from '../../lib/routeLifecycleDebug';
 import { getTrendIndicator } from '../../lib/insights';
 import { buildRoutineSuggestion } from '../../lib/RoutineSuggestionService';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../auth/useAuth';
 
 const DashboardChecklist = lazy(() => import('./DashboardChecklist').then((mod) => ({ default: mod.DashboardChecklist })));
 
@@ -98,7 +98,7 @@ type HabitStreak = {
 
 type ActivityItem = {
   id: string;
-  type: 'note' | 'habit' | 'project' | 'focus';
+  type: 'note' | 'habit' | 'project' | 'focus' | 'task' | 'reminder';
   title: string;
   detail: string;
   date: string;
@@ -268,7 +268,41 @@ function buildRecentActivity({
     .slice(0, 4);
 }
 
-export const Dashboard = memo(function Dashboard() {
+function normalizeActivityType(value?: string): ActivityItem['type'] {
+  if (value?.includes('habit')) return 'habit';
+  if (value?.includes('note')) return 'note';
+  if (value?.includes('focus')) return 'focus';
+  if (value?.includes('task')) return 'task';
+  if (value?.includes('reminder')) return 'reminder';
+  return 'project';
+}
+
+function activityIcon(type: ActivityItem['type']) {
+  if (type === 'habit') return CheckCircle2;
+  if (type === 'note') return FileText;
+  if (type === 'focus') return Timer;
+  if (type === 'task') return Target;
+  if (type === 'reminder') return Clock;
+  return Briefcase;
+}
+
+function buildRecentActivityFromRows(rows?: any[]): ActivityItem[] {
+  return (rows || []).map((row) => {
+    const type = normalizeActivityType(row.activity_type);
+
+    return {
+      id: `activity-${row.id}`,
+      type,
+      title: row.title || 'Activity',
+      detail: row.detail || row.title || 'MoTrack activity',
+      date: row.occurred_at || row.created_at,
+      icon: activityIcon(type),
+    };
+  }).filter((item) => item.date);
+}
+
+export const Dashboard = function Dashboard() {
+  useRouteLifecycleDebug('Dashboard');
   const { user, profile } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);
@@ -320,6 +354,7 @@ export const Dashboard = memo(function Dashboard() {
           { data: sessionsData },
           { data: settings },
           { data: latestNotes },
+          { data: activitiesData },
         ] = await Promise.all([
           (supabase.from('habits') as any)
             .select('*')
@@ -341,6 +376,11 @@ export const Dashboard = memo(function Dashboard() {
             .eq('user_id', user.id)
             .order('created_at', { ascending: false })
             .limit(1),
+          (supabase.from('activities') as any)
+            .select('id,activity_type,title,detail,occurred_at,created_at')
+            .eq('user_id', user.id)
+            .order('occurred_at', { ascending: false })
+            .limit(5),
         ]);
 
         const habits = (habitsData || []).filter((habit: any) => habit.is_active !== false);
@@ -453,12 +493,14 @@ export const Dashboard = memo(function Dashboard() {
             totalProjectTasks,
             projectProgress,
             weeklyData,
-            recentActivity: buildRecentActivity({
-              habits,
-              projects,
-              sessions,
-              latestNote: latestNotes?.[0],
-            }),
+            recentActivity: activitiesData?.length
+              ? buildRecentActivityFromRows(activitiesData)
+              : buildRecentActivity({
+                habits,
+                projects,
+                sessions,
+                latestNote: latestNotes?.[0],
+              }),
             projectRadar,
             habitStreaks,
           });
@@ -491,6 +533,8 @@ export const Dashboard = memo(function Dashboard() {
       .on('postgres_changes', { event: '*', schema: 'public', table: 'focus_sessions', filter: `user_id=eq.${user.id}` }, refreshDashboard)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'settings', filter: `user_id=eq.${user.id}` }, refreshDashboard)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'project_tasks', filter: `user_id=eq.${user.id}` }, refreshDashboard)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'habit_completions', filter: `user_id=eq.${user.id}` }, refreshDashboard)
+      .on('postgres_changes', { event: '*', schema: 'public', table: 'activities', filter: `user_id=eq.${user.id}` }, refreshDashboard)
       .subscribe();
 
     const localEvents = [
@@ -699,4 +743,4 @@ export const Dashboard = memo(function Dashboard() {
 
     </motion.div>
   );
-});
+};

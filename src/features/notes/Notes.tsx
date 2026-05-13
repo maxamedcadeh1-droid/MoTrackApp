@@ -20,9 +20,10 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../auth/useAuth';
 import { Database } from '../../types/database';
 import { cn } from '../../lib/utils';
+import { useRouteLifecycleDebug } from '../../lib/routeLifecycleDebug';
 import { MobileFormSheet } from '../../components/ui/MobileFormSheet';
 
 type Note = Database['public']['Tables']['notes']['Row'];
@@ -30,6 +31,7 @@ type Note = Database['public']['Tables']['notes']['Row'];
 const PRESET_TAGS = ['Ideas', 'Work', 'Personal', 'Meeting', 'Research'];
 
 export function Notes() {
+  useRouteLifecycleDebug('Notes');
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const [notes, setNotes] = useState<Note[]>([]);

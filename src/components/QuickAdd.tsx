@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Briefcase, CheckCircle2, FileText, Plus, Timer, X } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { useReliableNavigate } from '../lib/useReliableNavigate';
 
 const actions = [
   { label: 'New Habit', icon: CheckCircle2, path: '/habits?add=true', color: 'from-emerald-500 to-teal-500', iconBg: 'bg-emerald-500/15 text-emerald-400' },
@@ -12,7 +12,7 @@ const actions = [
 
 export function QuickAdd({ isHidden = false }: { isHidden?: boolean }) {
   const [isOpen, setIsOpen] = useState(false);
-  const navigate = useNavigate();
+  const navigate = useReliableNavigate();
 
   useEffect(() => {
     if (!isOpen) return;

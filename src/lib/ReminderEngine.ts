@@ -6,7 +6,7 @@
 import { SoundService, SoundType } from './SoundService';
 import { NotificationService, ReminderNotification } from './NotificationService';
 
-export type ReminderSourceType = 'habit' | 'task' | 'sleep';
+export type ReminderSourceType = 'habit' | 'task' | 'sleep' | 'reminder';
 export type ReminderExperience = 'standard' | 'wake' | 'shutdown';
 
 export interface ReminderConfig {

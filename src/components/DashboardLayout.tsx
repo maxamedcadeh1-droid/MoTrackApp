@@ -1,11 +1,11 @@
 import { Outlet, useLocation } from 'react-router-dom';
 import { useEffect, useState } from 'react';
-import { AnimatePresence, motion } from 'motion/react';
 import { Sidebar, MobileNav } from './Navigation';
 import { CommandCenter } from './CommandCenter';
 import { QuickAdd } from './QuickAdd';
 import { ReminderRuntime } from './ReminderRuntime';
 import { useModalContext } from './ui/ModalContext';
+import { SoundService } from '../lib/SoundService';
 import { cn } from '../lib/utils';
 
 function getLayoutMotionState() {
@@ -25,14 +25,11 @@ function getLayoutMotionState() {
 export function DashboardLayout() {
   const location = useLocation();
   const { isAnyModalOpen, closeAllModals } = useModalContext();
-  const [{ isMobile, reduceMotion }, setLayoutMotion] = useState(getLayoutMotionState);
+  const [{ isMobile }, setLayoutMotion] = useState(getLayoutMotionState);
 
-
-  // 1. Auto-close all modals and reset body locks on navigation
   useEffect(() => {
-    import('../lib/SoundService').then(({ SoundService }) => SoundService.unlockAudio());
+    SoundService.unlockAudio();
     closeAllModals();
-    // Force reset body styles to prevent stuck scroll locks from sheets/modals
     document.body.style.overflow = '';
     document.documentElement.style.overflow = '';
   }, [location.pathname, closeAllModals]);
@@ -61,35 +58,33 @@ export function DashboardLayout() {
 
   return (
     <div className="premium-bg flex min-h-screen overflow-x-hidden text-zinc-100 selection:bg-accent/40">
-      <motion.div
-        initial={reduceMotion ? false : { opacity: 0 }}
-        animate={{ opacity: 0.7 }}
-        transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
-        className="pointer-events-none fixed inset-0 z-0 grid-bg"
-      />
+      <div className="pointer-events-none fixed inset-0 z-0 grid-bg opacity-70" aria-hidden />
       {!isMobile && (
-        <motion.div
-          initial={reduceMotion ? false : { opacity: 0 }}
-          animate={{ opacity: 1 }}
-          transition={{ delay: 0.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+        <div
           className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),transparent_18%,transparent_82%,rgba(0,0,0,0.35))]"
+          aria-hidden
         />
       )}
 
       <Sidebar />
       <CommandCenter />
       <ReminderRuntime />
-      
-      <main className={cn('mobile-safe-main relative z-10 min-w-0 flex-1 pb-32 md:pb-0 transition-opacity duration-200', isAnyModalOpen && 'pointer-events-none')}>
+
+      <main
+        className={cn(
+          'mobile-safe-main relative z-10 min-w-0 flex-1 pb-32 md:pb-0 transition-opacity duration-200',
+          isAnyModalOpen && 'pointer-events-none'
+        )}
+      >
         <div className="mx-auto w-full max-w-[430px] px-5 py-6 md:max-w-7xl md:p-8 lg:p-12">
           <div className="min-h-[calc(100vh-120px)]">
-            <Outlet key={location.pathname} />
+            <Outlet />
           </div>
         </div>
       </main>
-      
+
       {!isAnyModalOpen && <MobileNav />}
-      
+
       <QuickAdd isHidden={isAnyModalOpen} />
     </div>
   );

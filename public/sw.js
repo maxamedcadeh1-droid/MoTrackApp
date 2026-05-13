@@ -3,16 +3,22 @@
  * Handles caching, offline support, and background sync
  */
 
-const CACHE_NAME = 'motrack-v1';
+const CACHE_NAME = 'motrack-v2';
 const STATIC_ASSETS = [
   '/',
   '/index.html',
   '/manifest.json',
   '/offline.html',
 ];
+const IS_LOCALHOST = ['localhost', '127.0.0.1', '::1'].includes(self.location.hostname);
 
 // Install event - cache static assets
 self.addEventListener('install', (event) => {
+  if (IS_LOCALHOST) {
+    event.waitUntil(self.skipWaiting());
+    return;
+  }
+
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
@@ -24,6 +30,16 @@ self.addEventListener('install', (event) => {
 
 // Activate event - clean up old caches
 self.addEventListener('activate', (event) => {
+  if (IS_LOCALHOST) {
+    event.waitUntil(
+      caches.keys()
+        .then((cacheNames) => Promise.all(cacheNames.map((name) => caches.delete(name))))
+        .then(() => self.registration.unregister())
+        .then(() => self.clients.claim())
+    );
+    return;
+  }
+
   event.waitUntil(
     caches.keys()
       .then((cacheNames) => {
@@ -44,6 +60,31 @@ self.addEventListener('fetch', (event) => {
 
   // Skip chrome-extension and other non-http requests
   if (!event.request.url.startsWith('http')) return;
+
+  const requestUrl = new URL(event.request.url);
+
+  // Never cache Vite dev-server files. They must always come from the server.
+  if (IS_LOCALHOST || requestUrl.pathname.startsWith('/@vite') || requestUrl.pathname.startsWith('/src/') || requestUrl.searchParams.has('t')) {
+    return;
+  }
+
+  if (event.request.mode === 'navigate') {
+    event.respondWith(
+      fetch(event.request)
+        .then((networkResponse) => {
+          if (networkResponse && networkResponse.status === 200) {
+            const responseClone = networkResponse.clone();
+            caches.open(CACHE_NAME)
+              .then((cache) => {
+                cache.put('/index.html', responseClone);
+              });
+          }
+          return networkResponse;
+        })
+        .catch(() => caches.match('/index.html').then((cachedResponse) => cachedResponse || caches.match('/offline.html')))
+    );
+    return;
+  }
 
   event.respondWith(
     caches.match(event.request)

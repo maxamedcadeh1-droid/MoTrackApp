@@ -29,8 +29,9 @@ import {
 import { motion, AnimatePresence } from 'motion/react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../auth/useAuth';
 import { Database } from '../../types/database';
+import { useRouteLifecycleDebug } from '../../lib/routeLifecycleDebug';
 import { cn, deriveProjectProgress } from '../../lib/utils';
 
 type Project = Database['public']['Tables']['projects']['Row'];
@@ -46,6 +47,7 @@ const DEFAULT_TASK_REMINDER: ReminderSettingsData = {
 };
 
 export function Projects() {
+  useRouteLifecycleDebug('Projects');
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const [projects, setProjects] = useState<Project[]>([]);

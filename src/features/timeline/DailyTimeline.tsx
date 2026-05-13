@@ -20,8 +20,9 @@ import { Card, Button, Skeleton, Toast, Badge, Input, TextArea } from '../../com
 import { MobileFormSheet } from '../../components/ui/MobileFormSheet';
 import { ReminderSettings, ReminderSettingsData } from '../../components/ReminderSettings';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../auth/AuthContext';
-import { calculateDailyStreak, cn, dateKey, deriveProjectProgress } from '../../lib/utils';
+import { useAuth } from '../auth/useAuth';
+import { cn, dateKey, deriveProjectProgress } from '../../lib/utils';
+import { useRouteLifecycleDebug } from '../../lib/routeLifecycleDebug';
 
 type TimelineItem = {
   id: string;
@@ -79,6 +80,7 @@ function typeIcon(type: TimelineItem['type']) {
 }
 
 export function DailyTimeline() {
+  useRouteLifecycleDebug('DailyTimeline');
   const { user } = useAuth();
   const navigate = useNavigate();
   const [items, setItems] = useState<TimelineItem[]>([]);
@@ -109,7 +111,7 @@ export function DailyTimeline() {
     setLoading(true);
 
     try {
-      const [{ data: habits }, { data: tasks }, { data: sessions }, { data: settings }] = await Promise.all([
+      const [{ data: habits }, { data: tasks }, { data: sessions }, { data: settings }, { data: reminders }] = await Promise.all([
         (supabase.from('habits') as any)
           .select('*')
           .eq('user_id', user.id)
@@ -127,6 +129,10 @@ export function DailyTimeline() {
           .select('*')
           .eq('user_id', user.id)
           .maybeSingle(),
+        (supabase.from('reminders') as any)
+          .select('*')
+          .eq('user_id', user.id)
+          .eq('is_enabled', true),
       ]);
 
       const habitItems: TimelineItem[] = (habits || [])
@@ -192,7 +198,22 @@ export function DailyTimeline() {
         }]
         : [];
 
-      setItems([...habitItems, ...taskItems, ...focusItems, ...sleepItems].sort((a, b) => sortValue(a) - sortValue(b)));
+      const reminderItems: TimelineItem[] = (reminders || [])
+        .filter((reminder: any) => reminder.reminder_time && isTodayReminder(reminder.reminder_days))
+        .map((reminder: any) => ({
+          id: `reminder-${reminder.id}`,
+          sourceId: reminder.id,
+          type: isMorning(reminder.reminder_time) ? 'wake' : 'habit',
+          title: reminder.title,
+          subtitle: reminder.body || 'Reminder',
+          time: reminder.reminder_time,
+          status: 'scheduled',
+          color: '#8b5cf6',
+          actionLabel: 'Open',
+          route: '/timeline',
+        }));
+
+      setItems([...habitItems, ...taskItems, ...focusItems, ...sleepItems, ...reminderItems].sort((a, b) => sortValue(a) - sortValue(b)));
     } catch (error: any) {
       console.error('Fetch timeline error:', error);
       setToast({ show: true, message: 'Timeline could not load', type: 'error' });
@@ -230,17 +251,12 @@ export function DailyTimeline() {
     const completedDates = data?.completed_dates || [];
     if (completedDates.includes(todayKey)) return;
 
-    const nextDates = [...completedDates, todayKey];
-    const streak = calculateDailyStreak(nextDates);
-    const { error } = await (supabase.from('habits') as any)
-      .update({
-        completed_dates: nextDates,
-        streak,
-        best_streak: Math.max(streak, data?.best_streak || 0),
-        updated_at: new Date().toISOString(),
-      })
-      .eq('id', item.sourceId)
-      .eq('user_id', user.id);
+    const { error } = await (supabase.from('habit_completions') as any)
+      .upsert({
+        habit_id: item.sourceId,
+        user_id: user.id,
+        completed_on: todayKey,
+      }, { onConflict: 'user_id,habit_id,completed_on' });
 
     if (error) {
       setToast({ show: true, message: 'Could not complete habit', type: 'error' });
@@ -403,22 +419,15 @@ export function DailyTimeline() {
             if (submitting || !user) return;
             setSubmitting(true);
             try {
-              const { error } = await (supabase.from('habits') as any).insert({
+              const { error } = await (supabase.from('reminders') as any).insert({
                 user_id: user.id,
                 title: reminderForm.title.trim(),
-                description: reminderForm.description.trim(),
-                category: 'Reminder',
-                color: '#8b5cf6',
-                icon: 'zap',
-                frequency: 'daily',
-                reminder_enabled: true,
+                body: reminderForm.description.trim() || null,
+                source_table: 'custom',
+                is_enabled: true,
                 reminder_time: reminderSettings.reminderTime,
                 reminder_days: reminderSettings.reminderDays,
-                reminder_sound: reminderSettings.reminderSound,
-                completed_dates: [],
-                streak: 0,
-                best_streak: 0,
-                is_active: true
+                sound: reminderSettings.reminderSound,
               });
 
               if (error) throw error;

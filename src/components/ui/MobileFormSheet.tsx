@@ -49,6 +49,9 @@ export function MobileFormSheet({
     } else {
       closeGlobal();
     }
+    return () => {
+      if (open) closeGlobal();
+    };
   }, [open, openGlobal, closeGlobal]);
 
   const updateKeyboardInset = useCallback(() => {

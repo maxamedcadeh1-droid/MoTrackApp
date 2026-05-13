@@ -26,13 +26,15 @@ import {
 } from 'lucide-react';
 import { motion } from 'motion/react';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../auth/useAuth';
 import { Database } from '../../types/database';
+import { useRouteLifecycleDebug } from '../../lib/routeLifecycleDebug';
 import { cn } from '../../lib/utils';
 
 type Profile = Database['public']['Tables']['profiles']['Row'];
 
 export function Profile() {
+  useRouteLifecycleDebug('Profile');
   const { user, refreshProfile } = useAuth();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);

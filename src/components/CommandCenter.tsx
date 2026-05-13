@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 import type { KeyboardEvent as ReactKeyboardEvent } from 'react';
-import { useLocation, useNavigate } from 'react-router-dom';
+import { useLocation } from 'react-router-dom';
 import {
   BarChart3,
   Briefcase,
@@ -18,6 +18,7 @@ import {
   X,
 } from 'lucide-react';
 import { cn } from '../lib/utils';
+import { useReliableNavigate } from '../lib/useReliableNavigate';
 
 type CommandItem = {
   id: string;
@@ -33,7 +34,7 @@ export function CommandCenter() {
   const [isOpen, setIsOpen] = useState(false);
   const [query, setQuery] = useState('');
   const [selectedIndex, setSelectedIndex] = useState(0);
-  const navigate = useNavigate();
+  const navigate = useReliableNavigate();
   const location = useLocation();
 
   useEffect(() => {

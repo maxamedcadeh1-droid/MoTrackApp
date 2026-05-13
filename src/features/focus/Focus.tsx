@@ -16,7 +16,8 @@ import {
 } from 'lucide-react';
 import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../auth/useAuth';
+import { useRouteLifecycleDebug } from '../../lib/routeLifecycleDebug';
 import { formatTime, cn } from '../../lib/utils';
 import { AmbientSoundType, SoundService } from '../../lib/SoundService';
 import { FocusRitualMode, FocusSummary } from '../../components/FocusRitualMode';
@@ -37,6 +38,7 @@ const SOUNDS: { id: AmbientSoundType; icon: any; label: string }[] = [
 ];
 
 export function Focus() {
+  useRouteLifecycleDebug('Focus');
   const { user } = useAuth();
   const [searchParams] = useSearchParams();
   const [preset, setPreset] = useState<PresetId>('25');

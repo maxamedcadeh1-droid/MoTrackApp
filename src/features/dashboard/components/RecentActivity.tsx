@@ -4,7 +4,7 @@ import { cn } from '../../../lib/utils';
 
 interface ActivityItem {
   id: string;
-  type: 'note' | 'habit' | 'project' | 'focus';
+  type: 'note' | 'habit' | 'project' | 'focus' | 'task' | 'reminder';
   title: string;
   detail: string;
   date: string;

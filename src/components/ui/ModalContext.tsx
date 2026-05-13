@@ -38,14 +38,18 @@ export function ModalProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const closeAllModals = useCallback(() => {
-    setModals(prev =>
-      Object.fromEntries(
+    // Avoid unnecessary state updates (prevents render churn / update-depth loops).
+    setModals(prev => {
+      const hasOpen = Object.values(prev).some(m => m.isOpen);
+      if (!hasOpen) return prev;
+
+      return Object.fromEntries(
         Object.entries(prev).map(([id, state]) => [
           id,
           { ...state, isOpen: false },
         ])
-      )
-    );
+      );
+    });
   }, []);
 
   const isAnyModalOpen = Object.values(modals).some(m => m.isOpen);

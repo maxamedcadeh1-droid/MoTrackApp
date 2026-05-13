@@ -111,69 +111,11 @@ export type Database = {
           best_streak: number
           completed_dates: string[]
           is_active: boolean
-          created_at: string
-          updated_at: string
-          // Reminder fields
           reminder_enabled: boolean
           reminder_time: string | null
           reminder_days: number[]
           reminder_sound: string
           last_triggered_at: string | null
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          title: string
-          description?: string | null
-          category?: string
-          color?: string
-          icon?: string
-          frequency?: string
-          streak?: number
-          best_streak?: number
-          completed_dates?: string[]
-          is_active?: boolean
-          created_at?: string
-          updated_at?: string
-          // Reminder fields
-          reminder_enabled?: boolean
-          reminder_time?: string | null
-          reminder_days?: number[]
-          reminder_sound?: string
-          last_triggered_at?: string | null
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          title?: string
-          description?: string | null
-          category?: string
-          color?: string
-          icon?: string
-          frequency?: string
-          streak?: number
-          best_streak?: number
-          completed_dates?: string[]
-          is_active?: boolean
-          created_at?: string
-          updated_at?: string
-          // Reminder fields
-          reminder_enabled?: boolean
-          reminder_time?: string | null
-          reminder_days?: number[]
-          reminder_sound?: string
-          last_triggered_at?: string | null
-        }
-      }
-      notes: {
-        Row: {
-          id: string
-          user_id: string
-          title: string
-          content: string | null
-          tags: string[]
-          is_pinned: boolean
-          color: string
           created_at: string
           updated_at: string
         }
@@ -181,10 +123,20 @@ export type Database = {
           id?: string
           user_id: string
           title: string
-          content?: string | null
-          tags?: string[]
-          is_pinned?: boolean
+          description?: string | null
+          category?: string
           color?: string
+          icon?: string
+          frequency?: string
+          streak?: number
+          best_streak?: number
+          completed_dates?: string[]
+          is_active?: boolean
+          reminder_enabled?: boolean
+          reminder_time?: string | null
+          reminder_days?: number[]
+          reminder_sound?: string
+          last_triggered_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -192,10 +144,52 @@ export type Database = {
           id?: string
           user_id?: string
           title?: string
-          content?: string | null
-          tags?: string[]
-          is_pinned?: boolean
+          description?: string | null
+          category?: string
           color?: string
+          icon?: string
+          frequency?: string
+          streak?: number
+          best_streak?: number
+          completed_dates?: string[]
+          is_active?: boolean
+          reminder_enabled?: boolean
+          reminder_time?: string | null
+          reminder_days?: number[]
+          reminder_sound?: string
+          last_triggered_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      habit_completions: {
+        Row: {
+          id: string
+          user_id: string
+          habit_id: string
+          completed_on: string
+          completed_at: string
+          note: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          habit_id: string
+          completed_on?: string
+          completed_at?: string
+          note?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          habit_id?: string
+          completed_on?: string
+          completed_at?: string
+          note?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -251,13 +245,13 @@ export type Database = {
           is_done: boolean
           due_date: string | null
           position: number
-          created_at: string
-          updated_at: string
           reminder_enabled: boolean
           reminder_time: string | null
           reminder_days: number[]
           reminder_sound: string
           last_triggered_at: string | null
+          created_at: string
+          updated_at: string
         }
         Insert: {
           id?: string
@@ -268,13 +262,13 @@ export type Database = {
           is_done?: boolean
           due_date?: string | null
           position?: number
-          created_at?: string
-          updated_at?: string
           reminder_enabled?: boolean
           reminder_time?: string | null
           reminder_days?: number[]
           reminder_sound?: string
           last_triggered_at?: string | null
+          created_at?: string
+          updated_at?: string
         }
         Update: {
           id?: string
@@ -285,13 +279,48 @@ export type Database = {
           is_done?: boolean
           due_date?: string | null
           position?: number
-          created_at?: string
-          updated_at?: string
           reminder_enabled?: boolean
           reminder_time?: string | null
           reminder_days?: number[]
           reminder_sound?: string
           last_triggered_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      notes: {
+        Row: {
+          id: string
+          user_id: string
+          title: string
+          content: string | null
+          tags: string[]
+          is_pinned: boolean
+          color: string
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          title: string
+          content?: string | null
+          tags?: string[]
+          is_pinned?: boolean
+          color?: string
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          title?: string
+          content?: string | null
+          tags?: string[]
+          is_pinned?: boolean
+          color?: string
+          created_at?: string
+          updated_at?: string
         }
       }
       focus_sessions: {
@@ -332,37 +361,93 @@ export type Database = {
           updated_at?: string
         }
       }
-      analytics: {
+      activities: {
         Row: {
           id: string
           user_id: string
-          date: string
-          habits_completed: number
-          focus_minutes: number
-          tasks_completed: number
-          productivity_score: number
+          activity_type: string
+          source_table: string | null
+          source_id: string | null
+          title: string
+          detail: string | null
+          metadata: Json
+          occurred_at: string
           created_at: string
           updated_at: string
         }
         Insert: {
           id?: string
           user_id: string
-          date?: string
-          habits_completed?: number
-          focus_minutes?: number
-          tasks_completed?: number
-          productivity_score?: number
+          activity_type: string
+          source_table?: string | null
+          source_id?: string | null
+          title: string
+          detail?: string | null
+          metadata?: Json
+          occurred_at?: string
           created_at?: string
           updated_at?: string
         }
         Update: {
           id?: string
           user_id?: string
-          date?: string
-          habits_completed?: number
-          focus_minutes?: number
-          tasks_completed?: number
-          productivity_score?: number
+          activity_type?: string
+          source_table?: string | null
+          source_id?: string | null
+          title?: string
+          detail?: string | null
+          metadata?: Json
+          occurred_at?: string
+          created_at?: string
+          updated_at?: string
+        }
+      }
+      reminders: {
+        Row: {
+          id: string
+          user_id: string
+          source_table: string | null
+          source_id: string | null
+          title: string
+          body: string | null
+          reminder_time: string | null
+          reminder_days: number[]
+          remind_at: string | null
+          sound: string
+          is_enabled: boolean
+          last_triggered_at: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          user_id: string
+          source_table?: string | null
+          source_id?: string | null
+          title: string
+          body?: string | null
+          reminder_time?: string | null
+          reminder_days?: number[]
+          remind_at?: string | null
+          sound?: string
+          is_enabled?: boolean
+          last_triggered_at?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          user_id?: string
+          source_table?: string | null
+          source_id?: string | null
+          title?: string
+          body?: string | null
+          reminder_time?: string | null
+          reminder_days?: number[]
+          remind_at?: string | null
+          sound?: string
+          is_enabled?: boolean
+          last_triggered_at?: string | null
           created_at?: string
           updated_at?: string
         }
@@ -372,7 +457,13 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      calculate_habit_streak: {
+        Args: {
+          p_habit_id: string
+          p_anchor_date?: string
+        }
+        Returns: number
+      }
     }
     Enums: {
       [_ in never]: never

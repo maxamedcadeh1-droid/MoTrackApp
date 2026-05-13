@@ -28,7 +28,8 @@ import {
 import { Button, Card, Skeleton } from '../../components/ui/Layout';
 import { supabase } from '../../lib/supabase';
 import { cn, dateKey, startOfDay } from '../../lib/utils';
-import { useAuth } from '../auth/AuthContext';
+import { useAuth } from '../auth/useAuth';
+import { useRouteLifecycleDebug } from '../../lib/routeLifecycleDebug';
 
 type AnalyticsStats = {
   productivityScore: number;
@@ -53,6 +54,7 @@ const initialStats: AnalyticsStats = {
 };
 
 export function Analytics() {
+  useRouteLifecycleDebug('Analytics');
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(true);

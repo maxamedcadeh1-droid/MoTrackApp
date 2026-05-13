@@ -6,7 +6,7 @@
 export interface ReminderNotification {
   itemId?: string;
   habitId?: string;
-  type?: 'habit' | 'task' | 'sleep';
+  type?: 'habit' | 'task' | 'sleep' | 'reminder';
   experience?: 'standard' | 'wake' | 'shutdown';
   title?: string;
   habitTitle?: string;
