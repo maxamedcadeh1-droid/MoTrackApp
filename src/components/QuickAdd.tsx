@@ -41,10 +41,10 @@ export function QuickAdd({ isHidden = false }: { isHidden?: boolean }) {
 
       {/* FAB Container - z-[80] */}
       {!isHidden && (
-        <div className="mobile-quick-add fixed bottom-28 right-6 z-[80] md:bottom-8 md:right-8">
+        <div className="fixed bottom-[max(6rem,calc(5.5rem+var(--safe-area-bottom)))] right-6 z-[80] md:bottom-10 md:right-10">
           {/* Action buttons */}
           {isOpen && (
-            <div className="mobile-quick-add-list absolute bottom-[4.5rem] right-0 flex flex-col gap-3">
+            <div className="absolute bottom-[5rem] right-0 flex flex-col gap-3 items-end">
               {actions.map((action, idx) => (
                 <button
                   key={action.label}
@@ -53,7 +53,7 @@ export function QuickAdd({ isHidden = false }: { isHidden?: boolean }) {
                     setIsOpen(false);
                   }}
                   style={{ animationDelay: `${idx * 40}ms` }}
-                  className="group ml-auto flex min-h-12 touch-manipulation items-center gap-3 animate-in fade-in slide-in-from-bottom-2"
+                  className="group flex min-h-12 touch-manipulation items-center gap-3 animate-in fade-in slide-in-from-bottom-2"
                 >
                   <span className="whitespace-nowrap rounded-2xl border border-white/10 bg-[#080b13]/98 px-3.5 py-2 text-xs font-bold text-white shadow-2xl backdrop-blur-xl transition-all md:opacity-0 md:group-hover:opacity-100">
                     {action.label}
@@ -67,23 +67,26 @@ export function QuickAdd({ isHidden = false }: { isHidden?: boolean }) {
           )}
 
           {/* Main FAB */}
-          <button
-            onClick={() => setIsOpen((v) => !v)}
-            className={cn(
-                    'relative flex h-16 w-16 touch-manipulation items-center justify-center rounded-[1.4rem] border shadow-2xl transition-all duration-300 active:scale-95',
-              isOpen
-                ? 'rotate-45 border-white/20 bg-white/10 text-white backdrop-blur-xl'
-                : 'border-white/10 bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-500 text-white shadow-violet-500/30'
-            )}
-            aria-expanded={isOpen}
-            aria-label={isOpen ? 'Close quick actions' : 'Open quick actions'}
-          >
-            {/* Glow effect when closed */}
+          <div className="relative flex h-16 w-16 items-center justify-center">
+            {/* Pulsating Glow - now properly contained */}
             {!isOpen && (
-              <div className="pointer-events-none absolute inset-0 animate-pulse rounded-2xl bg-gradient-to-br from-violet-500/40 to-cyan-500/40 blur-xl" />
+              <div className="absolute inset-0 animate-pulse rounded-[1.4rem] bg-gradient-to-br from-violet-500/30 to-cyan-500/30 blur-lg" />
             )}
-            <Plus className="relative z-10 h-6 w-6" />
-          </button>
+            
+            <button
+              onClick={() => setIsOpen((v) => !v)}
+              className={cn(
+                'relative z-10 flex h-full w-full touch-manipulation items-center justify-center rounded-[1.4rem] border shadow-2xl transition-all duration-300 active:scale-95',
+                isOpen
+                  ? 'rotate-45 border-white/20 bg-white/10 text-white backdrop-blur-xl'
+                  : 'border-white/10 bg-gradient-to-br from-violet-500 via-fuchsia-500 to-cyan-500 text-white'
+              )}
+              aria-expanded={isOpen}
+              aria-label={isOpen ? 'Close quick actions' : 'Open quick actions'}
+            >
+              <Plus className="h-6 w-6" />
+            </button>
+          </div>
         </div>
       )}
     </>

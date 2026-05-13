@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, Button, Badge, Toast, Input } from '../../components/ui/Layout';
 import { ReminderSettings, ReminderSettingsData } from '../../components/ReminderSettings';
 import {
@@ -282,12 +282,22 @@ export function Settings() {
               <div className="space-y-8">
                 <div className="space-y-4">
                   <label className="ml-1 text-[10px] font-semibold uppercase tracking-widest text-zinc-500">Accent color</label>
-                  <div className="flex gap-4">
+                  <div className="flex flex-wrap gap-3">
                     {COLORS.map(c => (
                       <button key={c.name} onClick={() => setAccentColor(c.value)}
-                        className={cn('relative h-12 w-12 rounded-2xl border-4 shadow-2xl transition-all', settings?.accent_color === c.value ? 'scale-110 border-white' : 'border-transparent opacity-40 hover:opacity-100')}
-                        style={{ backgroundColor: c.value }}>
-                        {settings?.accent_color === c.value && <Check className="absolute inset-0 m-auto h-5 w-5 text-white" />}
+                        className={cn(
+                          'relative h-11 w-11 rounded-2xl border-2 transition-all duration-300',
+                          settings?.accent_color === c.value 
+                            ? 'scale-110 border-white shadow-[0_0_15px_rgba(255,255,255,0.2)]' 
+                            : 'border-white/5 opacity-60 hover:opacity-100 hover:border-white/20'
+                        )}
+                        style={{ backgroundColor: c.value }}
+                      >
+                        {settings?.accent_color === c.value && (
+                          <div className="absolute inset-0 flex items-center justify-center">
+                            <Check className="h-5 w-5 text-white drop-shadow-md" />
+                          </div>
+                        )}
                       </button>
                     ))}
                   </div>

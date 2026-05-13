@@ -246,6 +246,7 @@ export function ReminderRuntime() {
 
   const handleTrigger = useCallback(async (notification: ReminderNotification, reminder: RuntimeReminder) => {
     if (reminder.experience === 'wake') {
+      void SoundService.startAlarm(reminder.reminderSound || 'sunrise');
       const momentumScore = await fetchMomentumScore();
       setWakeData({
         userName: firstName,
@@ -258,6 +259,7 @@ export function ReminderRuntime() {
     }
 
     if (reminder.experience === 'shutdown') {
+      void SoundService.startAlarm(reminder.reminderSound || 'night');
       const shutdownData = await fetchNightShutdownData();
       if (shutdownData) {
         setNightData(shutdownData);
@@ -265,6 +267,7 @@ export function ReminderRuntime() {
       }
     }
 
+    void SoundService.play(reminder.reminderSound || 'chime');
     setToast({
       id: `${notification.type || 'reminder'}-${notification.itemId || Date.now()}`,
       title: notification.type === 'task' ? 'Task reminder' : 'Habit reminder',
@@ -273,7 +276,10 @@ export function ReminderRuntime() {
       color: reminder.color || reminder.habitColor,
     });
 
-    window.setTimeout(() => setToast(null), 9000);
+    window.setTimeout(() => {
+      setToast(null);
+      SoundService.stopAlarm();
+    }, 9000);
   }, [fetchMomentumScore, fetchNightShutdownData, firstName]);
 
   useEffect(() => {
@@ -289,15 +295,7 @@ export function ReminderRuntime() {
     ReminderEngine.start();
     void fetchReminders();
 
-    const initSound = () => {
-      void SoundService.init();
-      document.removeEventListener('pointerdown', initSound);
-      document.removeEventListener('keydown', initSound);
-    };
-
     const refresh = () => void fetchReminders();
-    document.addEventListener('pointerdown', initSound);
-    document.addEventListener('keydown', initSound);
     window.addEventListener('motrack:reminders-updated', refresh);
     window.addEventListener('motrack:habit-updated', refresh);
 
@@ -319,10 +317,12 @@ export function ReminderRuntime() {
   }, [fetchReminders, handleTrigger, markTriggered, user]);
 
   const dismissWake = () => {
+    SoundService.stopAlarm();
     setWakeData(null);
   };
 
   const snoozeWake = () => {
+    SoundService.stopAlarm();
     const currentWake = wakeData;
     setWakeData(null);
     if (!currentWake) return;
@@ -332,11 +332,13 @@ export function ReminderRuntime() {
   };
 
   const startMorningRoutine = () => {
+    SoundService.stopAlarm();
     setWakeData(null);
     navigate('/habits');
   };
 
   const saveNightReflection = async (reflection: { wentWell: string; improveTomorrow: string }) => {
+    SoundService.stopAlarm();
     if (!user) return;
 
     const hasReflection = reflection.wentWell.trim() || reflection.improveTomorrow.trim();
