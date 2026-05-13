@@ -13,7 +13,6 @@ import {
   Sun,
   Target,
   Timer,
-  Zap,
   X,
 } from 'lucide-react';
 import { Skeleton, Badge } from '../../components/ui/Layout';
@@ -278,8 +277,6 @@ export const Dashboard = memo(function Dashboard() {
   const [lastSyncedAt, setLastSyncedAt] = useState<string>('');
   const [refreshKey, setRefreshKey] = useState(0);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
-  const [zenMode, setZenMode] = useState(false);
-  const [flowSeconds, setFlowSeconds] = useState(0);
   const [currentHour, setCurrentHour] = useState(() => new Date().getHours());
   const isMounted = useRef(true);
 
@@ -514,28 +511,7 @@ export const Dashboard = memo(function Dashboard() {
     };
   }, [user, refreshDashboard]);
 
-  useEffect(() => {
-    let timer: number | undefined;
-    if (zenMode) {
-      setFlowSeconds(0);
-      void SoundService.startAmbient('rain');
-      timer = window.setInterval(() => {
-        setFlowSeconds(prev => {
-          const next = prev + 1;
-          if (next === 60) {
-            void SoundService.startLoFi();
-          }
-          return next;
-        });
-      }, 1000);
-    } else {
-      SoundService.stopAmbient();
-      SoundService.stopLoFi();
-    }
-    return () => {
-      if (timer) window.clearInterval(timer);
-    };
-  }, [zenMode]);
+
 
   const firstName = useMemo(() => {
     const source = profile?.full_name || user?.email?.split('@')[0] || 'Mohamed';
@@ -721,91 +697,9 @@ export const Dashboard = memo(function Dashboard() {
         />
       </motion.div>
 
-      {/* Zen Mode Toggle (FAB) */}
-      <div className="fixed bottom-32 left-6 z-[100] md:bottom-12 md:left-12">
-        <button
-          onClick={() => setZenMode(!zenMode)}
-          className={cn(
-            "flex h-14 w-14 items-center justify-center rounded-[1.25rem] border shadow-2xl transition-all duration-500 active:scale-90",
-            zenMode 
-              ? "bg-violet-500 border-violet-400 text-white rotate-180" 
-              : "bg-[#0c0e14]/80 border-white/10 text-zinc-500 backdrop-blur-xl hover:border-violet-500/50 hover:text-white"
-          )}
-          aria-label={zenMode ? "Exit Zen Mode" : "Enter Zen Mode"}
-        >
-          <Zap className={cn("w-6 h-6", zenMode && "fill-current")} />
-        </button>
-      </div>
 
-      {/* Zen Mode Overlay */}
-      <AnimatePresence>
-        {zenMode && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[101] flex flex-col items-center justify-center bg-[#030408]/90 backdrop-blur-[60px]"
-          >
-            {/* Ambient Breathing Background */}
-            <motion.div 
-              animate={{ 
-                scale: [1, 1.2, 1],
-                opacity: [0.15, 0.25, 0.15],
-              }}
-              transition={{ 
-                duration: 8, 
-                repeat: Infinity,
-                ease: "easeInOut" 
-              }}
-              className="absolute inset-0 bg-radial-gradient from-violet-500/20 via-transparent to-transparent"
-            />
 
-            <div className="relative z-10 w-full max-w-2xl px-8 text-center">
-              <motion.div
-                initial={{ y: 20, opacity: 0 }}
-                animate={{ y: 0, opacity: 1 }}
-                transition={{ delay: 0.3 }}
-                className="space-y-12"
-              >
-                <div className="space-y-4">
-                  <Badge variant="outline" className="border-violet-500/30 text-violet-400 px-4 py-1.5 uppercase tracking-[0.3em] font-black text-[10px]">
-                    {flowSeconds >= 60 ? "Peak Flow State" : "Active Flow"}
-                  </Badge>
-                  <h2 className="text-4xl font-display font-black text-white tracking-tight sm:text-6xl">
-                    Today's Mission
-                  </h2>
-                  <p className="font-mono text-sm font-bold text-zinc-500 tracking-widest">
-                    {Math.floor(flowSeconds / 60)}:{(flowSeconds % 60).toString().padStart(2, '0')}
-                  </p>
-                </div>
 
-                <div className="space-y-8 py-10">
-                  <p className="text-xl sm:text-2xl font-medium text-zinc-400 leading-relaxed max-w-lg mx-auto">
-                    Focus on <span className="text-white font-bold">{stats.activeProjects > 0 ? stats.projectRadar[0]?.title : "your core habits"}</span>. 
-                    You have <span className="text-white font-bold">{stats.totalHabits - stats.habitsCompleted}</span> rituals remaining and 
-                    <span className="text-white font-bold"> {remainingFocusMinutes}m</span> of deep work scheduled.
-                  </p>
-                  
-                  <div className="flex flex-col items-center gap-4">
-                    <div className="text-6xl font-mono font-black text-white tabular-nums tracking-tighter sm:text-8xl">
-                      {stats.momentum}%
-                    </div>
-                    <p className="text-xs font-bold uppercase tracking-[0.5em] text-zinc-600">Current Momentum</p>
-                  </div>
-                </div>
-
-                <button
-                  onClick={() => setZenMode(false)}
-                  className="group flex items-center gap-3 mx-auto px-8 py-4 rounded-2xl bg-white/5 border border-white/10 text-white font-bold transition-all hover:bg-violet-500 hover:border-violet-400 active:scale-95"
-                >
-                  <X className="w-5 h-5 transition-transform group-hover:rotate-90" />
-                  Exit Ritual
-                </button>
-              </motion.div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
     </motion.div>
   );
 });
