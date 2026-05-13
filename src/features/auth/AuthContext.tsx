@@ -20,12 +20,21 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const fetchProfile = async (userId: string) => {
-    const { data } = await supabase
-      .from('profiles')
-      .select('*')
-      .eq('user_id', userId)
-      .single();
-    if (data) setProfile(data);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('*')
+        .eq('user_id', userId)
+        .single();
+      
+      if (error && error.code !== 'PGRST116') { // PGRST116 is 'not found'
+        console.warn('Profile fetch error:', error);
+      }
+      
+      if (data) setProfile(data);
+    } catch (err) {
+      console.error('Unexpected profile fetch error:', err);
+    }
   };
 
   const refreshProfile = async () => {
@@ -35,12 +44,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let isMounted = true;
 
-    // Listen for auth changes - this also handles the initial session in most cases
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+    const handleSession = async (session: Session | null) => {
       if (!isMounted) return;
       
-      setSession(session);
       const currentUser = session?.user ?? null;
+      setSession(session);
       setUser(currentUser);
       
       if (currentUser) {
@@ -49,21 +57,19 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setProfile(null);
       }
       
-      setIsLoading(false);
+      if (isMounted) setIsLoading(false);
+    };
+
+    // Listen for auth changes
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      void handleSession(session);
     });
 
-    // Fallback for initial session if onAuthStateChange doesn't fire immediately
+    // Initial check to guarantee loading state resolves
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!isMounted) return;
-      if (session) {
-        setSession(session);
-        setUser(session.user);
-        fetchProfile(session.user.id).then(() => {
-          if (isMounted) setIsLoading(false);
-        });
-      } else {
-        setIsLoading(false);
-      }
+      // If we already have a session or onAuthStateChange hasn't fired yet, handle it here
+      void handleSession(session);
     });
 
     return () => {
