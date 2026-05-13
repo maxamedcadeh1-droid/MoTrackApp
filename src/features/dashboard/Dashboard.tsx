@@ -1,6 +1,6 @@
 import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { motion, type Variants } from 'motion/react';
+import { motion, AnimatePresence, type Variants } from 'motion/react';
 import {
   Briefcase,
   CheckCircle2,
@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import { Skeleton, Badge } from '../../components/ui/Layout';
 import { PremiumRouteLoader } from '../../components/AppEntryExperience';
+import { supabase } from '../../lib/supabase';
 import { cn, dateKey, deriveProjectProgress, startOfDay } from '../../lib/utils';
 import { SoundService } from '../../lib/SoundService';
 import { DashboardHero } from './components/DashboardHero';

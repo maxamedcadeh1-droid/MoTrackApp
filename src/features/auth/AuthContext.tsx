@@ -33,29 +33,43 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      const currentUser = session?.user ?? null;
-      setUser(currentUser);
-      if (currentUser) fetchProfile(currentUser.id);
-      setIsLoading(false);
-    });
+    let isMounted = true;
 
-    // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    // Listen for auth changes - this also handles the initial session in most cases
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (!isMounted) return;
+      
       setSession(session);
       const currentUser = session?.user ?? null;
       setUser(currentUser);
+      
       if (currentUser) {
-        fetchProfile(currentUser.id);
+        await fetchProfile(currentUser.id);
       } else {
         setProfile(null);
       }
+      
       setIsLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    // Fallback for initial session if onAuthStateChange doesn't fire immediately
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return;
+      if (session) {
+        setSession(session);
+        setUser(session.user);
+        fetchProfile(session.user.id).then(() => {
+          if (isMounted) setIsLoading(false);
+        });
+      } else {
+        setIsLoading(false);
+      }
+    });
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signOut = async () => {
