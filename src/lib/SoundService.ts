@@ -4,7 +4,7 @@
  */
 
 export type SoundType = 'chime' | 'bell' | 'soft' | 'nature' | 'digital' | 'sunrise' | 'night' | 'modern_alarm';
-export type AmbientSoundType = 'rain' | 'waves' | 'forest' | 'white_noise' | 'lofi' | 'zen';
+export type AmbientSoundType = 'rain' | 'waves' | 'forest' | 'white_noise' | 'lofi' | 'zen' | 'wind';
 
 const SOUND_FILES: Record<SoundType, string> = {
   chime: '/sounds/chime.mp3',
@@ -133,7 +133,8 @@ export class SoundService {
       forest: 'https://assets.mixkit.co/active_storage/sfx/2577/2577-preview.mp3',
       white_noise: 'https://assets.mixkit.co/active_storage/sfx/2578/2578-preview.mp3',
       lofi: 'https://assets.mixkit.co/active_storage/sfx/2579/2579-preview.mp3',
-      zen: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3'
+      zen: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3',
+      wind: 'https://assets.mixkit.co/active_storage/sfx/2581/2581-preview.mp3'
     };
     
     try {

@@ -14,6 +14,7 @@ import {
   X,
   Plus,
 } from 'lucide-react';
+import { motion } from 'motion/react';
 import { Card, Button, Skeleton, Toast, Badge } from '../../components/ui/Layout';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../auth/AuthContext';

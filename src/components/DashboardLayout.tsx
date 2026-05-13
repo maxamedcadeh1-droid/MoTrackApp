@@ -24,8 +24,16 @@ function getLayoutMotionState() {
 
 export function DashboardLayout() {
   const location = useLocation();
-  const { isAnyModalOpen } = useModalContext();
+  const { isAnyModalOpen, closeAllModals } = useModalContext();
   const [{ isMobile, reduceMotion }, setLayoutMotion] = useState(getLayoutMotionState);
+
+  // 1. Auto-close all modals and reset body locks on navigation
+  useEffect(() => {
+    closeAllModals();
+    // Force reset body styles to prevent stuck scroll locks from sheets/modals
+    document.body.style.overflow = '';
+    document.documentElement.style.overflow = '';
+  }, [location.pathname, closeAllModals]);
 
   useEffect(() => {
     if (typeof window === 'undefined') return;
@@ -77,15 +85,14 @@ export function DashboardLayout() {
               <Outlet />
             </div>
           ) : (
-            <AnimatePresence mode="wait">
+            <AnimatePresence mode="popLayout" initial={false}>
               <motion.div
                 key={location.pathname}
-                initial={{ opacity: 0, y: isMobile ? 10 : 14, scale: 0.992, filter: 'blur(10px)' }}
-                animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
-                exit={{ opacity: 0, y: isMobile ? -6 : -10, scale: 0.996, filter: 'blur(8px)' }}
-                transition={{ type: 'spring', stiffness: 185, damping: 26, mass: 0.9 }}
+                initial={{ opacity: 0, y: 12, filter: 'blur(8px)' }}
+                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, y: -12, filter: 'blur(8px)' }}
+                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
                 className="min-h-[calc(100vh-120px)]"
-                style={{ willChange: 'transform, opacity, filter' }}
               >
                 <Outlet />
               </motion.div>
@@ -96,7 +103,6 @@ export function DashboardLayout() {
       
       {!isAnyModalOpen && <MobileNav />}
       
-      {/* QuickAdd FAB - rendered outside main to ensure proper z-index stacking */}
       <QuickAdd isHidden={isAnyModalOpen} />
     </div>
   );
