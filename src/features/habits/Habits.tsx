@@ -502,9 +502,9 @@ export function Habits() {
         title={editingHabit ? 'Edit Habit' : 'Create Habit'}
         badge="Habit setup"
         footer={
-          <div className="flex gap-3">
-            <Button type="button" variant="ghost" className="flex-1" onClick={closeModal} disabled={submitting}>Cancel</Button>
-            <Button type="submit" form="habit-form" className="flex-1" disabled={submitting || !habitTitle}>
+          <div className="flex gap-2">
+            <Button type="button" variant="ghost" className="h-12 flex-1 rounded-full" onClick={closeModal} disabled={submitting}>Cancel</Button>
+            <Button type="submit" form="habit-form" className="h-12 flex-1 rounded-full shadow-[0_0_26px_rgba(139,92,246,0.32)]" disabled={submitting || !habitTitle}>
               {submitting ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{editingHabit ? 'Saving...' : 'Creating...'}</>
               ) : (

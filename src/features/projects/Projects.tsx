@@ -268,18 +268,18 @@ export function Projects() {
         </Card>
       )}
 
-      {/* ── Add / Edit Project Sheet (keyboard-safe) ── */}
+      {/* Add / Edit Project Sheet */}
       <MobileSheet
         open={isModalOpen}
         onClose={closeModal}
         title={activeProject ? 'Edit Project' : 'Create Project'}
         badge="Project details"
         footer={
-          <div className="flex gap-3">
-            <Button type="button" variant="ghost" className="flex-1" onClick={closeModal} disabled={submitting}>
+          <div className="flex gap-2">
+            <Button type="button" variant="ghost" className="h-12 flex-1 rounded-full" onClick={closeModal} disabled={submitting}>
               Cancel
             </Button>
-            <Button type="submit" form="project-form" className="flex-1" disabled={submitting || !projectTitle}>
+            <Button type="submit" form="project-form" className="h-12 flex-1 rounded-full shadow-[0_0_26px_rgba(139,92,246,0.32)]" disabled={submitting || !projectTitle}>
               {submitting ? (
                 <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{activeProject ? 'Updating...' : 'Creating...'}</>
               ) : (
