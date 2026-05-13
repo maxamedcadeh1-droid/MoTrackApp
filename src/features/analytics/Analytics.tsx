@@ -155,11 +155,12 @@ export function Analytics() {
         setHeatmap(days28);
         setHourData(hours.filter((hour) => hour.minutes > 0 || hour.hour % 3 === 0));
         setStats({
-          productivityScore: Math.round(week.reduce((sum, day) => sum + day.score, 0) / week.length),
+          productivityScore: week.length > 0 ? Math.round(week.reduce((sum, day) => sum + day.score, 0) / week.length) : 0,
           totalFocusHours: Math.round((totalMinutes / 60) * 10) / 10,
-          consistencyRate: Math.round((activeDays / days28.length) * 100),
-          bestStreak: Math.max(0, ...habits.map((habit: any) => habit.best_streak || 0)),
-          currentStreak: Math.max(0, ...habits.map((habit: any) => habit.streak || 0)),
+          consistencyRate: days28.length > 0 ? Math.round((activeDays / days28.length) * 100) : 0,
+          // Use reduce instead of spread to safely handle empty arrays (Math.max() with spread returns -Infinity for empty arrays)
+          bestStreak: habits.reduce((max: number, h: any) => Math.max(max, h.best_streak || 0), 0),
+          currentStreak: habits.reduce((max: number, h: any) => Math.max(max, h.streak || 0), 0),
           bestDay: bestDaily && bestDaily.score > 0 ? bestDaily.day : 'No data',
           projectCompletionRate,
           bestFocusHour: bestHour && bestHour.minutes > 0 ? bestHour.label : 'No data',

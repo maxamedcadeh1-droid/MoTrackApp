@@ -253,6 +253,19 @@
 .fade-in { animation-name: fade-in; }
 .slide-in-from-bottom-2 { animation-name: slide-in-from-bottom-2; }
 
+.premium-select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%2371717a' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 1rem center;
+  background-size: 1rem;
+  padding-right: 2.5rem;
+}
+
+.premium-select:focus {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%238b5cf6' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
 .grid-bg {
   background-image: 
     linear-gradient(to right, rgba(255,255,255,0.026) 1px, transparent 1px),
@@ -441,39 +454,6 @@
     filter: blur(56px) !important;
   }
 
-  .focus-progress-ring {
-    filter: drop-shadow(0 0 10px var(--focus-ring-glow)) !important;
-  }
-
-  /* Keep motion present, but avoid ultra-fast infinite repaints on mobile. */
-  *,
-  ::before,
-  ::after {
-    transition-duration: 0.15s !important;
-  }
-
-  .animate-pulse {
-    animation-duration: 2.4s !important;
-  }
-
-  .animate-spin {
-    animation-duration: 0.85s !important;
-  }
-
-  .skeleton-shimmer::after {
-    animation-duration: 1.2s !important;
-  }
-
-  .animate-float {
-    animation-duration: 8s !important;
-    animation-name: float-mobile !important;
-  }
-
-  /* Reduce glow effects */
-  .neon-glow-purple {
-    box-shadow: 0 0 8px rgba(139, 92, 246, 0.08) !important;
-  }
-
   .shadow-glow {
     box-shadow: 0 0 12px rgba(139, 92, 246, 0.12) !important;
   }
@@ -565,6 +545,77 @@
   .animate-progress-fill {
     animation: progressFill 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
+}
+
+/* ── Global keyframe animations (available everywhere, not just mobile) ──────── */
+@keyframes ripple {
+  to {
+    transform: scale(4);
+    opacity: 0;
+  }
+}
+
+.animate-ripple {
+  animation: ripple 0.6s linear forwards;
+}
+
+@keyframes celebrate {
+  0% { transform: scale(1); }
+  15% { transform: scale(1.15); }
+  30% { transform: scale(1); }
+  45% { transform: scale(1.08); }
+  60% { transform: scale(1); }
+  100% { transform: scale(1); }
+}
+
+.animate-celebrate {
+  animation: celebrate 0.6s ease-in-out;
+}
+
+@keyframes bounceIn {
+  0% { transform: scale(0.3); opacity: 0; }
+  50% { transform: scale(1.05); }
+  70% { transform: scale(0.95); }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.animate-bounce-in {
+  animation: bounceIn 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+}
+
+@keyframes slideUp {
+  from { transform: translateY(20px); opacity: 0; }
+  to { transform: translateY(0); opacity: 1; }
+}
+
+.animate-slide-up {
+  animation: slideUp 0.3s ease-out;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.animate-fade-in {
+  animation: fadeIn 0.2s ease-out;
+}
+
+@keyframes glowPulse {
+  0%, 100% { box-shadow: 0 0 0 rgba(16, 185, 129, 0); }
+  50% { box-shadow: 0 0 20px rgba(16, 185, 129, 0.4); }
+}
+
+.animate-glow-pulse {
+  animation: glowPulse 2s ease-in-out infinite;
+}
+
+@keyframes progressFill {
+  from { width: 0; }
+}
+
+.animate-progress-fill {
+  animation: progressFill 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
 }
 
 .cinematic-entry-root,

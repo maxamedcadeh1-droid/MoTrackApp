@@ -345,7 +345,7 @@ export const Dashboard = memo(function Dashboard() {
 
         const habits = (habitsData || []).filter((habit: any) => habit.is_active !== false);
         const projects = (projectsData || []) as any[];
-        const activeProjects = projects.filter((project) => project.status === 'active');
+        const activeProjects = projects.filter((project) => project.status === 'active' || project.status === 'backlog');
         const totalProjects = projects.length;
         const completedProjects = projects.filter((project) => project.status === 'completed').length;
         const sessions = (sessionsData || []) as any[];

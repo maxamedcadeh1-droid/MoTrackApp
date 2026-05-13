@@ -231,7 +231,11 @@ export function Habits() {
       if (data) {
         setHabits(prev => prev.map(h => h.id === habit.id ? data : h));
         window.dispatchEvent(new Event('motrack:habit-updated'));
-        if (!isCompleted) showToast('Habit completed');
+        if (!isCompleted) {
+          showToast('Habit completed');
+          setCelebrationMessage(habit.streak >= 7 ? `Amazing! ${habit.streak} day streak!` : 'Habit complete! Keep it up!');
+          setShowCelebration(true);
+        }
       }
     } catch (error: any) {
       setHabits(prev => prev.map(h => h.id === habit.id ? habit : h));
@@ -298,7 +302,7 @@ export function Habits() {
   const todayKey = dateKey(new Date());
   const completedToday = habits.filter((habit) => habit.completed_dates?.includes(todayKey)).length;
   const completionRate = habits.length ? Math.round((completedToday / habits.length) * 100) : 0;
-  const bestStreak = Math.max(0, ...habits.map((habit) => habit.streak || 0));
+  const bestStreak = habits.reduce((max, h) => Math.max(max, h.streak || 0), 0);
   const weekDays = ['M', 'T', 'W', 'T', 'F', 'S', 'S'];
 
   return (
@@ -518,7 +522,7 @@ export function Habits() {
                 onChange={(e) => setNewHabit({ ...newHabit, category: e.target.value })}
                 // text-base (16px) on mobile to prevent iOS Safari auto-zoom
                 // md:text-sm on desktop for consistent styling
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-base text-white focus:outline-none focus:ring-2 focus:ring-accent/50 appearance-none md:text-sm"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-base text-white focus:outline-none focus:ring-2 focus:ring-accent/50 appearance-none md:text-sm premium-select"
               >
                 {CATEGORIES.filter(c => c !== 'All').map(c => <option key={c} value={c}>{c}</option>)}
               </select>

@@ -23,6 +23,7 @@ import { supabase } from '../../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 import { Database } from '../../types/database';
 import { cn } from '../../lib/utils';
+import { MobileFormSheet } from '../../components/ui/MobileFormSheet';
 
 type Note = Database['public']['Tables']['notes']['Row'];
 
@@ -308,102 +309,65 @@ export function Notes() {
         </Card>
       )}
 
-      {/* Editor Modal */}
-      <AnimatePresence>
-        {isModalOpen && (
-          <>
-            <motion.div
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              exit={{ opacity: 0 }}
-              className="fixed inset-0 z-[60] bg-black/65 backdrop-blur-sm"
-              onClick={closeModal}
+      {/* Editor Sheet */}
+      <MobileFormSheet
+        open={isModalOpen}
+        onClose={closeModal}
+        title={editingNote ? 'Edit Note' : 'Create Note'}
+        badge="Note details"
+        formId="note-form"
+        submitLabel={editingNote ? 'Save Changes' : 'Create Note'}
+        submitting={submitting}
+        submitDisabled={!noteTitle}
+      >
+        <form id="note-form" onSubmit={handleSubmit} className="space-y-6">
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Title</label>
+            <Input 
+              value={noteForm.title}
+              onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
+              placeholder="Note title..." 
+              className="border-white/10 bg-white/5 font-display text-xl font-bold text-white placeholder:text-zinc-800 focus:border-accent/50 focus:ring-accent/20"
+              required
+              autoFocus
             />
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="mobile-dialog-panel mobile-form-sheet fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-[61] max-h-[90dvh] w-auto overflow-hidden md:bottom-auto md:left-1/2 md:top-8 md:w-full md:max-w-3xl md:-translate-x-1/2"
-            >
-              <Card className="relative flex max-h-[85dvh] flex-col overflow-hidden rounded-t-[32px] rounded-b-none border-white/10 bg-[#0f0f0f] p-0 shadow-xl md:max-h-[calc(100vh-1.5rem)] md:rounded-3xl md:shadow-2xl">
-                <form onSubmit={handleSubmit} className="flex min-h-0 max-h-[85dvh] flex-col md:max-h-[calc(100vh-1.5rem)]">
-                  <div className="flex shrink-0 items-start justify-between gap-4 border-b border-white/5 px-5 pb-4 pt-5 sm:px-8 sm:pt-8">
-                    <div className="space-y-1">
-                      <Badge variant="outline" className="text-accent border-accent/20">Note details</Badge>
-                      <h3 className="text-2xl font-display font-bold text-white tracking-tight sm:text-3xl">
-                        {editingNote ? 'Edit Note' : 'Create Note'}
-                      </h3>
-                    </div>
-                    <button type="button" onClick={closeModal} className="mt-1 flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/8 bg-white/[0.035] text-zinc-500 transition-colors hover:text-white">
-                      <X className="w-5 h-5" />
-                    </button>
-                  </div>
+          </div>
+          
+          <div className="space-y-2">
+            <label className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Content</label>
+            <TextArea 
+              value={noteForm.content}
+              onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
+              placeholder="Start writing..." 
+              className="min-h-[220px] border-white/10 bg-white/5 font-sans text-base leading-relaxed text-zinc-400 placeholder:text-zinc-800 focus:border-accent/50 focus:ring-accent/20"
+            />
+          </div>
 
-                  <div className="min-h-0 flex-1 space-y-4 overflow-y-auto px-5 py-4 scrollbar-hide sm:px-8">
-                    <div className="space-y-2">
-                        <Input 
-                            value={noteForm.title}
-                            onChange={(e) => setNoteForm({ ...noteForm, title: e.target.value })}
-                            placeholder="Note title..." 
-                            className="h-auto border-none bg-transparent p-0 font-display text-2xl font-bold text-white placeholder:text-zinc-800 focus:ring-0 sm:text-3xl"
-                            required
-                        />
-                        <p className="text-xs text-zinc-700">A title is required before saving.</p>
-                    </div>
-                    
-                    <div className="space-y-2">
-                        <TextArea 
-                            value={noteForm.content}
-                            onChange={(e) => setNoteForm({ ...noteForm, content: e.target.value })}
-                            placeholder="Start writing..." 
-                            className="min-h-[120px] border-none bg-transparent p-0 font-sans text-base leading-relaxed text-zinc-400 placeholder:text-zinc-800 focus:ring-0 sm:min-h-[220px] sm:text-lg scrollbar-hide"
-                        />
-                    </div>
-
-                    <div className="space-y-4 border-t border-white/5 pt-4">
-                        <div className="flex items-center gap-2 text-zinc-500 mb-2">
-                            <TagIcon className="w-4 h-4" />
-                            <span className="text-[10px] font-display font-black uppercase tracking-[0.2em]">Tags</span>
-                        </div>
-                        <div className="flex flex-wrap gap-2">
-                            {PRESET_TAGS.map(tag => (
-                                <button
-                                    key={tag}
-                                    type="button"
-                                    onClick={() => toggleTag(tag)}
-                                    className={cn(
-                                        "px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all border",
-                                        noteForm.tags.includes(tag) 
-                                          ? "bg-accent/10 border-accent/40 text-accent" 
-                                          : "bg-white/5 border-white/5 text-zinc-600 hover:text-zinc-400"
-                                    )}
-                                >
-                                    {tag}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                  </div>
-
-                  <div className="sticky bottom-0 flex shrink-0 gap-3 border-t border-white/5 bg-zinc-950/90 px-5 pb-[calc(1rem+var(--safe-area-bottom))] pt-3 backdrop-blur-xl sm:px-8 sm:pb-5">
-                    <Button type="button" variant="ghost" className="flex-1" onClick={closeModal} disabled={submitting}>Cancel</Button>
-                    <Button type="submit" className="flex-1" disabled={submitting || !noteTitle}>
-                        {submitting ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Saving...
-                          </>
-                        ) : (
-                          editingNote ? 'Save Changes' : 'Save Note'
-                        )}
-                    </Button>
-                  </div>
-                </form>
-              </Card>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
+          <div className="space-y-4 border-t border-white/5 pt-4">
+            <div className="flex items-center gap-2 text-zinc-500 mb-2">
+              <TagIcon className="w-4 h-4" />
+              <span className="text-[10px] font-display font-black uppercase tracking-[0.2em]">Tags</span>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {PRESET_TAGS.map(tag => (
+                <button
+                  key={tag}
+                  type="button"
+                  onClick={() => toggleTag(tag)}
+                  className={cn(
+                    "px-3 py-1.5 rounded-lg text-[10px] font-bold uppercase transition-all border",
+                    noteForm.tags.includes(tag) 
+                      ? "bg-accent/10 border-accent/40 text-accent" 
+                      : "bg-white/5 border-white/5 text-zinc-600 hover:text-zinc-400"
+                  )}
+                >
+                  {tag}
+                </button>
+              ))}
+            </div>
+          </div>
+        </form>
+      </MobileFormSheet>
 
       {/* Viewer Modal */}
       <AnimatePresence>

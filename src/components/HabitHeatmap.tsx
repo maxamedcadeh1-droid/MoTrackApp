@@ -30,10 +30,10 @@ function getLevelClasses(level: number): string {
   const base = 'rounded-sm transition-all duration-200';
   switch (level) {
     case 0: return `${base} bg-white/[0.03] border border-white/[0.04]`;
-    case 1: return `${base} bg-emerald-500/20 border border-emerald-500/30`;
-    case 2: return `${base} bg-emerald-500/40 border border-emerald-500/50`;
-    case 3: return `${base} bg-emerald-500/60 border border-emerald-500/70`;
-    case 4: return `${base} bg-emerald-500/80 border border-emerald-500/90 shadow-[0_0_8px_rgba(16,185,129,0.4)]`;
+    case 1: return `${base} bg-violet-500/20 border border-violet-500/30`;
+    case 2: return `${base} bg-violet-500/40 border border-violet-500/50`;
+    case 3: return `${base} bg-blue-500/60 border border-blue-500/70`;
+    case 4: return `${base} bg-blue-500/80 border border-blue-500/90 shadow-[0_0_10px_rgba(59,130,246,0.45)]`;
     default: return `${base} bg-white/[0.03]`;
   }
 }
@@ -185,7 +185,7 @@ export function HabitHeatmap({ completedDates, months = 6, showStats = true }: H
       {showStats && (
         <div className="flex flex-wrap gap-4">
           <div className="flex items-center gap-2">
-            <div className="h-2 w-2 rounded-full bg-emerald-400 shadow-[0_0_6px_rgba(52,211,153,0.8)]" />
+            <div className="h-2 w-2 rounded-full bg-violet-400 shadow-[0_0_6px_rgba(139,92,246,0.8)]" />
             <span className="text-xs text-zinc-400">
               <span className="font-semibold text-white">{currentStreak}</span> day streak
             </span>

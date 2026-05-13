@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useId, useState } from 'react';
 import { Card, Button, Input, Badge, Toast, TextArea, Skeleton } from '../../components/ui/Layout';
 import { MobileFormSheet } from '../../components/ui/MobileFormSheet';
 import { ReminderSettings, ReminderSettingsData } from '../../components/ReminderSettings';
@@ -340,7 +340,7 @@ export function Projects() {
               <select
                 value={projectForm.status}
                 onChange={(e) => setProjectForm({ ...projectForm, status: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-base text-white focus:outline-none focus:ring-2 focus:ring-accent/50 appearance-none md:text-sm"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-base text-white focus:outline-none focus:ring-2 focus:ring-accent/50 appearance-none md:text-sm premium-select"
               >
                 {STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
               </select>
@@ -350,7 +350,7 @@ export function Projects() {
               <select
                 value={projectForm.priority}
                 onChange={(e) => setProjectForm({ ...projectForm, priority: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-base text-white focus:outline-none focus:ring-2 focus:ring-accent/50 appearance-none md:text-sm"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-base text-white focus:outline-none focus:ring-2 focus:ring-accent/50 appearance-none md:text-sm premium-select"
               >
                 {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
@@ -394,6 +394,9 @@ function ProjectCard({
   onProgressChange: (projectId: string, progress: number) => void;
   onError: (message: string) => void;
 }) {
+  // Unique gradient ID scoped to this card to prevent SVG ID conflicts across multiple cards
+  const gradientId = useId().replace(/:/g, '_');
+  const ringGradId = `projectRing_${gradientId}`;
   const [tasks, setTasks] = useState<Task[]>([]);
   const [showTasks, setShowTasks] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
@@ -572,9 +575,9 @@ function ProjectCard({
           <div className="relative flex h-28 w-28 items-center justify-center">
             <svg viewBox="0 0 112 112" className="absolute inset-0 h-full w-full -rotate-90">
               <circle cx="56" cy="56" r="42" stroke="rgba(255,255,255,0.07)" strokeWidth="8" fill="none" />
-              <circle cx="56" cy="56" r="42" stroke="url(#projectRing)" strokeWidth="8" strokeLinecap="round" fill="none" strokeDasharray="263.9" strokeDashoffset={`${263.9 - (263.9 * localProgress) / 100}`} />
+              <circle cx="56" cy="56" r="42" stroke={`url(#${ringGradId})`} strokeWidth="8" strokeLinecap="round" fill="none" strokeDasharray="263.9" strokeDashoffset={`${263.9 - (263.9 * localProgress) / 100}`} />
               <defs>
-                <linearGradient id="projectRing" x1="0%" y1="0%" x2="100%" y2="100%">
+                <linearGradient id={ringGradId} x1="0%" y1="0%" x2="100%" y2="100%">
                   <stop offset="0%" stopColor="#8b5cf6" />
                   <stop offset="100%" stopColor="#3b82f6" />
                 </linearGradient>

@@ -110,7 +110,7 @@ export function Button({
 
   const addRipple = (e: React.MouseEvent<HTMLButtonElement>) => {
     if (isLoading || props.disabled) return;
-    
+
     const rect = buttonRef.current?.getBoundingClientRect();
     if (!rect) return;
 
@@ -118,24 +118,22 @@ export function Button({
     const x = e.clientX - rect.left - size / 2;
     const y = e.clientY - rect.top - size / 2;
 
-    const newRipple = {
-      id: Date.now(),
-      x,
-      y,
-      size,
-    };
-
+    const newRipple = { id: Date.now(), x, y, size };
     setRipples(prev => [...prev, newRipple]);
+    setTimeout(() => setRipples(prev => prev.filter(r => r.id !== newRipple.id)), 600);
 
-    setTimeout(() => {
-      setRipples(prev => prev.filter(r => r.id !== newRipple.id));
-    }, 600);
+    // Call the original onClick handler if provided
+    props.onClick?.(e);
   };
+
+  // Destructure onClick from props so spread doesn't override our handler
+  const { onClick: _unusedOnClick, ...restProps } = props;
 
   return (
     <button
       ref={buttonRef}
       onClick={addRipple}
+      {...restProps}
       className={cn(
         "relative overflow-hidden inline-flex min-h-10 touch-manipulation items-center justify-center rounded-xl font-sans font-semibold tracking-normal transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#05060a] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.97] active:duration-75",
         "premium-control",
@@ -151,7 +149,6 @@ export function Button({
         className
       )}
       disabled={isLoading || props.disabled}
-      {...props}
     >
       {isLoading ? (
         <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -215,13 +212,22 @@ export function Toast({
   message, 
   type = 'info', 
   isVisible, 
-  onClose 
+  onClose,
+  durationMs = 4000,
 }: { 
   message: string; 
   type?: 'success' | 'error' | 'info' | 'warning'; 
   isVisible: boolean; 
-  onClose: () => void 
+  onClose: () => void;
+  durationMs?: number;
 }) {
+  // Auto-dismiss after durationMs
+  useEffect(() => {
+    if (!isVisible) return;
+    const timer = setTimeout(onClose, durationMs);
+    return () => clearTimeout(timer);
+  }, [isVisible, onClose, durationMs]);
+
   if (!isVisible) return null;
 
   return (
@@ -238,7 +244,7 @@ export function Toast({
       {type === 'error' && <AlertCircle className="w-5 h-5" />}
       {type === 'info' && <Info className="w-5 h-5" />}
       <span className="text-sm font-medium">{message}</span>
-      <button onClick={onClose} className="ml-auto rounded-md p-1 transition-colors hover:bg-white/10">
+      <button onClick={onClose} className="ml-auto rounded-md p-1 transition-colors hover:bg-white/10" aria-label="Dismiss">
         <X className="w-4 h-4" />
       </button>
     </div>
