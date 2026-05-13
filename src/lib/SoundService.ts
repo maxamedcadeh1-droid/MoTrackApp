@@ -3,7 +3,7 @@
  * Uses Web Audio so MoTrack is not dependent on remote sound files.
  */
 
-export type SoundType = 'chime' | 'bell' | 'soft' | 'nature' | 'digital' | 'sunrise' | 'night';
+export type SoundType = 'chime' | 'bell' | 'soft' | 'nature' | 'digital' | 'sunrise' | 'night' | 'modern_alarm';
 export type AmbientSoundType = 'rain' | 'waves' | 'wind';
 
 type AudioWindow = Window & typeof globalThis & {
@@ -16,6 +16,8 @@ export class SoundService {
   private static ambientNodes: Array<AudioNode | AudioBufferSourceNode | OscillatorNode | GainNode> = [];
   private static loFiIntervals: number[] = [];
   private static padOscillators: OscillatorNode[] = [];
+  private static alarmInterval: number | null = null;
+  private static alarmOscillators: OscillatorNode[] = [];
 
   static async init(): Promise<void> {
     if (this.initialized && this.audioContext) return;
@@ -66,6 +68,9 @@ export class SoundService {
         break;
       case 'night':
         this.playNight();
+        break;
+      case 'modern_alarm':
+        this.playModernAlarm(this.audioContext.currentTime);
         break;
     }
   }
@@ -186,6 +191,68 @@ export class SoundService {
       try { osc.stop(); osc.disconnect(); } catch {}
     });
     this.padOscillators = [];
+  }
+
+  static async startAlarm(type: SoundType = 'modern_alarm'): Promise<void> {
+    await this.init();
+    if (!this.audioContext) return;
+    this.stopAlarm();
+
+    const bpm = 120;
+    const intervalTime = (60 / bpm) * 1000;
+    
+    this.alarmInterval = window.setInterval(() => {
+      if (!this.audioContext) return;
+      const time = this.audioContext.currentTime;
+      if (type === 'modern_alarm') {
+        this.playModernAlarm(time);
+      } else {
+        this.play(type);
+      }
+    }, intervalTime * 2);
+
+    // Initial play
+    if (type === 'modern_alarm') {
+      this.playModernAlarm(this.audioContext.currentTime);
+    } else {
+      this.play(type);
+    }
+  }
+
+  static stopAlarm(): void {
+    if (this.alarmInterval) {
+      clearInterval(this.alarmInterval);
+      this.alarmInterval = null;
+    }
+    this.alarmOscillators.forEach(osc => {
+      try { osc.stop(); osc.disconnect(); } catch {}
+    });
+    this.alarmOscillators = [];
+  }
+
+  private static playModernAlarm(time: number): void {
+    if (!this.audioContext) return;
+    
+    // Modern rhythmic pulse
+    const frequencies = [440, 554.37, 659.25, 880]; // A4, C#5, E5, A5
+    frequencies.forEach((freq, idx) => {
+      const osc = this.audioContext!.createOscillator();
+      const gain = this.audioContext!.createGain();
+      
+      osc.type = idx % 2 === 0 ? 'sine' : 'triangle';
+      osc.frequency.setValueAtTime(freq, time + (idx * 0.1));
+      
+      gain.gain.setValueAtTime(0, time + (idx * 0.1));
+      gain.gain.linearRampToValueAtTime(0.04, time + (idx * 0.1) + 0.05);
+      gain.gain.exponentialRampToValueAtTime(0.001, time + (idx * 0.1) + 0.4);
+      
+      osc.connect(gain);
+      gain.connect(this.audioContext!.destination);
+      
+      osc.start(time + (idx * 0.1));
+      osc.stop(time + (idx * 0.1) + 0.45);
+      this.alarmOscillators.push(osc);
+    });
   }
 
   private static playKick(time: number): void {

@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
-import { Bell, Clock, Calendar, Volume2, BellOff } from 'lucide-react';
+import { Bell, Clock, Calendar, Volume2, BellOff, X } from 'lucide-react';
 import { cn } from '../lib/utils';
 import { SoundService, type SoundType } from '../lib/SoundService';
 import { NotificationService } from '../lib/NotificationService';
+import { Badge } from './ui/Layout';
 
 export interface ReminderSettingsData {
   reminderEnabled: boolean;
@@ -34,10 +35,12 @@ const SOUND_OPTIONS: { value: SoundType; label: string; description: string }[] 
   { value: 'digital', label: 'Digital', description: 'Modern beep' },
   { value: 'sunrise', label: 'Sunrise', description: 'Morning ritual' },
   { value: 'night', label: 'Night', description: 'Shutdown ritual' },
+  { value: 'modern_alarm', label: 'Modern', description: 'Persistent pulse' },
 ];
 
 export function ReminderSettings({ value, onChange }: ReminderSettingsProps) {
   const [notificationPermission, setNotificationPermission] = useState<'granted' | 'denied' | 'default'>('default');
+  const [isTesting, setIsTesting] = useState(false);
 
   useEffect(() => {
     setNotificationPermission(NotificationService.getPermission());
@@ -91,7 +94,30 @@ export function ReminderSettings({ value, onChange }: ReminderSettingsProps) {
       reminderSound: sound,
     });
     // Preview the sound
-    void SoundService.play(sound);
+    if (sound === 'modern_alarm') {
+      void SoundService.startAlarm('modern_alarm');
+      setIsTesting(true);
+      setTimeout(() => {
+        SoundService.stopAlarm();
+        setIsTesting(false);
+      }, 5000);
+    } else {
+      void SoundService.play(sound);
+    }
+  };
+
+  const toggleTestAlarm = () => {
+    if (isTesting) {
+      SoundService.stopAlarm();
+      setIsTesting(false);
+    } else {
+      void SoundService.startAlarm(value.reminderSound);
+      setIsTesting(true);
+      setTimeout(() => {
+        SoundService.stopAlarm();
+        setIsTesting(false);
+      }, 10000); // Test for 10 seconds
+    }
   };
 
   const selectAllDays = () => {
@@ -170,6 +196,32 @@ export function ReminderSettings({ value, onChange }: ReminderSettingsProps) {
           <p className="text-xs text-amber-400">
             Browser notifications are blocked. Please enable notifications in your browser settings to receive reminders.
           </p>
+        </div>
+      )}
+
+      {value.reminderEnabled && (
+        <div className="flex items-center justify-between rounded-2xl bg-white/[0.03] border border-white/5 p-4 animate-in fade-in slide-in-from-top-2">
+          <div className="flex items-center gap-3">
+            <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-violet-500/10 text-violet-400">
+              <Volume2 className="h-4 w-4" />
+            </div>
+            <div>
+              <p className="text-sm font-bold text-white">Alarm Experience</p>
+              <p className="text-[10px] text-zinc-500 uppercase tracking-widest font-bold">Sound loops until action</p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={toggleTestAlarm}
+            className={cn(
+              "px-4 py-2 rounded-xl text-xs font-bold transition-all active:scale-95",
+              isTesting 
+                ? "bg-red-500/10 text-red-400 border border-red-500/20" 
+                : "bg-white/5 text-zinc-300 border border-white/10 hover:bg-white/10"
+            )}
+          >
+            {isTesting ? "Stop Test" : "Test Sound"}
+          </button>
         </div>
       )}
 
