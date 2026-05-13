@@ -272,7 +272,7 @@ export function Settings() {
 
         {/* Content */}
         <div className="space-y-8 lg:col-span-3">
-﻿          {/* ── Appearance ── */}
+          {/* ── Appearance ── */}
           {activeTab === 'Appearance' && (
             <Card className="border-white/5 p-5 sm:p-8 lg:p-10">
               <div className="mb-8 flex items-center gap-4">
