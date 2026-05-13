@@ -50,6 +50,7 @@ export function Focus() {
   const [toast, setToast] = useState({ show: false, message: '', type: 'success' as any });
 
   const timerRef = useRef<number | null>(null);
+  const endTimeRef = useRef<number | null>(null);
   const startTimeRef = useRef<Date | null>(null);
   const autoStartedRef = useRef(false);
 
@@ -65,6 +66,7 @@ export function Focus() {
   useEffect(() => {
     if (!sessionStarted) {
       setTimeLeft(durationMinutes * 60);
+      endTimeRef.current = null;
     }
   }, [durationMinutes, sessionStarted]);
 
@@ -81,12 +83,23 @@ export function Focus() {
         window.clearInterval(timerRef.current);
         timerRef.current = null;
       }
+      endTimeRef.current = null;
       return;
     }
 
+    // Set end time based on current timeLeft to avoid drift
+    endTimeRef.current = Date.now() + (timeLeft * 1000);
+
     timerRef.current = window.setInterval(() => {
-      setTimeLeft((previous) => Math.max(previous - 1, 0));
-    }, 1000);
+      if (endTimeRef.current) {
+        const remaining = Math.max(0, Math.ceil((endTimeRef.current - Date.now()) / 1000));
+        setTimeLeft(remaining);
+        if (remaining === 0) {
+          window.clearInterval(timerRef.current!);
+          timerRef.current = null;
+        }
+      }
+    }, 200); // Higher frequency for smoother UI, actual time is based on Date.now()
 
     return () => {
       if (timerRef.current) {

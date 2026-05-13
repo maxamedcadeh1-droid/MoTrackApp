@@ -120,8 +120,8 @@ export function DailyTimeline() {
         (supabase.from('focus_sessions') as any)
           .select('*')
           .eq('user_id', user.id)
-          .gte('started_at', `${todayKey}T00:00:00`)
-          .lte('started_at', `${todayKey}T23:59:59`)
+          .gte('started_at', new Date(today.setHours(0,0,0,0)).toISOString())
+          .lte('started_at', new Date(today.setHours(23,59,59,999)).toISOString())
           .order('started_at', { ascending: true }),
         (supabase.from('settings') as any)
           .select('*')

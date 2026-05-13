@@ -33,6 +33,13 @@ export function calculateDailyStreak(dates: string[], anchorDate = new Date()) {
   );
 
   const today = startOfDay(anchorDate);
+  
+  // 4-hour buffer: If it's before 4 AM, consider "today" as yesterday for streak maintenance
+  const isEarlyMorning = anchorDate.getHours() < 4;
+  if (isEarlyMorning && !completedDays.has(dateKey(today))) {
+    today.setDate(today.getDate() - 1);
+  }
+
   const yesterday = new Date(today);
   yesterday.setDate(today.getDate() - 1);
 

@@ -161,6 +161,21 @@ export class SoundService {
   }
 
   /**
+   * Unlock audio context for mobile browsers (call on first user interaction)
+   */
+  static unlockAudio(): void {
+    const unlock = () => {
+      const audio = new Audio();
+      audio.src = 'data:audio/wav;base64,UklGRigAAABXQVZFZm10IBAAAAABAAEARKwAAIhYAQACABAAZGF0YQQAAAAAAA==';
+      audio.play().catch(() => {});
+      window.removeEventListener('click', unlock);
+      window.removeEventListener('touchstart', unlock);
+    };
+    window.addEventListener('click', unlock);
+    window.addEventListener('touchstart', unlock);
+  }
+
+  /**
    * Check if sound is currently playing
    */
   static isPlaying(): boolean {

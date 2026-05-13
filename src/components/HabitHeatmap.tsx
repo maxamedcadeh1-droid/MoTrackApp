@@ -40,6 +40,7 @@ function getLevelClasses(level: number): string {
 
 function formatDate(dateStr: string): string {
   const date = new Date(dateStr + 'T00:00:00');
+  if (Number.isNaN(date.getTime())) return 'Unknown date';
   return date.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
 }
 
@@ -150,19 +151,36 @@ export function HabitHeatmap({ completedDates, months = 6, showStats = true }: H
   }).length / totalDays) * 100) : 0;
 
   // Group days by week
-  const weeks: DayData[][] = [];
-  let currentWeek: DayData[] = [];
-  heatmapData.forEach((day, index) => {
+  const weeks: (DayData | null)[][] = [];
+  let currentWeek: (DayData | null)[] = [];
+  
+  // Pad the first week if it doesn't start on Sunday (day 0)
+  const firstHeatmapDay = heatmapData[0];
+  if (firstHeatmapDay) {
+    const firstDate = new Date(firstHeatmapDay.date + 'T00:00:00');
+    const firstDayOfWeek = Number.isNaN(firstDate.getTime()) ? 0 : firstDate.getDay();
+    for (let i = 0; i < firstDayOfWeek; i++) {
+      currentWeek.push(null);
+    }
+  }
+
+  heatmapData.forEach((day) => {
     const date = new Date(day.date + 'T00:00:00');
     const dayOfWeek = date.getDay();
     
     if (dayOfWeek === 0 && currentWeek.length > 0) {
+      // Fill the rest of the week if necessary (shouldn't happen with Sunday start)
       weeks.push(currentWeek);
       currentWeek = [];
     }
     currentWeek.push(day);
   });
+  
   if (currentWeek.length > 0) {
+    // Pad the last week
+    while (currentWeek.length < 7) {
+      currentWeek.push(null);
+    }
     weeks.push(currentWeek);
   }
 
@@ -170,13 +188,19 @@ export function HabitHeatmap({ completedDates, months = 6, showStats = true }: H
   const monthHeaders = useMemo(() => {
     const months: { name: string; offset: number }[] = [];
     let lastMonth = '';
+
     weeks.forEach((week, weekIndex) => {
-      const firstDay = week[0];
-      if (firstDay.month !== lastMonth) {
-        months.push({ name: firstDay.month, offset: weekIndex });
-        lastMonth = firstDay.month;
+      // Find first non-null day in week to get the month name
+      const firstValidDay = week.find((d) => d !== null);
+      const monthName = firstValidDay?.month;
+
+      if (!monthName) return;
+      if (monthName !== lastMonth) {
+        months.push({ name: monthName, offset: weekIndex });
+        lastMonth = monthName;
       }
     });
+
     return months;
   }, [weeks]);
 
@@ -239,6 +263,14 @@ export function HabitHeatmap({ completedDates, months = 6, showStats = true }: H
               {weeks.map((week, weekIndex) => (
                 <div key={weekIndex} className="flex flex-col gap-[3px]">
                   {week.map((day, dayIndex) => {
+                    if (!day) {
+                      return (
+                        <div
+                          key={`empty-${weekIndex}-${dayIndex}`}
+                          className="h-4 w-4 rounded-sm bg-transparent opacity-0"
+                        />
+                      );
+                    }
                     const level = getHeatmapLevel(day.count, maxCount);
                     return (
                       <div

@@ -27,8 +27,10 @@ export function DashboardLayout() {
   const { isAnyModalOpen, closeAllModals } = useModalContext();
   const [{ isMobile, reduceMotion }, setLayoutMotion] = useState(getLayoutMotionState);
 
+
   // 1. Auto-close all modals and reset body locks on navigation
   useEffect(() => {
+    import('../lib/SoundService').then(({ SoundService }) => SoundService.unlockAudio());
     closeAllModals();
     // Force reset body styles to prevent stuck scroll locks from sheets/modals
     document.body.style.overflow = '';
@@ -80,24 +82,9 @@ export function DashboardLayout() {
       
       <main className={cn('mobile-safe-main relative z-10 min-w-0 flex-1 pb-32 md:pb-0 transition-opacity duration-200', isAnyModalOpen && 'pointer-events-none')}>
         <div className="mx-auto w-full max-w-[430px] px-5 py-6 md:max-w-7xl md:p-8 lg:p-12">
-          {reduceMotion ? (
-            <div key={location.pathname} className="min-h-[calc(100vh-120px)]">
-              <Outlet />
-            </div>
-          ) : (
-            <AnimatePresence mode="popLayout" initial={false}>
-              <motion.div
-                key={location.pathname}
-                initial={{ opacity: 0, y: 12, filter: 'blur(8px)' }}
-                animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
-                exit={{ opacity: 0, y: -12, filter: 'blur(8px)' }}
-                transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                className="min-h-[calc(100vh-120px)]"
-              >
-                <Outlet />
-              </motion.div>
-            </AnimatePresence>
-          )}
+          <div className="min-h-[calc(100vh-120px)]">
+            <Outlet key={location.pathname} />
+          </div>
         </div>
       </main>
       

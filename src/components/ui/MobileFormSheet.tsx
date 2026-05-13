@@ -2,6 +2,7 @@ import { useCallback, useEffect, useId, useRef, useState, type ReactNode } from 
 import { X } from 'lucide-react';
 import { motion } from 'motion/react';
 import { cn } from '../../lib/utils';
+import { useModal } from '../ui/ModalContext';
 
 interface MobileFormSheetProps {
   open: boolean;
@@ -37,6 +38,18 @@ export function MobileFormSheet({
   const sheetRef = useRef<HTMLDivElement>(null);
   const [keyboardInset, setKeyboardInset] = useState(0);
   const [layoutHeight, setLayoutHeight] = useState(0);
+
+  // Integrate with global modal context to hide bottom nav
+  const modalId = useRef(`sheet-${titleId}`).current;
+  const { open: openGlobal, close: closeGlobal } = useModal(modalId);
+
+  useEffect(() => {
+    if (open) {
+      openGlobal();
+    } else {
+      closeGlobal();
+    }
+  }, [open, openGlobal, closeGlobal]);
 
   const updateKeyboardInset = useCallback(() => {
     if (typeof window === 'undefined') return;
@@ -85,8 +98,9 @@ export function MobileFormSheet({
       document.body.style.overflow = previousBodyOverflow;
       document.documentElement.style.overflow = previousDocOverflow;
       document.body.style.overscrollBehavior = previousOverscroll;
+      closeGlobal(); // Ensure cleanup on unmount
     };
-  }, [open]);
+  }, [open, closeGlobal]);
 
   useEffect(() => {
     if (!open) return;

@@ -22,11 +22,17 @@ export class GlobalErrorBoundary extends Component<Props, State> {
   }
 
   public componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Uncaught error:', error, errorInfo);
+    // Keep the real component stack in dev; also log to console for production telemetry tooling.
+    console.error('Uncaught error:', error);
+    if (process.env.NODE_ENV !== 'production') {
+      // errorInfo.componentStack contains the React component stack (critical for debugging).
+      console.error('React component stack:', errorInfo.componentStack);
+    }
   }
 
   private handleReload = () => {
-    window.location.reload();
+    // Clear state first to avoid any potential render-loop during navigation/reload.
+    this.setState({ hasError: false, error: null }, () => window.location.reload());
   };
 
   public render() {
@@ -62,7 +68,13 @@ export class GlobalErrorBoundary extends Component<Props, State> {
           </Button>
           
           <button 
-            onClick={() => window.location.href = '/dashboard'}
+            onClick={() => {
+              // Clear state first to avoid any boundary re-triggers while React remounts.
+              this.setState({ hasError: false, error: null }, () => {
+                // Safe fallback navigation.
+                window.location.href = '/dashboard';
+              });
+            }}
             className="mt-4 text-xs font-medium text-zinc-600 hover:text-zinc-400 transition-colors"
           >
             Return to Dashboard
