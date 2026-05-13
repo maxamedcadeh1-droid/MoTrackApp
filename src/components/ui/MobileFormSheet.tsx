@@ -166,24 +166,29 @@ export function MobileFormSheet({
 
       <motion.div
         ref={sheetRef}
-        initial={{ y: 42, opacity: 0.95 }}
-        animate={{ y: -keyboardInset, opacity: 1 }}
-        exit={{ y: 42, opacity: 0 }}
-        transition={{ type: 'spring', stiffness: 360, damping: 34, mass: 0.9 }}
+        initial={{ y: "100%" }}
+        animate={{ y: -keyboardInset }}
+        exit={{ y: "100%" }}
+        transition={{ type: 'spring', stiffness: 300, damping: 30, mass: 1 }}
         className={cn(
           'absolute inset-x-0 bottom-0 mx-auto flex w-full max-w-3xl flex-col overflow-hidden',
-          'rounded-t-[2rem] border border-white/10 border-b-0',
-          'bg-[#070912]/95 shadow-[0_-28px_100px_rgba(0,0,0,0.62),0_0_54px_rgba(139,92,246,0.18),0_0_58px_rgba(59,130,246,0.12)]',
-          'backdrop-blur-2xl will-change-transform',
+          'rounded-t-[2.5rem] border border-white/10 border-b-0',
+          'bg-[#070912]/98 shadow-[0_-28px_100px_rgba(0,0,0,0.7),0_0_60px_rgba(139,92,246,0.15)]',
+          'backdrop-blur-3xl will-change-transform',
           className
         )}
         style={{
           maxHeight: sheetMaxHeight,
-          paddingBottom: 'env(safe-area-inset-bottom, 0px)',
+          paddingBottom: 'env(safe-area-inset-bottom, 20px)',
         }}
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-violet-300/50 to-transparent" />
+        {/* Modern Drag Handle */}
+        <div className="flex w-full items-center justify-center pt-3 pb-1">
+          <div className="h-1.5 w-12 rounded-full bg-white/10" />
+        </div>
+
+        <div className="pointer-events-none absolute inset-x-10 top-0 h-px bg-gradient-to-r from-transparent via-violet-400/40 to-transparent" />
         <div className="pointer-events-none absolute -right-16 bottom-8 h-44 w-44 rounded-full bg-blue-500/15 blur-3xl" />
         <div className="pointer-events-none absolute -left-16 bottom-10 h-48 w-48 rounded-full bg-violet-500/15 blur-3xl" />
 

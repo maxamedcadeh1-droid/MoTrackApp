@@ -122,13 +122,18 @@ export function Habits() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (submitting) return; // Prevent duplicate submissions
+
+    if (!habitTitle) {
+      showToast('Please enter a habit title', 'error');
+      return;
+    }
+
     const { data: { user: authUser } } = await supabase.auth.getUser();
-    
     if (!authUser) {
       showToast('Please log in first', 'error');
       return;
     }
-    if (!habitTitle) return;
 
     setSubmitting(true);
     try {
@@ -136,7 +141,7 @@ export function Habits() {
         const { data, error } = await (supabase.from('habits') as any)
           .update({
             title: habitTitle,
-            description: newHabit.description,
+            description: newHabit.description || '',
             category: newHabit.category,
             color: newHabit.color,
             icon: newHabit.icon,
@@ -147,7 +152,7 @@ export function Habits() {
             updated_at: new Date().toISOString()
           })
           .eq('id', editingHabit.id)
-          .eq('user_id', authUser.id) // Security: ensure user owns the record
+          .eq('user_id', authUser.id)
           .select()
           .single();
 
@@ -156,13 +161,13 @@ export function Habits() {
         setHabits(prev => prev.map(h => h.id === editingHabit.id ? data : h));
         window.dispatchEvent(new Event('motrack:habit-updated'));
         window.dispatchEvent(new Event('motrack:reminders-updated'));
-        showToast('Habit updated');
+        showToast('Habit updated successfully');
         closeModal();
       } else {
         const { data, error } = await (supabase.from('habits') as any).insert({
           user_id: authUser.id,
           title: habitTitle,
-          description: newHabit.description,
+          description: newHabit.description || '',
           category: newHabit.category,
           color: newHabit.color,
           icon: newHabit.icon,
@@ -181,15 +186,19 @@ export function Habits() {
 
         if (error) throw error;
 
+        // Update local state immediately
         setHabits(prev => [data, ...prev]);
+        
+        // Notify other components
         window.dispatchEvent(new Event('motrack:habit-updated'));
         window.dispatchEvent(new Event('motrack:reminders-updated'));
-        showToast('Habit created');
+        
+        showToast('New habit created');
         closeModal();
       }
     } catch (error: any) {
       console.error('Save habit error:', error);
-      showToast('Something went wrong', 'error');
+      showToast(error.message || 'Could not save habit', 'error');
     } finally {
       setSubmitting(false);
     }

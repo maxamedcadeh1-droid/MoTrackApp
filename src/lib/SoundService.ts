@@ -4,6 +4,7 @@
  */
 
 export type SoundType = 'chime' | 'bell' | 'soft' | 'nature' | 'digital' | 'sunrise' | 'night' | 'modern_alarm';
+export type AmbientSoundType = 'rain' | 'waves' | 'forest' | 'white_noise' | 'lofi' | 'zen';
 
 const SOUND_FILES: Record<SoundType, string> = {
   chime: '/sounds/chime.mp3',
@@ -120,6 +121,42 @@ export class SoundService {
     // In case of multiple overlaps (safety)
     const audios = document.querySelectorAll('audio');
     audios.forEach(a => { a.pause(); a.remove(); });
+  }
+
+  /**
+   * Start ambient background sound
+   */
+  static async startAmbient(type: AmbientSoundType, volume = 0.3): Promise<void> {
+    const urls: Record<AmbientSoundType, string> = {
+      rain: 'https://assets.mixkit.co/active_storage/sfx/2575/2575-preview.mp3',
+      waves: 'https://assets.mixkit.co/active_storage/sfx/2576/2576-preview.mp3',
+      forest: 'https://assets.mixkit.co/active_storage/sfx/2577/2577-preview.mp3',
+      white_noise: 'https://assets.mixkit.co/active_storage/sfx/2578/2578-preview.mp3',
+      lofi: 'https://assets.mixkit.co/active_storage/sfx/2579/2579-preview.mp3',
+      zen: 'https://assets.mixkit.co/active_storage/sfx/2580/2580-preview.mp3'
+    };
+    
+    try {
+      this.stopAmbient();
+      const audio = new Audio(urls[type]);
+      audio.loop = true;
+      audio.volume = volume;
+      audio.id = 'ambient-audio';
+      await audio.play();
+    } catch (error) {
+      console.warn('Ambient audio failed:', error);
+    }
+  }
+
+  /**
+   * Stop ambient background sound
+   */
+  static stopAmbient(): void {
+    const ambient = document.getElementById('ambient-audio') as HTMLAudioElement;
+    if (ambient) {
+      ambient.pause();
+      ambient.remove();
+    }
   }
 
   /**

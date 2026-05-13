@@ -11,6 +11,8 @@ import {
   Clock,
   Sparkles,
   Timer,
+  X,
+  Plus,
 } from 'lucide-react';
 import { Card, Button, Skeleton, Toast, Badge } from '../../components/ui/Layout';
 import { supabase } from '../../lib/supabase';
@@ -310,7 +312,10 @@ export function DailyTimeline() {
         <div className="pointer-events-none absolute -right-10 -top-12 h-44 w-44 rounded-full bg-cyan-500/16 blur-3xl" />
         <div className="relative flex flex-col gap-5 sm:flex-row sm:items-end sm:justify-between">
           <div>
-            <p className="text-sm font-semibold text-cyan-200">Daily Timeline</p>
+            <div className="flex items-center gap-2">
+              <Badge variant="outline" className="border-cyan-500/30 text-cyan-400">Sequence</Badge>
+              <p className="text-sm font-semibold text-zinc-500">Daily Timeline</p>
+            </div>
             <h1 className="mt-2 font-display text-3xl font-bold leading-tight text-white">
               Today’s <span className="bg-gradient-to-r from-violet-300 to-cyan-300 bg-clip-text text-transparent">Ritual Map</span>
             </h1>
@@ -318,15 +323,24 @@ export function DailyTimeline() {
               {today.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
             </p>
           </div>
-          <div className="grid grid-cols-2 gap-2 sm:w-60">
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Complete</p>
-              <p className="mt-1 font-mono text-xl font-bold text-white">{completedCount}</p>
+          <div className="flex flex-col gap-3 sm:items-end">
+            <div className="grid grid-cols-2 gap-2 sm:w-48">
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-2.5">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">Done</p>
+                <p className="font-mono text-lg font-bold text-white">{completedCount}</p>
+              </div>
+              <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-2.5">
+                <p className="text-[9px] font-bold uppercase tracking-widest text-zinc-500">Left</p>
+                <p className="font-mono text-lg font-bold text-white">{scheduledCount}</p>
+              </div>
             </div>
-            <div className="rounded-2xl border border-white/10 bg-white/[0.04] p-3">
-              <p className="text-[10px] font-bold uppercase tracking-widest text-zinc-500">Ahead</p>
-              <p className="mt-1 font-mono text-xl font-bold text-white">{scheduledCount}</p>
-            </div>
+            <Button 
+              onClick={() => navigate('/habits?add=true')}
+              className="w-full sm:w-auto h-11 rounded-2xl gap-2 shadow-violet-500/20"
+            >
+              <Plus className="w-4 h-4" />
+              Add Ritual
+            </Button>
           </div>
         </div>
       </header>
@@ -338,24 +352,31 @@ export function DailyTimeline() {
               <CalendarDays className="h-5 w-5" />
             </div>
             <div>
-              <h2 className="font-display text-lg font-bold text-white">Ritual sequence</h2>
-              <p className="text-xs text-zinc-500">Built from your saved data</p>
+              <h2 className="font-display text-lg font-bold text-white">Your Day</h2>
+              <p className="text-xs text-zinc-500">Smart ritual sequence</p>
             </div>
           </div>
-          <Badge variant="outline" className="border-white/10 text-zinc-500">Live</Badge>
+          <Badge variant="outline" className="border-white/10 text-emerald-400 bg-emerald-400/5">Active Sync</Badge>
         </div>
 
         {loading ? (
-          <div className="space-y-3">
-            {[1, 2, 3, 4].map((item) => <Skeleton key={item} className="h-20 rounded-2xl" />)}
+          <div className="space-y-4">
+            {[1, 2, 3, 4].map((item) => (
+              <div key={item} className="flex gap-4">
+                <Skeleton className="h-14 w-1 flex-shrink-0 rounded-full" />
+                <Skeleton className="h-20 flex-1 rounded-2xl" />
+              </div>
+            ))}
           </div>
         ) : items.length > 0 ? (
-          <div className="relative space-y-3">
-            <div className="absolute bottom-8 left-[1.35rem] top-8 w-px bg-gradient-to-b from-cyan-400/25 via-white/10 to-violet-400/20" />
+          <div className="relative space-y-6">
+            {/* Connection Line */}
+            <div className="absolute left-[1.35rem] top-8 bottom-8 w-px bg-gradient-to-b from-cyan-400/30 via-violet-400/20 to-transparent" />
+            
             {items.map((item) => {
               const Icon = typeIcon(item.type);
               return (
-                <div key={item.id} className="relative grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-3 rounded-2xl border border-white/8 bg-white/[0.03] p-3">
+                <div key={item.id} className="relative grid grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-4 rounded-3xl border border-white/8 bg-white/[0.03] p-4 transition-all hover:bg-white/[0.05]">
                   <div className="relative z-10 flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-[#070a16] shadow-xl" style={{ color: item.color }}>
                     <Icon className="h-5 w-5" />
                   </div>
@@ -399,14 +420,37 @@ export function DailyTimeline() {
             })}
           </div>
         ) : (
-          <div className="rounded-3xl border border-dashed border-white/10 bg-white/[0.02] p-10 text-center">
-            <Sparkles className="mx-auto h-10 w-10 text-zinc-700" />
-            <h3 className="mt-5 font-display text-xl font-bold text-white">No rituals scheduled today</h3>
-            <p className="mx-auto mt-2 max-w-sm text-sm text-zinc-500">Add habit reminders, task reminders, focus sessions, or a shutdown ritual to populate the timeline.</p>
-            <Button onClick={() => navigate('/habits?add=true')} className="mt-6 rounded-2xl">Add Reminder</Button>
-          </div>
+          <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="flex flex-col items-center justify-center py-16 text-center"
+          >
+            <div className="relative mb-6">
+              <div className="absolute inset-0 animate-pulse rounded-full bg-cyan-500/20 blur-2xl" />
+              <div className="relative flex h-24 w-24 items-center justify-center rounded-3xl border border-white/10 bg-white/[0.03] text-cyan-400">
+                <Sparkles className="h-10 w-10" />
+              </div>
+            </div>
+            <h3 className="font-display text-xl font-bold text-white">Your day is a blank canvas</h3>
+            <p className="mt-2 max-w-[280px] text-sm text-zinc-500">
+              Add your first ritual or reminder to start mapping your momentum.
+            </p>
+            <Button 
+              onClick={() => navigate('/habits?add=true')} 
+              className="mt-8 rounded-2xl px-8 shadow-cyan-500/20"
+              variant="primary"
+            >
+              Add Your First Ritual
+            </Button>
+          </motion.div>
         )}
       </Card>
+
+      {/* Sync Footer */}
+      <div className="flex items-center justify-center gap-2 py-4 opacity-50">
+        <div className="h-1.5 w-1.5 rounded-full bg-emerald-400 animate-pulse" />
+        <p className="text-[10px] font-bold uppercase tracking-[0.2em] text-zinc-500">Live Sync Active</p>
+      </div>
 
       <Toast
         isVisible={toast.show}

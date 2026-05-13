@@ -307,8 +307,6 @@ export function ReminderRuntime() {
 
     return () => {
       if (snoozeTimerRef.current) window.clearTimeout(snoozeTimerRef.current);
-      document.removeEventListener('pointerdown', initSound);
-      document.removeEventListener('keydown', initSound);
       window.removeEventListener('motrack:reminders-updated', refresh);
       window.removeEventListener('motrack:habit-updated', refresh);
       void supabase.removeChannel(channel);

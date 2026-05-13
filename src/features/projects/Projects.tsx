@@ -21,7 +21,10 @@ import {
   Trash2,
   Check,
   Calendar,
-  SquarePen
+  SquarePen,
+  Moon,
+  Sun,
+  Timer
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
 import { useSearchParams } from 'react-router-dom';
@@ -398,6 +401,7 @@ function ProjectCard({
   const gradientId = useId().replace(/:/g, '_');
   const ringGradId = `projectRing_${gradientId}`;
   const [tasks, setTasks] = useState<Task[]>([]);
+  const [submitting, setSubmitting] = useState(false);
   const [showTasks, setShowTasks] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDueDate, setNewTaskDueDate] = useState('');
@@ -445,13 +449,15 @@ function ProjectCard({
   };
 
   const addTask = async () => {
-    if (!trimmedTaskTitle) return;
+    if (!trimmedTaskTitle || submitting) return;
+    
     const { data: { user: authUser } } = await supabase.auth.getUser();
     if (!authUser || authUser.id !== userId) {
       onError('Please log in first');
       return;
     }
 
+    setSubmitting(true);
     try {
       const { data, error } = await (supabase.from('project_tasks') as any).insert({
         project_id: project.id,
@@ -470,16 +476,23 @@ function ProjectCard({
 
       if (error) throw error;
 
-      setTasks(prev => [...prev, data]);
+      const nextTasks = [...tasks, data];
+      setTasks(nextTasks);
       setNewTaskTitle('');
       setNewTaskDueDate('');
       setTaskReminder(DEFAULT_TASK_REMINDER);
       setIsAddingTask(false);
+      
+      // Update global systems
       window.dispatchEvent(new Event('motrack:reminders-updated'));
-      await updateProjectProgress([...tasks, data]);
+      window.dispatchEvent(new Event('motrack:project-updated'));
+      
+      await updateProjectProgress(nextTasks);
     } catch (error: any) {
       console.error('Add task error:', error);
-      onError('Task could not be created');
+      onError(error.message || 'Task could not be created');
+    } finally {
+      setSubmitting(false);
     }
   };
 
