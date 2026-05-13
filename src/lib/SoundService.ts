@@ -14,6 +14,8 @@ export class SoundService {
   private static audioContext: AudioContext | null = null;
   private static initialized = false;
   private static ambientNodes: Array<AudioNode | AudioBufferSourceNode | OscillatorNode | GainNode> = [];
+  private static loFiIntervals: number[] = [];
+  private static padOscillators: OscillatorNode[] = [];
 
   static async init(): Promise<void> {
     if (this.initialized && this.audioContext) return;
@@ -115,6 +117,128 @@ export class SoundService {
       }
     });
     this.ambientNodes = [];
+    this.stopLoFi();
+  }
+
+  static async startLoFi(): Promise<void> {
+    await this.init();
+    if (!this.audioContext) return;
+    this.stopLoFi();
+
+    // Soft Crystalline Pad
+    const frequencies = [261.63, 329.63, 392.00, 493.88]; // C4, E4, G4, B4
+    frequencies.forEach((freq, idx) => {
+      const osc = this.audioContext!.createOscillator();
+      const lfo = this.audioContext!.createOscillator();
+      const lfoGain = this.audioContext!.createGain();
+      const gain = this.audioContext!.createGain();
+
+      osc.type = 'sine';
+      osc.frequency.value = freq;
+      
+      lfo.type = 'sine';
+      lfo.frequency.value = 0.1 + (idx * 0.05);
+      lfoGain.gain.value = 2;
+      lfo.connect(lfoGain);
+      lfoGain.connect(osc.frequency);
+
+      gain.gain.value = 0;
+      const startTime = this.audioContext!.currentTime;
+      gain.gain.linearRampToValueAtTime(0.012, startTime + 4);
+
+      osc.connect(gain);
+      gain.connect(this.audioContext!.destination);
+      
+      osc.start();
+      lfo.start();
+      this.padOscillators.push(osc, lfo as any);
+    });
+
+    // Procedural Lo-Fi Beat
+    let step = 0;
+    const interval = window.setInterval(() => {
+      if (!this.audioContext) return;
+      const time = this.audioContext.currentTime;
+      
+      // Kick on 1 and 3
+      if (step % 8 === 0 || step % 8 === 4) {
+        this.playKick(time);
+      }
+      // Snare on 2 and 4
+      if (step % 8 === 2 || step % 8 === 6) {
+        this.playSnare(time);
+      }
+      // Hi-hat on every off-beat
+      if (step % 2 === 1) {
+        this.playHat(time);
+      }
+      
+      step = (step + 1) % 16;
+    }, 450); // ~133 BPM in 16ths or simple 4/4 at ~66 BPM
+    
+    this.loFiIntervals.push(interval);
+  }
+
+  static stopLoFi(): void {
+    this.loFiIntervals.forEach(clearInterval);
+    this.loFiIntervals = [];
+    this.padOscillators.forEach(osc => {
+      try { osc.stop(); osc.disconnect(); } catch {}
+    });
+    this.padOscillators = [];
+  }
+
+  private static playKick(time: number): void {
+    if (!this.audioContext) return;
+    const osc = this.audioContext.createOscillator();
+    const gain = this.audioContext.createGain();
+    osc.connect(gain);
+    gain.connect(this.audioContext.destination);
+
+    osc.frequency.setValueAtTime(120, time);
+    osc.frequency.exponentialRampToValueAtTime(0.01, time + 0.4);
+    gain.gain.setValueAtTime(0.2, time);
+    gain.gain.exponentialRampToValueAtTime(0.01, time + 0.4);
+    osc.start(time);
+    osc.stop(time + 0.4);
+  }
+
+  private static playSnare(time: number): void {
+    if (!this.audioContext) return;
+    const noise = this.createNoiseSource();
+    const filter = this.audioContext.createBiquadFilter();
+    const gain = this.audioContext.createGain();
+    
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.audioContext.destination);
+
+    filter.type = 'highpass';
+    filter.frequency.value = 1200;
+    gain.gain.setValueAtTime(0.08, time);
+    gain.gain.exponentialRampToValueAtTime(0.01, time + 0.15);
+    
+    noise.start(time);
+    noise.stop(time + 0.15);
+  }
+
+  private static playHat(time: number): void {
+    if (!this.audioContext) return;
+    const noise = this.createNoiseSource();
+    const filter = this.audioContext.createBiquadFilter();
+    const gain = this.audioContext.createGain();
+    
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.audioContext.destination);
+
+    filter.type = 'highpass';
+    filter.frequency.value = 8000;
+    gain.gain.setValueAtTime(0.02, time);
+    gain.gain.exponentialRampToValueAtTime(0.01, time + 0.05);
+    
+    noise.start(time);
+    noise.stop(time + 0.05);
   }
 
   private static startWind(): void {

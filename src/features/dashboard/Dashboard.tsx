@@ -18,8 +18,8 @@ import {
 } from 'lucide-react';
 import { Skeleton, Badge } from '../../components/ui/Layout';
 import { PremiumRouteLoader } from '../../components/AppEntryExperience';
-import { supabase } from '../../lib/supabase';
 import { cn, dateKey, deriveProjectProgress, startOfDay } from '../../lib/utils';
+import { SoundService } from '../../lib/SoundService';
 import { DashboardHero } from './components/DashboardHero';
 import { CinematicCard } from './components/CinematicCard';
 import { TodayMission } from './components/TodayMission';
@@ -278,6 +278,7 @@ export const Dashboard = memo(function Dashboard() {
   const [refreshKey, setRefreshKey] = useState(0);
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const [zenMode, setZenMode] = useState(false);
+  const [flowSeconds, setFlowSeconds] = useState(0);
   const [currentHour, setCurrentHour] = useState(() => new Date().getHours());
   const isMounted = useRef(true);
 
@@ -512,6 +513,29 @@ export const Dashboard = memo(function Dashboard() {
     };
   }, [user, refreshDashboard]);
 
+  useEffect(() => {
+    let timer: number | undefined;
+    if (zenMode) {
+      setFlowSeconds(0);
+      void SoundService.startAmbient('rain');
+      timer = window.setInterval(() => {
+        setFlowSeconds(prev => {
+          const next = prev + 1;
+          if (next === 60) {
+            void SoundService.startLoFi();
+          }
+          return next;
+        });
+      }, 1000);
+    } else {
+      SoundService.stopAmbient();
+      SoundService.stopLoFi();
+    }
+    return () => {
+      if (timer) window.clearInterval(timer);
+    };
+  }, [zenMode]);
+
   const firstName = useMemo(() => {
     const source = profile?.full_name || user?.email?.split('@')[0] || 'Mohamed';
     return source.split(' ')[0] || 'Mohamed';
@@ -743,10 +767,15 @@ export const Dashboard = memo(function Dashboard() {
                 className="space-y-12"
               >
                 <div className="space-y-4">
-                  <Badge variant="outline" className="border-violet-500/30 text-violet-400 px-4 py-1.5 uppercase tracking-[0.3em] font-black text-[10px]">Active Flow</Badge>
+                  <Badge variant="outline" className="border-violet-500/30 text-violet-400 px-4 py-1.5 uppercase tracking-[0.3em] font-black text-[10px]">
+                    {flowSeconds >= 60 ? "Peak Flow State" : "Active Flow"}
+                  </Badge>
                   <h2 className="text-4xl font-display font-black text-white tracking-tight sm:text-6xl">
                     Today's Mission
                   </h2>
+                  <p className="font-mono text-sm font-bold text-zinc-500 tracking-widest">
+                    {Math.floor(flowSeconds / 60)}:{(flowSeconds % 60).toString().padStart(2, '0')}
+                  </p>
                 </div>
 
                 <div className="space-y-8 py-10">
