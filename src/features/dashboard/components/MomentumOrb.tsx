@@ -1,3 +1,5 @@
+import { motion } from 'motion/react';
+
 interface MomentumOrbProps {
   momentum: number;
   trend?: { trend: 'up' | 'down' | 'stable'; percentage: number };
@@ -28,14 +30,16 @@ export function MomentumOrb({ momentum, trend }: MomentumOrbProps) {
         {/* Track */}
         <circle cx="54" cy="54" r={r} stroke="rgba(255,255,255,0.07)" strokeWidth="6" fill="none" />
         {/* Progress arc */}
-        <circle
+        <motion.circle
           cx="54" cy="54" r={r}
           strokeWidth="6"
           strokeLinecap="round"
           fill="none"
           stroke="url(#orbGradMain)"
           strokeDasharray={circumference}
-          strokeDashoffset={offset}
+          initial={{ strokeDashoffset: circumference }}
+          animate={{ strokeDashoffset: offset }}
+          transition={{ duration: 1.15, ease: [0.16, 1, 0.3, 1] }}
           style={{ filter: 'drop-shadow(0 0 8px rgba(139,92,246,0.9)) drop-shadow(0 0 16px rgba(59,130,246,0.6))' }}
         />
         {/* Animated wave line inside */}

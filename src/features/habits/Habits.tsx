@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button, Input, Toast, TextArea, Skeleton } from '../../components/ui/Layout';
-import { MobileSheet } from '../../components/ui/MobileSheet';
+import { MobileFormSheet } from '../../components/ui/MobileFormSheet';
 import { HabitHeatmap } from '../../components/HabitHeatmap';
 import { ReminderSettings, ReminderSettingsData } from '../../components/ReminderSettings';
 import { SuccessCelebration } from '../../components/SuccessCelebration';
@@ -11,7 +11,6 @@ import {
   Edit2, 
   Search,
   Check,
-  Loader2,
   TrendingUp,
   Target,
   Zap,
@@ -31,7 +30,7 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 import { Database } from '../../types/database';
-import { cn, dateKey } from '../../lib/utils';
+import { calculateDailyStreak, cn, dateKey } from '../../lib/utils';
 
 type Habit = Database['public']['Tables']['habits']['Row'];
 
@@ -146,6 +145,7 @@ export function Habits() {
         if (error) throw error;
         
         setHabits(prev => prev.map(h => h.id === editingHabit.id ? data : h));
+        window.dispatchEvent(new Event('motrack:habit-updated'));
         window.dispatchEvent(new Event('motrack:reminders-updated'));
         showToast('Habit updated');
         closeModal();
@@ -173,6 +173,7 @@ export function Habits() {
         if (error) throw error;
 
         setHabits(prev => [data, ...prev]);
+        window.dispatchEvent(new Event('motrack:habit-updated'));
         window.dispatchEvent(new Event('motrack:reminders-updated'));
         showToast('Habit created');
         closeModal();
@@ -200,7 +201,7 @@ export function Habits() {
       newCompletedDates.push(today);
     }
 
-    const newStreak = calculateStreak(newCompletedDates);
+    const newStreak = calculateDailyStreak(newCompletedDates);
     const newBestStreak = Math.max(newStreak, habit.best_streak);
     const optimisticHabit = {
       ...habit,
@@ -239,43 +240,15 @@ export function Habits() {
     }
   };
 
-  const calculateStreak = (dates: string[]) => {
-    if (!dates.length) return 0;
-    const sortedDates = [...dates].sort((a, b) => new Date(b).getTime() - new Date(a).getTime());
-    let streak = 0;
-    let current = new Date();
-    current.setHours(0, 0, 0, 0);
-
-    // If not completed today or yesterday, streak is broken
-    const lastDate = new Date(sortedDates[0]);
-    lastDate.setHours(0, 0, 0, 0);
-    
-    const diff = Math.floor((current.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
-    if (diff > 1) return 0;
-
-    // Count backwards
-    let checkDate = lastDate;
-    for (let i = 0; i < sortedDates.length; i++) {
-        const d = new Date(sortedDates[i]);
-        d.setHours(0, 0, 0, 0);
-        if (i === 0 || Math.floor((checkDate.getTime() - d.getTime()) / (1000 * 60 * 60 * 24)) <= 1) {
-            streak++;
-            checkDate = d;
-        } else {
-            break;
-        }
-    }
-    return streak;
-  };
-
   const handleDelete = async (id: string) => {
     if (!user || deletingHabitId) return;
 
     setDeletingHabitId(id);
     try {
-      const { error } = await supabase.from('habits').delete().eq('id', id);
+      const { error } = await supabase.from('habits').delete().eq('id', id).eq('user_id', user.id);
       if (error) throw error;
       setHabits(prev => prev.filter(h => h.id !== id));
+      window.dispatchEvent(new Event('motrack:habit-updated'));
       window.dispatchEvent(new Event('motrack:reminders-updated'));
       setPendingDeleteHabit(null);
       showToast('Habit deleted');
@@ -453,14 +426,20 @@ export function Habits() {
         </div>
       ) : filteredHabits.length > 0 ? (
         <div className="space-y-3">
-          {filteredHabits.map((habit) => (
-            <HabitCard 
-              key={habit.id} 
-              habit={habit} 
-              onToggle={() => toggleComplete(habit)}
-              onDelete={() => setPendingDeleteHabit(habit)}
-              onEdit={() => openEdit(habit)}
-            />
+          {filteredHabits.map((habit, index) => (
+            <motion.div
+              key={habit.id}
+              initial={{ opacity: 0, y: 14, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              transition={{ delay: Math.min(index * 0.045, 0.28), type: 'spring', stiffness: 210, damping: 24 }}
+            >
+              <HabitCard
+                habit={habit}
+                onToggle={() => toggleComplete(habit)}
+                onDelete={() => setPendingDeleteHabit(habit)}
+                onEdit={() => openEdit(habit)}
+              />
+            </motion.div>
           ))}
         </div>
       ) : (
@@ -496,23 +475,16 @@ export function Habits() {
       )}
 
       {/* Add / Edit Habit Sheet */}
-      <MobileSheet
+      <MobileFormSheet
         open={isAdding}
         onClose={closeModal}
         title={editingHabit ? 'Edit Habit' : 'Create Habit'}
         badge="Habit setup"
-        footer={
-          <div className="flex gap-2">
-            <Button type="button" variant="ghost" className="h-12 flex-1 rounded-full" onClick={closeModal} disabled={submitting}>Cancel</Button>
-            <Button type="submit" form="habit-form" className="h-12 flex-1 rounded-full shadow-[0_0_26px_rgba(139,92,246,0.32)]" disabled={submitting || !habitTitle}>
-              {submitting ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{editingHabit ? 'Saving...' : 'Creating...'}</>
-              ) : (
-                editingHabit ? 'Save Changes' : 'Create Habit'
-              )}
-            </Button>
-          </div>
-        }
+        formId="habit-form"
+        submitLabel={editingHabit ? 'Save Changes' : 'Create Habit'}
+        submittingLabel={editingHabit ? 'Saving...' : 'Creating...'}
+        submitting={submitting}
+        submitDisabled={!habitTitle}
       >
         <form id="habit-form" onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -578,6 +550,7 @@ export function Habits() {
                 <button
                   key={c}
                   type="button"
+                  aria-label={`Use ${c} as habit color`}
                   onClick={() => setNewHabit({ ...newHabit, color: c })}
                   className={cn(
                     'w-8 h-8 rounded-full transition-all border-2',
@@ -597,7 +570,7 @@ export function Habits() {
             />
           </div>
         </form>
-      </MobileSheet>
+      </MobileFormSheet>
 
       <AnimatePresence>
         {pendingDeleteHabit && (
@@ -615,7 +588,7 @@ export function Habits() {
               initial={{ opacity: 0, scale: 0.96, y: 18 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.96, y: 18 }}
-              className="mobile-dialog-panel fixed inset-x-4 top-1/2 z-[71] -translate-y-1/2 md:left-1/2 md:w-full md:max-w-md md:-translate-x-1/2"
+              className="mobile-dialog-panel fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[71] md:bottom-auto md:left-1/2 md:top-24 md:w-full md:max-w-md md:-translate-x-1/2"
             >
               <Card className="rounded-[1.7rem] border-red-500/20 p-5 shadow-2xl shadow-red-500/10">
                 <div className="mb-5 flex items-start gap-4">

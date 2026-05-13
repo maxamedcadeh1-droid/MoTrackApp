@@ -6,6 +6,7 @@ import { DashboardLayout } from './components/DashboardLayout';
 import { ToastProvider } from './components/ui/ToastProvider';
 import { ModalProvider } from './components/ui/ModalContext';
 import { PWAInstallPrompt } from './components/PWAInstallPrompt';
+import { AppEntryExperience, PremiumRouteLoader } from './components/AppEntryExperience';
 
 // Auth Pages
 import { LoginForm } from './features/auth/LoginForm';
@@ -25,19 +26,13 @@ const Profile = lazy(() => import('./features/profile/Profile').then(m => ({ def
 const Settings = lazy(() => import('./features/settings/Settings').then(m => ({ default: m.Settings })));
 
 function RouteLoader() {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-[#05060a]">
-      <div className="text-center">
-        <div className="mx-auto mb-4 h-12 w-12 animate-spin rounded-full border-2 border-accent/20 border-t-accent" />
-        <p className="font-sans text-sm text-zinc-500">Loading workspace...</p>
-      </div>
-    </div>
-  );
+  return <PremiumRouteLoader fullscreen={false} label="Preparing workspace..." />;
 }
 
 export default function App() {
   return (
     <AuthProvider>
+      <AppEntryExperience />
       <ModalProvider>
         <ToastProvider>
           <Router>

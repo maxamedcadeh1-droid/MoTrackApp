@@ -1,15 +1,12 @@
 import { Navigate, Outlet } from 'react-router-dom';
 import { useAuth } from './AuthContext';
+import { PremiumRouteLoader } from '../../components/AppEntryExperience';
 
 export function ProtectedRoute() {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <div className="w-12 h-12 border-t-2 border-purple-500 rounded-full animate-spin"></div>
-      </div>
-    );
+    return <PremiumRouteLoader label="Restoring your workspace..." />;
   }
 
   if (!user) {
@@ -23,11 +20,7 @@ export function PublicRoute() {
   const { user, isLoading } = useAuth();
 
   if (isLoading) {
-    return (
-      <div className="min-h-screen bg-[#050505] flex items-center justify-center">
-        <div className="w-12 h-12 border-t-2 border-purple-500 rounded-full animate-spin"></div>
-      </div>
-    );
+    return <PremiumRouteLoader label="Preparing your session..." />;
   }
 
   if (user) {

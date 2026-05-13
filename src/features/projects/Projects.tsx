@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { Card, Button, Input, Badge, Toast, TextArea, Skeleton } from '../../components/ui/Layout';
-import { MobileSheet } from '../../components/ui/MobileSheet';
+import { MobileFormSheet } from '../../components/ui/MobileFormSheet';
 import { ReminderSettings, ReminderSettingsData } from '../../components/ReminderSettings';
 import {
   Plus,
@@ -10,7 +10,6 @@ import {
   AlertCircle,
   CheckCircle2,
   ListTodo,
-  Loader2,
   Briefcase,
   X,
   ChevronRight,
@@ -29,7 +28,7 @@ import { useSearchParams } from 'react-router-dom';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
 import { Database } from '../../types/database';
-import { cn } from '../../lib/utils';
+import { cn, deriveProjectProgress } from '../../lib/utils';
 
 type Project = Database['public']['Tables']['projects']['Row'];
 type Task = Database['public']['Tables']['project_tasks']['Row'];
@@ -84,7 +83,7 @@ export function Projects() {
   useEffect(() => {
     fetchProjects();
     if (searchParams.get('add') === 'true') {
-      setIsModalOpen(true);
+      openCreate();
     }
   }, [user, searchParams]);
 
@@ -102,6 +101,12 @@ export function Projects() {
 
     setSubmitting(true);
     try {
+      const nextProgress = projectForm.status === 'completed'
+        ? 100
+        : activeProject
+          ? Math.min(activeProject.progress || 0, 100)
+          : 0;
+
       if (activeProject) {
         const { data, error } = await (supabase.from('projects') as any)
           .update({
@@ -110,6 +115,7 @@ export function Projects() {
             status: projectForm.status,
             priority: projectForm.priority,
             deadline: projectForm.deadline || null,
+            progress: nextProgress,
             updated_at: new Date().toISOString()
           })
           .eq('id', activeProject.id)
@@ -120,6 +126,8 @@ export function Projects() {
         if (error) throw error;
 
         setProjects(prev => prev.map(p => p.id === activeProject.id ? data : p));
+        window.dispatchEvent(new Event('motrack:project-updated'));
+        window.dispatchEvent(new Event('motrack:reminders-updated'));
         showToast('Project updated');
         closeModal();
       } else {
@@ -130,7 +138,7 @@ export function Projects() {
           status: projectForm.status,
           priority: projectForm.priority,
           deadline: projectForm.deadline || null,
-          progress: 0,
+          progress: nextProgress,
           color: '#8b5cf6'
         })
         .select()
@@ -139,6 +147,7 @@ export function Projects() {
         if (error) throw error;
 
         setProjects(prev => [data, ...prev]);
+        window.dispatchEvent(new Event('motrack:project-updated'));
         showToast('Project created');
         closeModal();
       }
@@ -153,11 +162,12 @@ export function Projects() {
   const handleDelete = async (id: string) => {
     if (!user) return;
     try {
-      const { error } = await supabase.from('projects').delete().eq('id', id);
+      const { error } = await supabase.from('projects').delete().eq('id', id).eq('user_id', user.id);
       if (error) throw error;
       setProjects(prev => prev.filter(p => p.id !== id));
+      window.dispatchEvent(new Event('motrack:project-updated'));
       window.dispatchEvent(new Event('motrack:reminders-updated'));
-      showToast('Project deleted', 'error');
+      showToast('Project deleted');
     } catch (error: any) {
       console.error('Delete project error:', error);
       showToast('Something went wrong', 'error');
@@ -174,6 +184,12 @@ export function Projects() {
     setProjectForm({ title: '', description: '', status: 'backlog', priority: 'medium', deadline: '' });
   };
 
+  const openCreate = () => {
+    setActiveProject(null);
+    setProjectForm({ title: '', description: '', status: 'backlog', priority: 'medium', deadline: '' });
+    setIsModalOpen(true);
+  };
+
   const openEdit = (project: Project) => {
     setActiveProject(project);
     setProjectForm({
@@ -184,6 +200,10 @@ export function Projects() {
       deadline: project.deadline ? new Date(project.deadline).toISOString().split('T')[0] : ''
     });
     setIsModalOpen(true);
+  };
+
+  const updateProjectInList = (projectId: string, progress: number) => {
+    setProjects(prev => prev.map(project => project.id === projectId ? { ...project, progress } : project));
   };
 
   const filteredProjects = projects.filter(p =>
@@ -203,7 +223,7 @@ export function Projects() {
             </h1>
             <p className="mt-3 max-w-xl text-sm font-medium text-zinc-400">Track project momentum, timelines, tasks, and next actions in one premium workspace.</p>
           </div>
-          <Button onClick={() => setIsModalOpen(true)} size="sm" className="shrink-0 rounded-2xl">
+          <Button onClick={openCreate} size="sm" className="shrink-0 rounded-2xl">
             <Plus className="mr-2 h-4 w-4" />
             New
           </Button>
@@ -232,13 +252,23 @@ export function Projects() {
         </div>
       ) : filteredProjects.length > 0 ? (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          {filteredProjects.map((project) => (
-            <ProjectCard
+          {filteredProjects.map((project, index) => (
+            <motion.div
               key={project.id}
-              project={project}
-              onEdit={() => openEdit(project)}
-              onDelete={() => handleDelete(project.id)}
-            />
+              initial={{ opacity: 0, y: 16, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+              transition={{ delay: Math.min(index * 0.06, 0.3), type: 'spring', stiffness: 205, damping: 24 }}
+              className="h-full"
+            >
+              <ProjectCard
+                project={project}
+                userId={user?.id}
+                onEdit={() => openEdit(project)}
+                onDelete={() => handleDelete(project.id)}
+                onProgressChange={updateProjectInList}
+                onError={(message) => showToast(message, 'error')}
+              />
+            </motion.div>
           ))}
         </div>
       ) : (
@@ -258,7 +288,7 @@ export function Projects() {
               : 'Turn a goal into a visible plan. Add a project, then break it into a few clear tasks.'}
           </p>
           <Button
-            onClick={() => isSearchingExistingProjects ? setSearch('') : setIsModalOpen(true)}
+            onClick={() => isSearchingExistingProjects ? setSearch('') : openCreate()}
             variant="outline"
             className="mt-10 h-14 px-10 border-white/10 hover:bg-accent/10 hover:border-accent/40 rounded-2xl transition-all"
           >
@@ -269,25 +299,16 @@ export function Projects() {
       )}
 
       {/* Add / Edit Project Sheet */}
-      <MobileSheet
+      <MobileFormSheet
         open={isModalOpen}
         onClose={closeModal}
         title={activeProject ? 'Edit Project' : 'Create Project'}
         badge="Project details"
-        footer={
-          <div className="flex gap-2">
-            <Button type="button" variant="ghost" className="h-12 flex-1 rounded-full" onClick={closeModal} disabled={submitting}>
-              Cancel
-            </Button>
-            <Button type="submit" form="project-form" className="h-12 flex-1 rounded-full shadow-[0_0_26px_rgba(139,92,246,0.32)]" disabled={submitting || !projectTitle}>
-              {submitting ? (
-                <><Loader2 className="w-4 h-4 mr-2 animate-spin" />{activeProject ? 'Updating...' : 'Creating...'}</>
-              ) : (
-                activeProject ? 'Save Changes' : 'Create Project'
-              )}
-            </Button>
-          </div>
-        }
+        formId="project-form"
+        submitLabel={activeProject ? 'Save Changes' : 'Create Project'}
+        submittingLabel={activeProject ? 'Saving...' : 'Creating...'}
+        submitting={submitting}
+        submitDisabled={!projectTitle}
       >
         <form id="project-form" onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
@@ -319,7 +340,7 @@ export function Projects() {
               <select
                 value={projectForm.status}
                 onChange={(e) => setProjectForm({ ...projectForm, status: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-accent/50 appearance-none"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-base text-white focus:outline-none focus:ring-2 focus:ring-accent/50 appearance-none md:text-sm"
               >
                 {STATUSES.map(s => <option key={s} value={s}>{s.replace('_', ' ')}</option>)}
               </select>
@@ -329,7 +350,7 @@ export function Projects() {
               <select
                 value={projectForm.priority}
                 onChange={(e) => setProjectForm({ ...projectForm, priority: e.target.value })}
-                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-sm text-white focus:outline-none focus:ring-2 focus:ring-accent/50 appearance-none"
+                className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-base text-white focus:outline-none focus:ring-2 focus:ring-accent/50 appearance-none md:text-sm"
               >
                 {PRIORITIES.map(p => <option key={p} value={p}>{p}</option>)}
               </select>
@@ -346,7 +367,7 @@ export function Projects() {
             />
           </div>
         </form>
-      </MobileSheet>
+      </MobileFormSheet>
 
       <Toast
         isVisible={toast.show}
@@ -358,14 +379,28 @@ export function Projects() {
   );
 }
 
-function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: () => void; onDelete: () => void }) {
+function ProjectCard({
+  project,
+  userId,
+  onEdit,
+  onDelete,
+  onProgressChange,
+  onError,
+}: {
+  project: Project;
+  userId?: string;
+  onEdit: () => void;
+  onDelete: () => void;
+  onProgressChange: (projectId: string, progress: number) => void;
+  onError: (message: string) => void;
+}) {
   const [tasks, setTasks] = useState<Task[]>([]);
   const [showTasks, setShowTasks] = useState(false);
   const [newTaskTitle, setNewTaskTitle] = useState('');
   const [newTaskDueDate, setNewTaskDueDate] = useState('');
   const [isAddingTask, setIsAddingTask] = useState(false);
   const [taskReminder, setTaskReminder] = useState<ReminderSettingsData>(DEFAULT_TASK_REMINDER);
-  const [localProgress, setLocalProgress] = useState(project.progress || 0);
+  const [localProgress, setLocalProgress] = useState(deriveProjectProgress(project));
   const trimmedTaskTitle = newTaskTitle.trim();
   const completedTasks = tasks.filter((task) => task.is_done).length;
 
@@ -374,22 +409,45 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
   }, [showTasks, project.id]);
 
   useEffect(() => {
-    setLocalProgress(project.progress || 0);
-  }, [project.progress]);
+    setLocalProgress(deriveProjectProgress(project));
+  }, [project.progress, project.status]);
 
   const fetchTasks = async () => {
-    const { data } = await supabase
+    if (!userId) return;
+
+    const { data, error } = await supabase
       .from('project_tasks')
       .select('*')
       .eq('project_id', project.id)
+      .eq('user_id', userId)
       .order('created_at', { ascending: true });
-    if (data) setTasks(data);
+
+    if (error) {
+      console.error('Fetch project tasks error:', error);
+      onError('Project tasks could not load');
+      return;
+    }
+
+    if (data) {
+      const rows = data as Task[];
+      const progress = deriveProjectProgress({ ...project, project_tasks: rows });
+      setTasks(rows);
+      setLocalProgress(progress);
+      onProgressChange(project.id, progress);
+
+      if (progress !== (project.progress || 0)) {
+        await updateProjectProgress(rows);
+      }
+    }
   };
 
   const addTask = async () => {
     if (!trimmedTaskTitle) return;
     const { data: { user: authUser } } = await supabase.auth.getUser();
-    if (!authUser) return;
+    if (!authUser || authUser.id !== userId) {
+      onError('Please log in first');
+      return;
+    }
 
     try {
       const { data, error } = await (supabase.from('project_tasks') as any).insert({
@@ -415,42 +473,59 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
       setTaskReminder(DEFAULT_TASK_REMINDER);
       setIsAddingTask(false);
       window.dispatchEvent(new Event('motrack:reminders-updated'));
-      await updateProjectProgress();
+      await updateProjectProgress([...tasks, data]);
     } catch (error: any) {
       console.error('Add task error:', error);
+      onError('Task could not be created');
     }
   };
 
   const toggleTask = async (task: Task) => {
+    if (!userId) {
+      onError('Please log in first');
+      return;
+    }
+
     try {
       const { data, error } = await (supabase.from('project_tasks') as any)
-        .update({ is_done: !task.is_done })
+        .update({ is_done: !task.is_done, updated_at: new Date().toISOString() })
         .eq('id', task.id)
+        .eq('user_id', userId)
         .select()
         .single();
 
       if (error) throw error;
 
-      setTasks(prev => prev.map(t => t.id === task.id ? data : t));
+      const nextTasks = tasks.map(t => t.id === task.id ? data : t);
+      setTasks(nextTasks);
       window.dispatchEvent(new Event('motrack:reminders-updated'));
-      await updateProjectProgress();
+      await updateProjectProgress(nextTasks);
     } catch (error: any) {
       console.error('Toggle task error:', error);
+      onError('Task could not be updated');
     }
   };
 
-  const updateProjectProgress = async () => {
-    const { data } = await supabase.from('project_tasks').select('is_done').eq('project_id', project.id);
-    const tasks = (data || []) as any[];
-    if (tasks.length > 0) {
-      const done = tasks.filter(t => t.is_done).length;
-      const progress = Math.round((done / tasks.length) * 100);
-      await (supabase.from('projects') as any).update({ progress }).eq('id', project.id);
-      setLocalProgress(progress);
-    } else {
-      await (supabase.from('projects') as any).update({ progress: 0 }).eq('id', project.id);
-      setLocalProgress(0);
+  const updateProjectProgress = async (knownTasks?: Task[]) => {
+    if (!userId) return;
+
+    const taskRows = knownTasks || tasks;
+    const progress = deriveProjectProgress({ ...project, project_tasks: taskRows });
+
+    const { error } = await (supabase.from('projects') as any)
+      .update({ progress, updated_at: new Date().toISOString() })
+      .eq('id', project.id)
+      .eq('user_id', userId);
+
+    if (error) {
+      console.error('Update project progress error:', error);
+      onError('Project progress could not sync');
+      return;
     }
+
+    setLocalProgress(progress);
+    onProgressChange(project.id, progress);
+    window.dispatchEvent(new Event('motrack:project-updated'));
   };
 
   const statusMap: any = {
@@ -465,20 +540,22 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
     medium: 'text-accent',
     high: 'text-red-500'
   };
+  const statusStyle = statusMap[project.status] || statusMap.backlog;
+  const priorityStyle = priorityMap[project.priority] || priorityMap.medium;
 
   return (
     <Card className="group relative flex h-full flex-col overflow-hidden rounded-[1.7rem] border-white/10 p-5 transition-all duration-500 hover:border-accent/30 sm:p-7">
       <div className="absolute top-0 right-0 w-64 h-64 bg-accent/5 blur-[100px] rounded-full -translate-y-1/2 translate-x-1/2 opacity-0 group-hover:opacity-100 transition-all duration-1000" />
 
       <div className="flex justify-between items-start mb-10 relative z-10">
-        <Badge variant="outline" className={cn("uppercase tracking-[0.2em] text-[10px] font-bold border-none px-4 py-1.5 rounded-full shadow-lg", statusMap[project.status].color, statusMap[project.status].bg)}>
-          {project.status.replace('_', ' ')}
+        <Badge variant="outline" className={cn("uppercase tracking-[0.2em] text-[10px] font-bold border-none px-4 py-1.5 rounded-full shadow-lg", statusStyle.color, statusStyle.bg)}>
+          {(project.status || 'backlog').replace('_', ' ')}
         </Badge>
         <div className="flex gap-1">
-          <button onClick={onEdit} className="p-2.5 hover:bg-white/5 rounded-2xl text-zinc-600 hover:text-white transition-all">
+          <button type="button" onClick={onEdit} className="p-2.5 hover:bg-white/5 rounded-2xl text-zinc-600 hover:text-white transition-all" aria-label={`Edit ${project.title}`}>
             <SquarePen className="w-4 h-4" />
           </button>
-          <button onClick={onDelete} className="p-2.5 hover:bg-red-500/10 rounded-2xl text-zinc-600 hover:text-red-400 transition-all">
+          <button type="button" onClick={onDelete} className="p-2.5 hover:bg-red-500/10 rounded-2xl text-zinc-600 hover:text-red-400 transition-all" aria-label={`Delete ${project.title}`}>
             <Trash2 className="w-4 h-4" />
           </button>
         </div>
@@ -539,7 +616,7 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
               </span>
             </div>
             <div className="flex items-center gap-3">
-              <div className={cn("p-2 rounded-xl bg-white/5 border border-white/5", priorityMap[project.priority])}>
+              <div className={cn("p-2 rounded-xl bg-white/5 border border-white/5", priorityStyle)}>
                 <Flag className="w-4 h-4" />
               </div>
               <span className="text-[10px] uppercase font-bold tracking-widest text-zinc-600">
@@ -549,6 +626,7 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
           </div>
 
           <button
+            type="button"
             onClick={() => setShowTasks(!showTasks)}
             className="flex h-12 w-full items-center justify-center gap-3 rounded-2xl border border-accent/10 bg-accent/5 px-6 text-accent shadow-xl shadow-accent/5 transition-all hover:bg-accent/10 xl:w-auto group/btn"
           >
@@ -615,6 +693,7 @@ function ProjectCard({ project, onEdit, onDelete }: { project: Project; onEdit: 
                       type="button"
                       key={task.id}
                       onClick={() => toggleTask(task)}
+                      aria-label={task.is_done ? `Mark ${task.title} incomplete` : `Complete ${task.title}`}
                       className="flex w-full items-center gap-4 rounded-2xl border border-white/5 bg-[#080808] p-4 text-left shadow-xl transition-all hover:border-accent/20 group/task"
                     >
                       <div className={cn(

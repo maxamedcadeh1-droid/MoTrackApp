@@ -1,4 +1,5 @@
 import { Sparkles } from 'lucide-react';
+import { motion } from 'motion/react';
 import { cn } from '../../../lib/utils';
 
 interface ActivityItem {
@@ -19,7 +20,7 @@ interface RecentActivityProps {
 export function RecentActivity({ items, formatTime, navigate }: RecentActivityProps) {
   return (
     <div
-      className="relative overflow-hidden rounded-[1.75rem] p-5"
+      className="premium-cinema-card relative overflow-hidden rounded-[1.75rem] p-5"
       style={{
         background: 'linear-gradient(145deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%), rgba(7,10,23,0.88)',
         border: '1px solid rgba(148,163,184,0.12)',
@@ -38,9 +39,12 @@ export function RecentActivity({ items, formatTime, navigate }: RecentActivityPr
 
       <div className="space-y-2">
         {items.length > 0 ? (
-          items.slice(0, 5).map((item) => (
-            <div
+          items.slice(0, 5).map((item, index) => (
+            <motion.div
               key={item.id}
+              initial={{ opacity: 0, x: -10, filter: 'blur(6px)' }}
+              animate={{ opacity: 1, x: 0, filter: 'blur(0px)' }}
+              transition={{ delay: 0.08 * index, type: 'spring', stiffness: 210, damping: 24 }}
               className="flex items-center gap-3 rounded-xl border border-white/5 bg-white/[0.02] p-3"
             >
               <div
@@ -59,7 +63,7 @@ export function RecentActivity({ items, formatTime, navigate }: RecentActivityPr
                 <p className="text-[10px] text-zinc-600">{item.title}</p>
               </div>
               <span className="shrink-0 text-[10px] text-zinc-600">{formatTime(item.date)}</span>
-            </div>
+            </motion.div>
           ))
         ) : (
           <div className="flex flex-col items-center gap-2 py-6">

@@ -17,6 +17,7 @@ interface DashboardChecklistProps {
   stats: {
     totalHabits: number;
     activeProjects: number;
+    totalProjects: number;
     focusMinutes: number;
   };
   navigate: (path: string) => void;
@@ -51,7 +52,7 @@ export function DashboardChecklist({ stats, navigate, onComplete }: DashboardChe
       description: 'Turn a goal into a visible plan with tasks',
       action: 'Create Project',
       icon: CheckCircle2,
-      completed: stats.activeProjects > 0,
+      completed: stats.totalProjects > 0,
       onClick: () => navigate('/projects?add=true'),
     },
     {

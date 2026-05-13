@@ -29,6 +29,7 @@ export function Card({ children, className, variant = 'glass', id, onClick }: Ca
       onHoverEnd={() => setIsHovered(false)}
       className={cn(
         "relative overflow-hidden rounded-2xl p-6 group transition-all duration-300",
+        "premium-card-interaction",
         variant === 'glass' && "glass-card border-white/10 hover:border-white/20",
         variant === 'solid' && "bg-[#0a0a0a] border border-white/5 hover:border-white/10",
         variant === 'glow' && "glass-accent shadow-[0_0_20px_rgba(139,92,246,0.08)] hover:shadow-[0_0_30px_rgba(139,92,246,0.15)]",
@@ -137,6 +138,7 @@ export function Button({
       onClick={addRipple}
       className={cn(
         "relative overflow-hidden inline-flex min-h-10 touch-manipulation items-center justify-center rounded-xl font-sans font-semibold tracking-normal transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-2 focus-visible:ring-offset-[#05060a] disabled:cursor-not-allowed disabled:opacity-50 active:scale-[0.97] active:duration-75",
+        "premium-control",
         variant === 'primary' && "border border-white/10 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-blue-500 text-white shadow-lg shadow-violet-500/25 hover:-translate-y-0.5 hover:shadow-blue-500/30 hover:shadow-violet-500/30",
         variant === 'secondary' && "border border-white/10 bg-white/[0.075] text-white shadow-lg shadow-black/15 hover:bg-white/[0.12] hover:shadow-black/25",
         variant === 'ghost' && "bg-transparent text-zinc-400 hover:text-white hover:bg-white/5",
@@ -180,6 +182,7 @@ export function Input({ className, ...props }: React.InputHTMLAttributes<HTMLInp
       // md:text-sm on desktop for consistent styling
       className={cn(
         "w-full min-h-11 touch-manipulation rounded-xl border border-white/10 bg-[#070a16]/75 px-4 py-3 text-base text-white placeholder:text-zinc-600 shadow-inner shadow-black/20 transition-all focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/35 md:text-sm",
+        "premium-input",
         className
       )}
       {...props}
@@ -194,6 +197,7 @@ export function TextArea({ className, ...props }: React.TextareaHTMLAttributes<H
       // md:text-sm on desktop for consistent styling
       className={cn(
         "min-h-[100px] w-full touch-manipulation rounded-xl border border-white/10 bg-[#070a16]/75 px-4 py-3 text-base text-white placeholder:text-zinc-600 shadow-inner shadow-black/20 transition-all focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/35 md:text-sm",
+        "premium-input",
         className
       )}
       {...props}

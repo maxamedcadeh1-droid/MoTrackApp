@@ -566,3 +566,212 @@
     animation: progressFill 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
   }
 }
+
+.cinematic-entry-root,
+.premium-route-loader,
+.dashboard-reveal,
+.premium-cinema-card,
+.premium-control {
+  transform: translateZ(0);
+  backface-visibility: hidden;
+}
+
+.cinematic-entry-mesh {
+  background:
+    radial-gradient(circle at 22% 18%, rgba(139, 92, 246, 0.34), transparent 28%),
+    radial-gradient(circle at 78% 22%, rgba(59, 130, 246, 0.28), transparent 30%),
+    radial-gradient(circle at 50% 76%, rgba(6, 182, 212, 0.16), transparent 34%),
+    linear-gradient(140deg, #02030a 0%, #071025 46%, #03040b 100%);
+  filter: saturate(1.08);
+  animation: cinematicMesh 8s ease-in-out infinite alternate;
+  will-change: transform, opacity;
+}
+
+.cinematic-entry-particle {
+  opacity: 0.55;
+  animation: cinematicParticle 5.6s ease-in-out infinite;
+  will-change: transform, opacity;
+}
+
+.cinematic-orb-ring {
+  box-shadow:
+    0 0 28px rgba(139, 92, 246, 0.18),
+    inset 0 0 22px rgba(59, 130, 246, 0.1);
+  animation: cinematicRing 9s linear infinite;
+  will-change: transform;
+}
+
+.cinematic-orb-ring::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  background: conic-gradient(from 0deg, transparent, rgba(125, 211, 252, 0.5), transparent 32%, rgba(167, 139, 250, 0.42), transparent 64%);
+  -webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+  mask-composite: exclude;
+  padding: 1px;
+}
+
+.cinematic-orb-breath {
+  animation: cinematicBreath 3.4s ease-in-out infinite;
+  will-change: transform, box-shadow;
+}
+
+.premium-loading-card::after,
+.premium-cinema-card::after,
+.premium-card-interaction::after {
+  content: "";
+  position: absolute;
+  inset: -45% -75%;
+  pointer-events: none;
+  background: linear-gradient(115deg, transparent 35%, rgba(255, 255, 255, 0.1) 48%, transparent 61%);
+  opacity: 0;
+  transform: translateX(-34%) rotate(10deg);
+}
+
+.premium-loading-card::after {
+  opacity: 0.35;
+  animation: cinematicSheen 2.8s ease-in-out infinite;
+}
+
+.premium-cinema-card:hover::after,
+.premium-card-interaction:hover::after {
+  opacity: 0.5;
+  transform: translateX(36%) rotate(10deg);
+  transition: transform 900ms cubic-bezier(0.16, 1, 0.3, 1), opacity 500ms ease;
+}
+
+.cinematic-progress-line span {
+  width: 46%;
+  background: linear-gradient(90deg, transparent, rgba(167, 139, 250, 0.95), rgba(56, 189, 248, 0.95), transparent);
+  box-shadow: 0 0 18px rgba(59, 130, 246, 0.48);
+  animation: cinematicProgress 1.55s cubic-bezier(0.16, 1, 0.3, 1) infinite;
+  will-change: transform;
+}
+
+.premium-control {
+  will-change: transform, box-shadow, border-color;
+}
+
+.premium-control:hover {
+  box-shadow:
+    0 12px 34px rgba(0, 0, 0, 0.22),
+    0 0 24px rgba(139, 92, 246, 0.12);
+}
+
+.premium-control:active {
+  transform: translateY(1px) scale(0.98);
+}
+
+.premium-input {
+  will-change: box-shadow, border-color;
+}
+
+.premium-input:focus {
+  box-shadow:
+    0 0 0 1px rgba(139, 92, 246, 0.22),
+    0 0 26px rgba(59, 130, 246, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.04);
+}
+
+.premium-card-interaction,
+.premium-cinema-card {
+  will-change: transform, box-shadow, border-color;
+}
+
+@keyframes cinematicMesh {
+  0% {
+    transform: scale(1) translate3d(0, 0, 0);
+    opacity: 0.92;
+  }
+  100% {
+    transform: scale(1.08) translate3d(1.5%, -1%, 0);
+    opacity: 1;
+  }
+}
+
+@keyframes cinematicParticle {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+    opacity: 0.24;
+  }
+  50% {
+    transform: translate3d(0, -18px, 0) scale(1.45);
+    opacity: 0.72;
+  }
+}
+
+@keyframes cinematicRing {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@keyframes cinematicBreath {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 42px rgba(139, 92, 246, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.16);
+  }
+  50% {
+    transform: scale(1.045);
+    box-shadow: 0 0 58px rgba(59, 130, 246, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  }
+}
+
+@keyframes cinematicSheen {
+  0%, 40% {
+    opacity: 0;
+    transform: translateX(-36%) rotate(10deg);
+  }
+  72% {
+    opacity: 0.38;
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(36%) rotate(10deg);
+  }
+}
+
+@keyframes cinematicProgress {
+  from {
+    transform: translateX(-110%);
+  }
+  to {
+    transform: translateX(230%);
+  }
+}
+
+@media (max-width: 768px) {
+  .premium-control,
+  .premium-card-interaction,
+  .premium-cinema-card,
+  .premium-input {
+    transition-duration: 260ms !important;
+  }
+
+  .cinematic-entry-mesh {
+    animation-duration: 10s;
+  }
+
+  .cinematic-entry-particle:nth-of-type(n + 8) {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cinematic-entry-mesh,
+  .cinematic-entry-particle,
+  .cinematic-orb-ring,
+  .cinematic-orb-breath,
+  .premium-loading-card::after,
+  .cinematic-progress-line span {
+    animation: none !important;
+  }
+
+  .premium-cinema-card:hover::after,
+  .premium-card-interaction:hover::after {
+    transition: none !important;
+  }
+}

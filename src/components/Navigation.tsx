@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
+import { motion } from 'motion/react';
 import {
   BarChart3,
   Briefcase,
@@ -48,7 +49,12 @@ export function Sidebar() {
   const avatarUrl = profile?.avatar_url;
 
   return (
-    <aside className="sticky top-0 z-50 hidden h-screen w-[17rem] shrink-0 flex-col border-r border-white/5 bg-[#070912]/70 px-4 py-5 backdrop-blur-2xl md:flex">
+    <motion.aside
+      initial={{ opacity: 0, y: -18, filter: 'blur(10px)' }}
+      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      transition={{ delay: 0.18, duration: 0.62, ease: [0.16, 1, 0.3, 1] }}
+      className="sticky top-0 z-50 hidden h-screen w-[17rem] shrink-0 flex-col border-r border-white/5 bg-[#070912]/70 px-4 py-5 backdrop-blur-2xl md:flex"
+    >
       <div className="flex items-center gap-4 px-3 pb-6">
         <div className="flex h-11 w-11 items-center justify-center rounded-2xl border border-white/10 bg-gradient-to-br from-purple-500 to-blue-500 shadow-xl shadow-purple-500/15">
           <Moon className="h-5 w-5 text-white" />
@@ -154,7 +160,7 @@ export function Sidebar() {
           <span>{isLoggingOut ? 'Logging out...' : 'Logout'}</span>
         </button>
       </div>
-    </aside>
+    </motion.aside>
   );
 }
 
@@ -254,7 +260,12 @@ export function MobileNav() {
       )}
 
       {/* ── FLOATING GLASS DOCK ── */}
-      <nav className="mobile-bottom-nav fixed bottom-3 left-5 right-5 z-[70] flex h-[4.75rem] items-center justify-between gap-1 overflow-hidden rounded-[1.75rem] border border-white/12 bg-[#070a16]/88 px-2 shadow-2xl shadow-black/50 backdrop-blur-2xl md:hidden">
+      <motion.nav
+        initial={{ opacity: 0, y: 24, filter: 'blur(8px)' }}
+        animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+        transition={{ delay: 0.2, type: 'spring', stiffness: 190, damping: 24 }}
+        className="mobile-bottom-nav fixed bottom-3 left-5 right-5 z-[70] flex h-[4.75rem] items-center justify-between gap-1 overflow-hidden rounded-[1.75rem] border border-white/12 bg-[#070a16]/88 px-2 shadow-2xl shadow-black/50 backdrop-blur-2xl md:hidden"
+      >
         {/* Subtle top highlight */}
         <div className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/15 to-transparent" />
 
@@ -308,7 +319,7 @@ export function MobileNav() {
           </div>
           <span className={cn('relative z-10 text-[10px] font-semibold leading-none transition-all', profileOpen ? 'text-white' : '')}>Profile</span>
         </button>
-      </nav>
+      </motion.nav>
     </>
   );
 }

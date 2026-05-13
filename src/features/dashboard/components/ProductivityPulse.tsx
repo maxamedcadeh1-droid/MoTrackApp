@@ -20,7 +20,7 @@ interface ProductivityPulseProps {
 export function ProductivityPulse({ data }: ProductivityPulseProps) {
   return (
     <div
-      className="relative overflow-hidden rounded-[1.75rem] p-5"
+      className="premium-cinema-card relative overflow-hidden rounded-[1.75rem] p-5"
       style={{
         background: 'linear-gradient(145deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%), rgba(7,10,23,0.88)',
         border: '1px solid rgba(148,163,184,0.12)',

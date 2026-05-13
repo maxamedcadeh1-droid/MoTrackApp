@@ -185,7 +185,7 @@ export function FocusSummary({ open, minutes, onClose }: FocusSummaryProps) {
             initial={{ opacity: 0, y: 18, scale: 0.96 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: 18, scale: 0.96 }}
-            className="mobile-dialog-panel fixed inset-x-4 top-1/2 z-[116] -translate-y-1/2 rounded-[2rem] border border-emerald-500/20 bg-[#07110e]/95 p-6 text-center shadow-2xl shadow-emerald-500/10 backdrop-blur-2xl md:left-1/2 md:max-w-md md:-translate-x-1/2"
+            className="mobile-dialog-panel fixed inset-x-4 bottom-[max(1rem,env(safe-area-inset-bottom))] z-[116] rounded-[2rem] border border-emerald-500/20 bg-[#07110e]/95 p-6 text-center shadow-2xl shadow-emerald-500/10 backdrop-blur-2xl md:bottom-auto md:left-1/2 md:top-24 md:max-w-md md:-translate-x-1/2"
           >
             <div className="mx-auto flex h-16 w-16 items-center justify-center rounded-3xl border border-emerald-400/20 bg-emerald-400/10 text-emerald-300">
               <CheckCircle2 className="h-8 w-8" />

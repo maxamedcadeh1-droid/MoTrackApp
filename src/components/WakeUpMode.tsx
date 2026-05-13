@@ -1,4 +1,4 @@
-/**
+ /**
  * WakeUpMode - Cinematic wake-up experience
  * Fullscreen wake screen with calming animations and morning ritual
  */

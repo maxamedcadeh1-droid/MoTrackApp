@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { Bell, Plus, TrendingUp, TrendingDown, ArrowRight, Wifi, X, Clock, Zap } from 'lucide-react';
+import { motion } from 'motion/react';
 import { cn } from '../../../lib/utils';
 import { MomentumOrb } from './MomentumOrb';
 
@@ -64,8 +65,10 @@ export function DashboardHero({
   }, [notificationsOpen, setNotificationsOpen]);
 
   return (
-    <div
-      className="relative overflow-visible rounded-[1.75rem] p-5"
+    <motion.div
+      className="premium-cinema-card relative overflow-visible rounded-[1.75rem] p-5"
+      whileHover={{ y: -2 }}
+      transition={{ type: 'spring', stiffness: 260, damping: 26 }}
       style={{
         background:
           'linear-gradient(145deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%), radial-gradient(circle at 0% 0%, rgba(139,92,246,0.18) 0%, transparent 50%), radial-gradient(circle at 100% 100%, rgba(59,130,246,0.12) 0%, transparent 50%), rgba(7,10,23,0.9)',
@@ -93,7 +96,7 @@ export function DashboardHero({
           <button
             onClick={() => setNotificationsOpen(!notificationsOpen)}
             className={cn(
-              'relative flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-zinc-400 transition-all hover:text-white active:scale-95',
+              'premium-control relative flex h-9 w-9 items-center justify-center rounded-xl border border-white/10 bg-white/[0.04] text-zinc-400 transition-all hover:text-white active:scale-95',
               notificationsOpen && 'border-violet-500/30 bg-violet-500/10 text-violet-300'
             )}
             aria-label="Notifications"
@@ -106,7 +109,11 @@ export function DashboardHero({
 
           {/* Notification panel */}
           {notificationsOpen && (
-            <div
+            <motion.div
+              initial={{ opacity: 0, y: 8, scale: 0.98, filter: 'blur(8px)' }}
+              animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+              exit={{ opacity: 0, y: 8, scale: 0.98, filter: 'blur(8px)' }}
+              transition={{ type: 'spring', stiffness: 240, damping: 24 }}
               className="absolute right-0 top-full z-[200] mt-2 w-[min(300px,calc(100vw-2rem))] overflow-hidden rounded-2xl shadow-2xl shadow-black/60"
               style={{
                 background: 'rgba(8,11,19,0.98)',
@@ -155,7 +162,7 @@ export function DashboardHero({
                   </div>
                 )}
               </div>
-            </div>
+            </motion.div>
           )}
         </div>
       </div>
@@ -197,7 +204,7 @@ export function DashboardHero({
             {/* Quick Add button */}
             <button
               onClick={onQuickAdd}
-              className="flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold text-white transition-all active:scale-95"
+              className="premium-control flex items-center gap-1.5 rounded-full px-3 py-1.5 text-[11px] font-bold text-white transition-all active:scale-95"
               style={{
                 background: 'linear-gradient(135deg, #7c3aed, #6366f1, #0ea5e9)',
                 boxShadow: '0 0 16px rgba(139,92,246,0.4), 0 4px 12px rgba(0,0,0,0.3)',
@@ -214,10 +221,15 @@ export function DashboardHero({
         </div>
 
         {/* Right: Momentum Orb */}
-        <div className="shrink-0">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.88, rotate: -8 }}
+          animate={{ opacity: 1, scale: 1, rotate: 0 }}
+          transition={{ delay: 0.28, type: 'spring', stiffness: 180, damping: 18 }}
+          className="shrink-0"
+        >
           <MomentumOrb momentum={stats.momentum} trend={trend} />
-        </div>
+        </motion.div>
       </div>
-    </div>
+    </motion.div>
   );
 }

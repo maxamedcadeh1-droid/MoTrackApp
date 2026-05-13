@@ -1,5 +1,6 @@
 import { lazy, memo, Suspense, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { motion, type Variants } from 'motion/react';
 import {
   Briefcase,
   CheckCircle2,
@@ -15,8 +16,9 @@ import {
   Zap,
 } from 'lucide-react';
 import { Skeleton } from '../../components/ui/Layout';
+import { PremiumRouteLoader } from '../../components/AppEntryExperience';
 import { supabase } from '../../lib/supabase';
-import { cn, dateKey, startOfDay } from '../../lib/utils';
+import { cn, dateKey, deriveProjectProgress, startOfDay } from '../../lib/utils';
 import { DashboardHero } from './components/DashboardHero';
 import { CinematicCard } from './components/CinematicCard';
 import { TodayMission } from './components/TodayMission';
@@ -28,6 +30,32 @@ import { buildRoutineSuggestion } from '../../lib/RoutineSuggestionService';
 import { useAuth } from '../auth/AuthContext';
 
 const DashboardChecklist = lazy(() => import('./DashboardChecklist').then((mod) => ({ default: mod.DashboardChecklist })));
+
+const dashboardContainerVariants: Variants = {
+  hidden: { opacity: 0 },
+  visible: {
+    opacity: 1,
+    transition: {
+      staggerChildren: 0.09,
+      delayChildren: 0.08,
+    },
+  },
+};
+
+const dashboardItemVariants: Variants = {
+  hidden: { opacity: 0, y: 18, filter: 'blur(10px)' },
+  visible: {
+    opacity: 1,
+    y: 0,
+    filter: 'blur(0px)',
+    transition: {
+      type: 'spring',
+      stiffness: 185,
+      damping: 24,
+      mass: 0.9,
+    },
+  },
+};
 
 const HABIT_ICONS = {
   target: Target,
@@ -88,6 +116,8 @@ type DashboardStats = {
   focusMinutes: number;
   dailyGoal: number;
   activeProjects: number;
+  completedProjects: number;
+  totalProjects: number;
   completedProjectTasks: number;
   totalProjectTasks: number;
   projectProgress: number;
@@ -108,6 +138,8 @@ const emptyStats: DashboardStats = {
   focusMinutes: 0,
   dailyGoal: 45,
   activeProjects: 0,
+  completedProjects: 0,
+  totalProjects: 0,
   completedProjectTasks: 0,
   totalProjectTasks: 0,
   projectProgress: 0,
@@ -303,7 +335,7 @@ export const Dashboard = memo(function Dashboard() {
           (supabase.from('settings') as any)
             .select('daily_goal_minutes')
             .eq('user_id', user.id)
-            .single(),
+            .maybeSingle(),
           (supabase.from('notes') as any)
             .select('id,title,created_at,updated_at')
             .eq('user_id', user.id)
@@ -314,6 +346,8 @@ export const Dashboard = memo(function Dashboard() {
         const habits = (habitsData || []).filter((habit: any) => habit.is_active !== false);
         const projects = (projectsData || []) as any[];
         const activeProjects = projects.filter((project) => project.status === 'active');
+        const totalProjects = projects.length;
+        const completedProjects = projects.filter((project) => project.status === 'completed').length;
         const sessions = (sessionsData || []) as any[];
         const dailyGoal = Math.max((settings as any)?.daily_goal_minutes || 45, 1);
 
@@ -331,19 +365,20 @@ export const Dashboard = memo(function Dashboard() {
           .filter((session) => session.started_at?.startsWith(yesterdayKey))
           .reduce((acc, session) => acc + (session.completed_minutes || 0), 0);
 
-        const projectTasks = activeProjects.flatMap((project) => project.project_tasks || []);
+        const projectTasks = projects.flatMap((project) => project.project_tasks || []);
         const totalProjectTasks = projectTasks.length;
         const completedProjectTasks = projectTasks.filter((task: any) => task.is_done).length;
-        const projectProgress = activeProjects.length > 0
-          ? Math.round(activeProjects.reduce((sum, project) => sum + (project.progress || 0), 0) / activeProjects.length)
+        const projectProgress = totalProjects > 0
+          ? Math.round(projects.reduce((sum, project) => sum + deriveProjectProgress(project), 0) / totalProjects)
           : 0;
+        const projectCompletionRate = totalProjects > 0 ? Math.round((completedProjects / totalProjects) * 100) : 0;
 
         const habitsScore = totalHabits > 0 ? Math.round((habitsCompletedToday / totalHabits) * 40) : 0;
         const focusScore = Math.min(Math.round((focusMinutesToday / dailyGoal) * 30), 30);
         const projectsScore = totalProjectTasks > 0
           ? Math.round((completedProjectTasks / totalProjectTasks) * 30)
-          : activeProjects.length > 0
-            ? Math.min(Math.round(projectProgress * 0.3), 30)
+          : totalProjects > 0
+            ? Math.min(Math.round(Math.max(projectCompletionRate, projectProgress) * 0.3), 30)
             : 0;
 
         const yesterdayHabitsScore = totalHabits > 0 ? Math.round((habitsCompletedYesterday / totalHabits) * 40) : 0;
@@ -378,7 +413,7 @@ export const Dashboard = memo(function Dashboard() {
           return {
             id: project.id,
             title: project.title,
-            progress: project.progress || 0,
+            progress: deriveProjectProgress(project),
             deadline: project.deadline,
             priority,
             tasksTotal: tasks.length,
@@ -412,6 +447,8 @@ export const Dashboard = memo(function Dashboard() {
             focusMinutes: focusMinutesToday,
             dailyGoal,
             activeProjects: activeProjects.length,
+            completedProjects,
+            totalProjects,
             completedProjectTasks,
             totalProjectTasks,
             projectProgress,
@@ -445,24 +482,30 @@ export const Dashboard = memo(function Dashboard() {
     }
 
     const dashboardChannel = supabase.channel(`dashboard-updates-${user.id}`);
-    // Tables with user_id column — filter to this user only
+    // Tables with user_id column are filtered to this user only.
     const userTables = ['habits', 'notes', 'projects', 'focus_sessions', 'settings'] as const;
     userTables.forEach((table) => {
       dashboardChannel.on('postgres_changes', { event: '*', schema: 'public', table, filter: `user_id=eq.${user.id}` }, () => {
         refreshDashboard();
       });
     });
-    // project_tasks has no direct user_id — listen without filter (RLS protects data)
-    dashboardChannel.on('postgres_changes', { event: '*', schema: 'public', table: 'project_tasks' }, () => {
+    dashboardChannel.on('postgres_changes', { event: '*', schema: 'public', table: 'project_tasks', filter: `user_id=eq.${user.id}` }, () => {
       refreshDashboard();
     });
 
     void dashboardChannel.subscribe();
 
-    window.addEventListener('motrack:habit-updated', refreshDashboard);
+    const localEvents = [
+      'motrack:habit-updated',
+      'motrack:project-updated',
+      'motrack:focus-updated',
+      'motrack:notes-updated',
+      'motrack:reminders-updated',
+    ];
+    localEvents.forEach((eventName) => window.addEventListener(eventName, refreshDashboard));
 
     return () => {
-      window.removeEventListener('motrack:habit-updated', refreshDashboard);
+      localEvents.forEach((eventName) => window.removeEventListener(eventName, refreshDashboard));
       void supabase.removeChannel(dashboardChannel);
     };
   }, [user, refreshDashboard]);
@@ -486,7 +529,7 @@ export const Dashboard = memo(function Dashboard() {
     }));
   }, [stats.weeklyData]);
 
-  const hasNoData = stats.totalHabits === 0 && stats.activeProjects === 0 && stats.focusMinutes === 0;
+  const hasNoData = stats.totalHabits === 0 && stats.totalProjects === 0 && stats.focusMinutes === 0;
   const incompleteHabits = Math.max(stats.totalHabits - stats.habitsCompleted, 0);
   const remainingFocusMinutes = Math.max(stats.dailyGoal - stats.focusMinutes, 0);
   const yesterdayPulse = stats.weeklyData.length >= 2 ? stats.weeklyData[stats.weeklyData.length - 2] : undefined;
@@ -515,20 +558,7 @@ export const Dashboard = memo(function Dashboard() {
 
   // ── LOADING SKELETON ──────────────────────────────────────────────────────
   if (loading) {
-    return (
-      <div className="space-y-3 pb-36">
-        <Skeleton className="h-[200px] rounded-[1.75rem]" />
-        <div className="grid grid-cols-2 gap-3">
-          {[1, 2, 3, 4].map((i) => (
-            <Skeleton key={i} className="h-28 rounded-[1.5rem]" />
-          ))}
-        </div>
-        <Skeleton className="h-48 rounded-[1.75rem]" />
-        <Skeleton className="h-44 rounded-[1.75rem]" />
-        <Skeleton className="h-32 rounded-[1.75rem]" />
-        <Skeleton className="h-40 rounded-[1.75rem]" />
-      </div>
-    );
+    return <PremiumRouteLoader fullscreen={false} label="Syncing today's momentum..." />;
   }
 
   // ── STAT CARDS DATA ───────────────────────────────────────────────────────
@@ -554,11 +584,11 @@ export const Dashboard = memo(function Dashboard() {
       glowColor: 'rgba(59,130,246,0.25)',
     },
     {
-      title: 'Active',
-      subtitle: 'Projects',
-      value: `${stats.activeProjects}`,
-      trend: stats.activeProjects > 0 ? `${stats.projectProgress}% avg progress` : 'No active projects',
-      progress: stats.projectProgress,
+      title: 'Projects',
+      subtitle: 'Completed',
+      value: `${stats.completedProjects}/${stats.totalProjects}`,
+      trend: stats.activeProjects > 0 ? `${stats.activeProjects} active` : 'No active projects',
+      progress: stats.totalProjects ? Math.round((stats.completedProjects / stats.totalProjects) * 100) : stats.projectProgress,
       icon: Briefcase,
       color: '#f59e0b',
       glowColor: 'rgba(245,158,11,0.25)',
@@ -577,75 +607,93 @@ export const Dashboard = memo(function Dashboard() {
 
   // ── RENDER ────────────────────────────────────────────────────────────────
   return (
-    <div className="space-y-4 pb-36">
+    <motion.div
+      variants={dashboardContainerVariants}
+      initial="hidden"
+      animate="visible"
+      className="dashboard-reveal space-y-4 pb-36"
+    >
 
       {/* 1. Hero */}
-      <DashboardHero
-        greeting={heroCopy.greeting}
-        firstName={firstName}
-        subtitle={heroCopy.subtitle}
-        stats={stats}
-        syncLabel={syncLabel}
-        syncStatus={syncStatus}
-        lastSyncedAt={lastSyncedAt}
-        onQuickAdd={openCommandCenter}
-        notificationsOpen={notificationsOpen}
-        setNotificationsOpen={setNotificationsOpen}
-        formatActivityTime={formatActivityTime}
-        trend={trend}
-        navigate={navigate}
-      />
+      <motion.div variants={dashboardItemVariants}>
+        <DashboardHero
+          greeting={heroCopy.greeting}
+          firstName={firstName}
+          subtitle={heroCopy.subtitle}
+          stats={stats}
+          syncLabel={syncLabel}
+          syncStatus={syncStatus}
+          lastSyncedAt={lastSyncedAt}
+          onQuickAdd={openCommandCenter}
+          notificationsOpen={notificationsOpen}
+          setNotificationsOpen={setNotificationsOpen}
+          formatActivityTime={formatActivityTime}
+          trend={trend}
+          navigate={navigate}
+        />
+      </motion.div>
 
       {/* Onboarding checklist — only when user has no data */}
       {hasNoData && (
-        <Suspense fallback={<Skeleton className="h-40 rounded-[1.75rem]" />}>
-          <DashboardChecklist stats={stats} navigate={navigate} />
-        </Suspense>
+        <motion.div variants={dashboardItemVariants}>
+          <Suspense fallback={<Skeleton className="h-40 rounded-[1.75rem]" />}>
+            <DashboardChecklist stats={stats} navigate={navigate} />
+          </Suspense>
+        </motion.div>
       )}
 
       {/* 2. Stat cards — 2 cols mobile, 4 cols desktop */}
-      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+      <motion.div variants={dashboardItemVariants} className="grid grid-cols-2 gap-3 md:grid-cols-4">
         {statCards.map((card) => (
-          <CinematicCard
-            key={card.title}
-            title={card.title}
-            subtitle={card.subtitle}
-            value={card.value}
-            trend={card.trend}
-            progress={card.progress}
-            icon={card.icon}
-            color={card.color}
-            glowColor={card.glowColor}
-          />
+          <motion.div key={card.title} variants={dashboardItemVariants}>
+            <CinematicCard
+              title={card.title}
+              subtitle={card.subtitle}
+              value={card.value}
+              trend={card.trend}
+              progress={card.progress}
+              icon={card.icon}
+              color={card.color}
+              glowColor={card.glowColor}
+            />
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       {/* 3. Today's Mission */}
-      <TodayMission
-        incompleteHabits={incompleteHabits}
-        totalHabits={stats.totalHabits}
-        habitsCompleted={stats.habitsCompleted}
-        remainingFocusMinutes={remainingFocusMinutes}
-        activeProjects={stats.activeProjects}
-        navigate={navigate}
-      />
+      <motion.div variants={dashboardItemVariants}>
+        <TodayMission
+          incompleteHabits={incompleteHabits}
+          totalHabits={stats.totalHabits}
+          habitsCompleted={stats.habitsCompleted}
+          remainingFocusMinutes={remainingFocusMinutes}
+          activeProjects={stats.activeProjects}
+          navigate={navigate}
+        />
+      </motion.div>
 
       {/* 4. Productivity Pulse */}
-      <ProductivityPulse data={pulseChartData} />
+      <motion.div variants={dashboardItemVariants}>
+        <ProductivityPulse data={pulseChartData} />
+      </motion.div>
 
       {/* 5. Smart Suggestion */}
-      <SmartSuggestion
-        suggestion={routineSuggestion}
-        navigate={navigate}
-      />
+      <motion.div variants={dashboardItemVariants}>
+        <SmartSuggestion
+          suggestion={routineSuggestion}
+          navigate={navigate}
+        />
+      </motion.div>
 
       {/* 6. Recent Activity */}
-      <RecentActivity
-        items={stats.recentActivity}
-        formatTime={formatActivityTime}
-        navigate={navigate}
-      />
+      <motion.div variants={dashboardItemVariants}>
+        <RecentActivity
+          items={stats.recentActivity}
+          formatTime={formatActivityTime}
+          navigate={navigate}
+        />
+      </motion.div>
 
-    </div>
+    </motion.div>
   );
 });

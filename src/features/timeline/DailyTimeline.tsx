@@ -15,11 +15,12 @@ import {
 import { Card, Button, Skeleton, Toast, Badge } from '../../components/ui/Layout';
 import { supabase } from '../../lib/supabase';
 import { useAuth } from '../auth/AuthContext';
-import { cn, dateKey } from '../../lib/utils';
+import { calculateDailyStreak, cn, dateKey, deriveProjectProgress } from '../../lib/utils';
 
 type TimelineItem = {
   id: string;
   sourceId?: string;
+  projectId?: string;
   type: 'wake' | 'habit' | 'task' | 'focus' | 'sleep';
   title: string;
   subtitle: string;
@@ -69,21 +70,6 @@ function typeIcon(type: TimelineItem['type']) {
   if (type === 'focus') return Timer;
   if (type === 'sleep') return Bed;
   return CheckCircle2;
-}
-
-function calculateStreak(dates: string[]) {
-  if (!dates.length) return 0;
-  const dateSet = new Set(dates);
-  let streak = 0;
-  const cursor = new Date();
-  cursor.setHours(0, 0, 0, 0);
-
-  while (dateSet.has(dateKey(cursor))) {
-    streak += 1;
-    cursor.setDate(cursor.getDate() - 1);
-  }
-
-  return streak;
 }
 
 export function DailyTimeline() {
@@ -147,6 +133,7 @@ export function DailyTimeline() {
         .map((task: any) => ({
           id: `task-${task.id}`,
           sourceId: task.id,
+          projectId: task.project_id,
           type: 'task',
           title: task.title,
           subtitle: task.projects?.title || 'Project task',
@@ -208,7 +195,7 @@ export function DailyTimeline() {
     if (completedDates.includes(todayKey)) return;
 
     const nextDates = [...completedDates, todayKey];
-    const streak = calculateStreak(nextDates);
+    const streak = calculateDailyStreak(nextDates);
     const { error } = await (supabase.from('habits') as any)
       .update({
         completed_dates: nextDates,
@@ -243,8 +230,43 @@ export function DailyTimeline() {
     }
 
     setToast({ show: true, message: 'Task completed', type: 'success' });
+    if (item.projectId) {
+      await syncProjectProgress(item.projectId);
+    }
+    window.dispatchEvent(new Event('motrack:project-updated'));
     window.dispatchEvent(new Event('motrack:reminders-updated'));
     void fetchTimeline();
+  };
+
+  const syncProjectProgress = async (projectId: string) => {
+    if (!user) return;
+
+    const [{ data: tasks, error: tasksError }, { data: project, error: projectError }] = await Promise.all([
+      (supabase.from('project_tasks') as any)
+        .select('is_done')
+        .eq('project_id', projectId)
+        .eq('user_id', user.id),
+      (supabase.from('projects') as any)
+        .select('status,progress')
+        .eq('id', projectId)
+        .eq('user_id', user.id)
+        .maybeSingle(),
+    ]);
+
+    if (tasksError || projectError) {
+      console.error('Timeline project progress sync error:', tasksError || projectError);
+      return;
+    }
+
+    const progress = deriveProjectProgress({ ...(project || {}), project_tasks: tasks || [] });
+    const { error } = await (supabase.from('projects') as any)
+      .update({ progress, updated_at: new Date().toISOString() })
+      .eq('id', projectId)
+      .eq('user_id', user.id);
+
+    if (error) {
+      console.error('Timeline project update error:', error);
+    }
   };
 
   const runQuickAction = (item: TimelineItem) => {

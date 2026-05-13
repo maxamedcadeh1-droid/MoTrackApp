@@ -100,6 +100,7 @@ export function Notes() {
         if (error) throw error;
         
         setNotes(prev => prev.map(n => n.id === editingNote.id ? data : n));
+        window.dispatchEvent(new Event('motrack:notes-updated'));
         showToast('Note saved');
         closeModal();
       } else {
@@ -117,6 +118,7 @@ export function Notes() {
         if (error) throw error;
 
         setNotes(prev => [data, ...prev]);
+        window.dispatchEvent(new Event('motrack:notes-updated'));
         showToast('Note saved');
         closeModal();
       }
@@ -167,9 +169,10 @@ export function Notes() {
   const handleDelete = async (id: string) => {
     if (!user) return;
     try {
-      const { error } = await supabase.from('notes').delete().eq('id', id);
+      const { error } = await supabase.from('notes').delete().eq('id', id).eq('user_id', user.id);
       if (error) throw error;
       setNotes(prev => prev.filter(n => n.id !== id));
+      window.dispatchEvent(new Event('motrack:notes-updated'));
       showToast('Note deleted', 'error');
     } catch (error: any) {
       console.error('Delete note error:', error);
@@ -320,7 +323,7 @@ export function Notes() {
               initial={{ opacity: 0, scale: 0.95, y: 20 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              className="mobile-dialog-panel mobile-form-sheet fixed inset-x-3 top-1/2 z-[61] max-h-[85dvh] w-auto -translate-y-1/2 overflow-hidden md:left-1/2 md:w-full md:max-w-3xl md:-translate-x-1/2"
+              className="mobile-dialog-panel mobile-form-sheet fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-[61] max-h-[90dvh] w-auto overflow-hidden md:bottom-auto md:left-1/2 md:top-8 md:w-full md:max-w-3xl md:-translate-x-1/2"
             >
               <Card className="relative flex max-h-[85dvh] flex-col overflow-hidden rounded-t-[32px] rounded-b-none border-white/10 bg-[#0f0f0f] p-0 shadow-xl md:max-h-[calc(100vh-1.5rem)] md:rounded-3xl md:shadow-2xl">
                 <form onSubmit={handleSubmit} className="flex min-h-0 max-h-[85dvh] flex-col md:max-h-[calc(100vh-1.5rem)]">
@@ -417,7 +420,7 @@ export function Notes() {
                     initial={{ opacity: 0, scale: 0.95 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.95 }}
-                    className="mobile-dialog-panel fixed inset-x-3 top-1/2 z-[61] max-h-[calc(100vh-1.5rem)] w-auto -translate-y-1/2 overflow-y-auto md:left-1/2 md:w-full md:max-w-4xl md:-translate-x-1/2"
+                    className="mobile-dialog-panel fixed inset-x-3 bottom-[max(0.75rem,env(safe-area-inset-bottom))] z-[61] max-h-[90dvh] w-auto overflow-y-auto md:bottom-auto md:left-1/2 md:top-8 md:w-full md:max-w-4xl md:-translate-x-1/2"
                 >
                     <Card className="relative border-white/5 bg-transparent p-5 shadow-none sm:p-12 md:p-20">
                         <div className="absolute right-5 top-5 flex gap-4 sm:right-10 sm:top-10">

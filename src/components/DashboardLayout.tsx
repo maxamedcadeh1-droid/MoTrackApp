@@ -18,7 +18,7 @@ function getLayoutMotionState() {
 
   return {
     isMobile,
-    reduceMotion: isMobile || prefersReducedMotion,
+    reduceMotion: prefersReducedMotion,
   };
 }
 
@@ -35,7 +35,7 @@ export function DashboardLayout() {
     const updateMotion = () => {
       setLayoutMotion({
         isMobile: mobileQuery.matches,
-        reduceMotion: mobileQuery.matches || motionQuery.matches,
+        reduceMotion: motionQuery.matches,
       });
     };
 
@@ -51,9 +51,19 @@ export function DashboardLayout() {
 
   return (
     <div className="premium-bg flex min-h-screen overflow-x-hidden text-zinc-100 selection:bg-accent/40">
-      <div className="pointer-events-none fixed inset-0 z-0 grid-bg opacity-70" />
+      <motion.div
+        initial={reduceMotion ? false : { opacity: 0 }}
+        animate={{ opacity: 0.7 }}
+        transition={{ duration: 0.65, ease: [0.16, 1, 0.3, 1] }}
+        className="pointer-events-none fixed inset-0 z-0 grid-bg"
+      />
       {!isMobile && (
-        <div className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),transparent_18%,transparent_82%,rgba(0,0,0,0.35))]" />
+        <motion.div
+          initial={reduceMotion ? false : { opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ delay: 0.1, duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          className="pointer-events-none fixed inset-0 z-0 bg-[linear-gradient(180deg,rgba(255,255,255,0.04),transparent_18%,transparent_82%,rgba(0,0,0,0.35))]"
+        />
       )}
 
       <Sidebar />
@@ -70,11 +80,12 @@ export function DashboardLayout() {
             <AnimatePresence mode="wait">
               <motion.div
                 key={location.pathname}
-                initial={{ opacity: 0, y: 8 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -8 }}
-                transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                initial={{ opacity: 0, y: isMobile ? 10 : 14, scale: 0.992, filter: 'blur(10px)' }}
+                animate={{ opacity: 1, y: 0, scale: 1, filter: 'blur(0px)' }}
+                exit={{ opacity: 0, y: isMobile ? -6 : -10, scale: 0.996, filter: 'blur(8px)' }}
+                transition={{ type: 'spring', stiffness: 185, damping: 26, mass: 0.9 }}
                 className="min-h-[calc(100vh-120px)]"
+                style={{ willChange: 'transform, opacity, filter' }}
               >
                 <Outlet />
               </motion.div>

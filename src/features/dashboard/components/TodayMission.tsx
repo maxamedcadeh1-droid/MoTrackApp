@@ -1,4 +1,5 @@
 import { ArrowRight, CheckCircle2, Sparkles, Target } from 'lucide-react';
+import { motion } from 'motion/react';
 import { cn } from '../../../lib/utils';
 
 interface TodayMissionProps {
@@ -50,7 +51,7 @@ export function TodayMission({
 
   return (
     <div
-      className="relative overflow-hidden rounded-[1.75rem] p-5"
+      className="premium-cinema-card relative overflow-hidden rounded-[1.75rem] p-5"
       style={{
         background: 'linear-gradient(145deg, rgba(255,255,255,0.07) 0%, rgba(255,255,255,0.02) 100%), rgba(7,10,23,0.88)',
         border: '1px solid rgba(148,163,184,0.12)',
@@ -83,7 +84,13 @@ export function TodayMission({
       {/* Steps */}
       <div>
         {steps.map((item, idx, arr) => (
-          <div key={item.num} className="flex gap-3">
+          <motion.div
+            key={item.num}
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: idx * 0.08, type: 'spring', stiffness: 220, damping: 24 }}
+            className="flex gap-3"
+          >
             <div className="flex flex-col items-center">
               <div
                 className={cn(
@@ -108,13 +115,13 @@ export function TodayMission({
                 </div>
                 <button
                   onClick={() => navigate(item.path)}
-                  className="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-400 transition-all hover:border-violet-500/30 hover:text-white active:scale-95"
+                  className="premium-control flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl border border-white/10 bg-white/[0.04] text-zinc-400 transition-all hover:border-violet-500/30 hover:text-white active:scale-95"
                 >
                   <ArrowRight className="h-4 w-4" />
                 </button>
               </div>
             </div>
-          </div>
+          </motion.div>
         ))}
       </div>
 

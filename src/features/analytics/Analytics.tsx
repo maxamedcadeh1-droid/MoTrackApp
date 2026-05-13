@@ -142,8 +142,9 @@ export function Analytics() {
         });
 
         const totalMinutes = sessions.reduce((sum: number, session: any) => sum + (session.completed_minutes || 0), 0);
-        const avgProjectProgress = projects.length > 0
-          ? Math.round(projects.reduce((sum: number, project: any) => sum + (project.progress || 0), 0) / projects.length)
+        const completedProjects = projects.filter((project: any) => project.status === 'completed').length;
+        const projectCompletionRate = projects.length > 0
+          ? Math.round((completedProjects / projects.length) * 100)
           : 0;
         const bestDaily = [...week].sort((a, b) => b.score - a.score)[0];
         const bestHour = [...hours].sort((a, b) => b.minutes - a.minutes)[0];
@@ -160,7 +161,7 @@ export function Analytics() {
           bestStreak: Math.max(0, ...habits.map((habit: any) => habit.best_streak || 0)),
           currentStreak: Math.max(0, ...habits.map((habit: any) => habit.streak || 0)),
           bestDay: bestDaily && bestDaily.score > 0 ? bestDaily.day : 'No data',
-          projectCompletionRate: avgProjectProgress,
+          projectCompletionRate,
           bestFocusHour: bestHour && bestHour.minutes > 0 ? bestHour.label : 'No data',
         });
         setHasData(sessions.length > 0 || habits.length > 0 || projects.length > 0);
@@ -235,7 +236,7 @@ export function Analytics() {
         <MetricCard icon={Activity} label="Productivity score" value={`${stats.productivityScore}%`} detail="Weekly blended score" color="text-accent" />
         <MetricCard icon={Clock} label="Focus hours" value={`${stats.totalFocusHours}h`} detail="Last 28 days" color="text-blue-300" />
         <MetricCard icon={CheckCircle2} label="Consistency" value={`${stats.consistencyRate}%`} detail="Active days this month" color="text-emerald-300" />
-        <MetricCard icon={Briefcase} label="Projects" value={`${stats.projectCompletionRate}%`} detail="Average completion" color="text-purple-300" />
+        <MetricCard icon={Briefcase} label="Projects" value={`${stats.projectCompletionRate}%`} detail="Completed projects" color="text-purple-300" />
       </div>
 
       <div className="grid grid-cols-1 gap-6 xl:grid-cols-12">

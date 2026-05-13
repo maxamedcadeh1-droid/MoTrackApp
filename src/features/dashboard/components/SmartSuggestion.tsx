@@ -13,7 +13,7 @@ export function SmartSuggestion({ suggestion, navigate }: SmartSuggestionProps) 
 
   return (
     <div
-      className="relative overflow-hidden rounded-[1.75rem] p-5"
+      className="premium-cinema-card relative overflow-hidden rounded-[1.75rem] p-5"
       style={{
         background:
           'linear-gradient(145deg, rgba(139,92,246,0.08) 0%, rgba(255,255,255,0.02) 100%), rgba(7,10,23,0.9)',
@@ -39,7 +39,7 @@ export function SmartSuggestion({ suggestion, navigate }: SmartSuggestionProps) 
           <p className="mt-1 text-xs text-zinc-400">{suggestion.subtext}</p>
           <button
             onClick={() => navigate(suggestion.actionPath)}
-            className="mt-3 inline-flex min-h-10 items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold text-white transition-all active:scale-95"
+            className="premium-control mt-3 inline-flex min-h-10 items-center gap-1.5 rounded-xl px-4 py-2 text-xs font-bold text-white transition-all active:scale-95"
             style={{
               background: 'linear-gradient(135deg, #7c3aed, #6366f1)',
               boxShadow: '0 4px 16px rgba(139,92,246,0.35)',
